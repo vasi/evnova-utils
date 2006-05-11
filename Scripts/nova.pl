@@ -4,9 +4,6 @@ use strict;
 
 use lib 'lib';
 
+use Nova::Command;
+Nova::Command->execute(@ARGV);
 
-use Nova::Resources;
-
-my $file = '../ConText.txt';
-my $resources = Nova::Resources->fromConText($file);
-print "$_\n" for $resources->types;

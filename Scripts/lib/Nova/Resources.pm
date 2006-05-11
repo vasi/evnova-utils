@@ -11,7 +11,7 @@ use Nova::ConText;
 use Nova::Resource;
 use Nova::Util qw(deaccent);
 
-use File::Spec::Functions qw(rel2abs);
+use Cwd qw(realpath);
 
 =head1 NAME
 
@@ -38,7 +38,7 @@ sub _init {
 
 sub fromConText {
 	my ($class, $file) = @_;
-	my $source = rel2abs($file);
+	my $source = realpath($file);
 	my $cache = Nova::Cache->cache($source);
 	
 	unless ($cache->{done}) {
@@ -57,14 +57,19 @@ sub fromConText {
 	return $class->new($source, $cache);
 }
 
+sub deleteCache {
+	my ($self) = @_;
+	unlink($self->source);
+}
+
 # Get a single resource by type and ID
 sub get {
 	my ($self, $type, $id) = @_;
 	$type = deaccent($type);
 	
 	die "No such resource $id of type $type\n"
-		unless exists $self->{cache}{'resources',$type,$id};
-	return $self->{cache}{'resources',$type,$id};
+		unless exists $self->{cache}{'resource',$type,$id};
+	return $self->{cache}{'resource',$type,$id};
 }
 
 # Get all resources of a type

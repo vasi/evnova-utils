@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use base 'Nova::Base';
-use Nova::Util qw(deaccent);
+use Nova::Util qw(deaccent methods);
 
 =head1 NAME
 
@@ -94,12 +94,7 @@ sub DESTROY { }
 # Trickery to allow case-insensitive methods
 {
 	no strict 'refs';
-	while (my ($k, $v) = each %{__PACKAGE__ . '::'}) {
-		next if $k =~ /::/ or $k eq '_temp'; # sub-modules
-		*_temp = $v;
-		next unless defined &_temp;
-		$SUBS{lc $k} = *_temp{CODE};
-	}
+	$SUBS{lc $_} = \&{__PACKAGE__ . "::$_"} for methods(__PACKAGE__);
 }
 
 sub AUTOLOAD {

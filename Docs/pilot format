@@ -1,0 +1,97 @@
+Resource 128 in the pilot file:
+    0	short lastStellar	last stellar object to be visited (0-1499)
+    2	short shipClass		player's ship class (0-63)
+    4	short cargo[6]		current quantity of each of the six types of basic cargo
+   10	short unused		unused (300?)
+   12	short fuel		current fuel quantity, 100 units per jump
+   14	short month		the currect month (1-12)
+   16	short day		the current day (1-31)
+   18	short year		the current year
+   1a 	short exploration[2048]	current state of each system's exploration: ≤ 0 means unexplored; 1 means player has visited; 2 means player has visited and landed within this system
+ 101a	short itemCount[512]		how many of each type of outfit item owned
+ 141a	short legalStatus[2048]	legal status in each system (0 =neutral)
+ 241a	short weapCount[256]		how many of each type of weapon the player's ship has
+ 261a	short ammo[256]		how much ammo each weapon
+ 281a	long cash			how many credits player has
+ 281e	MissionObjectives missionObj[10]	data on currently-running missions' objectives (see below)
+ 295e	MissionData missionData[10]		data on currently-running missions' parameters (see below)
+ ???
+ b81e	Boolean missionBit[10000]		the state of each of the mission bits
+ df2e	Boolean stelDominated[2048]		whether or not each of the stellar objects is dominated
+ e72e	short escortClass[74?]		stores the player's current escorts: for each one: -1 means not an escort data item, 0-63 means a captured escort (the number is the escort's ship class), 1000-1063 means a hired escort. (Don't make EV crash by abusing the ability to have more than the normal number of escorts!)
+ e7c2	short fighterClass[54?]		stores the player's current deployed fighters: for each one: -1 means not a fighter data item, 0-63 means a fighter of a certain class
+ e82e	???
+ e9ae	long rating		player's combat rating
+
+
+struct MissionObjectives (size = 0x14 = 20)
+ 281e	Boolean active		mission is active
+ 281f	Boolean travelObjComplete	player has visited assigned destination
+ 2820	Boolean shipObjComplete	player has completed special-ship assignment
+ 2821	Boolean missionFailed		mission was failed
+ 2822	short flags			???
+ 2824	DateTimeRec missionDeadline	mission completion deadline
+
+struct DateTimeRec (size = 0xe = 14)
+	short year
+	short month
+	short day
+	short hour			unused
+	short minute		unused
+	short second		unused
+	short dayOfWeek		unused
+
+struct MissionData (size = 0x8ec = 2284)
+ 295e	short destStellar		destination stellar object (0-1499)
+ 2960	short destSystem		destination system (0-999)   unused?
+ 2962	short returnStellar		return stellar object (0-1499)
+ 2964	short specialShipCount		number of remaining special ships
+ 2966	short specialShipDude		special ship 'dude' type
+ 2968	short specialShipGoal		special ship goal
+ 296a	short specialShipBehavior	special ship behavior
+ 296c	short specialShipStart		special ship system
+ 296e	short specialShipSyst		special ship system
+ 2970	short cargoType, cargoQty	mission cargo type and quantity
+ 2974	short pickupMode, dropoffMode	mission cargo pickup/dropoff mode
+	short scanGovt		which govt tries to scan the player for this mission (0-127, or -1 if none)
+	short compBitSet[2]	which bits to set on completion
+	short compGovt, compReward		successful-mission government and reward
+	short failBitSet	which bit to set on failure
+	long pay	how many credits to give player upon successful completion
+	short specialShipsKilled, specialShipsBoarded	how many special ships have been killed or boarded
+	short specialShipsDisabled		how many special ships have been disabled
+	short specialShipsJumpedIn, specialShipsJumpedOut	how many special ships have jumped in or out
+	short initialShipCount		how many special ships there were at the start of the mission
+	Boolean failIfScanned	fail the mission if the player is scanned
+	Boolean canAbort		player can abort this mission
+	Boolean cargoLoaded	mission cargo is aboard
+	short briefText, quickBriefText, loadCargoText, dropOffCargoText, compText, failText	'dësc' ID's for various text messages
+	short timeLeft		number of days remaining
+	short specialShipNameResID		ID of 'STR#' resource used to name the special ships
+	short specialShipNameIndex		index of the string within the above 'STR#' resource
+	short unused		ignored
+	short specialShipDelay		
+	short unused2		ignored
+	unsigned short flags	mission flags (see EV Bible)
+	short auxShipCount, auxShipDude, auxShipSyst, auxShipsJumpedIn, auxShipDelay, auxShipsLeft		similar to above values, but for auxShips
+	char specialShipName[32]	the name of the special ship(s)
+	Str255 missionName		the name of the mission
+ 29ae	short missionID ???
+ 29d0	Str63 shipName (really Str63?)
+ 2a0e	Str63 shipSubtitle
+ 3147	Str255 missionName
+
+Resource 129 in the pilot file:
+Note: the name of the resource is the name of the player's ship
+   0	short versionInfo			used internally
+   2	short strictPlayFlag		0 = strict play off
+   4?	short stelShipCount[2048]	number of defense ships remaining at each planet
+1006	short personAlive[1024]	 	flag to set each 'pers' active or not
+1806	short personGrudge[1024]		flag to give a 'pers' a grudge against the player
+2006?	short unused[64]			ignored
+	short stelAnnoyance[1500]	keeps track of planets' propensity to overthrow your rule
+	Boolean seenIntroScreen		the player has seen the game intro screen
+	short disasterTime[128]		time left on active disasters (<0 = inactive)
+	short disasterStellar[128]	where each disaster is currently active
+	short junkQty[128]		how much of each type of 'junk' the player has aboard
+	short priceFlux[2][2]		global price fluctuations

@@ -1,0 +1,103 @@
+EV Mission Checklist
+
+Choose Sides	
+___Transport Confed Documents
+___Transport Rebel Parcels
+___Switch Sides
+	
+Confederate String	
+ Destroy Rebel Prototype Mission Set	
+___Destroy Escort Carrier
+___Destroy Escort Carrier
+___Destroy Rebel Convoy
+ Rebel Attack Mission Set	
+___Confed Covert Ops
+___Confed Courier Operations
+___Intercept Rebel Convoy
+___Intercept Rebel Convoy
+ Recon Mission Set	
+___Confed Recon Mission
+___Rebel Pursuit
+___Rebel Pursuit Part 2
+___Rebel Pursuit Part 3
+___Rebel Pursuit Part 4
+ Alien Mission Set	
+___Investigate Disappearances
+___Escort Confed Convoy
+___Extract Confed Spy
+___Locate Aliens
+___Destroy Alien Cruiser
+ Extra Mission	
+___Locate Rebel Fleet
+	
+Rebel String	
+ Weapons Smuggling Mission Set	
+___Locate Weapons Cache
+___Distribute Rebel Munitions
+ Rebel Recon Mission Set	
+___Rebel Special Ops
+___Special Ops Insertion
+___Special Ops Rendezvous
+ Astrodyne Mission Set	
+___Astrodyne Outpost Recruitment
+___Astrodyne Outpost I
+___Astrodyne Outpost II
+___Astrodyne Outpost III
+___Astrodyne Outpost IV
+___Astrodyne Outpost V
+ Alien Mission Set	
+___Investigate Disappearances
+___Lead Rebel Patrol
+___Rescue Rebel Spy
+___Get War Records
+___Locate Aliens
+___Destroy Alien Cruiser
+ Extra Mission	
+___Rebel Recon
+	
+Diphidia String	
+___Investigate Dumping
+___Observe Antares
+___Capture Ore Sample
+___Destroy Freighters
+___Escape Astex
+	
+Starbound Shipping String	
+*___Help Starbound Shipping
+*___Ferry Important Documents
+___Dangerous Courier Mission
+	
+United Galactic Express String	
+___Help United Galactic Express
+___UGE Recruitment
+___UGE Smuggling
+___UGE Smuggling
+___UGE Redemption
+	
+Turin V String	
+*___Transport Engineers
+*___Retrieve Equipment
+*___Retrieve Colonists
+	
+Biological Weapons String	
+___Transport Industrial Toxins
+___Deliver Refined Toxins
+___Distribute Biological Weapons
+	
+Artemis String	
+___Ferry Passenger to <Any Independent Planet>
+___Retrieve Data
+___Rescue Agent
+___Gather Hunters
+___Meet with UGE Reps
+___T.A.G. - You're IT
+	
+Standalone Missions From Bars	
+___Transport Criminal
+___Smuggle Drugs
+___Prospecting Expedition
+___Gun Running
+___Hunt Pirate
+___Assassination
+___Black Market Wood
+___Environmental Trip to <Pirate Planet>

@@ -17,11 +17,14 @@ my %CATEGORIES;
 
 # Run the command line
 sub execute {
-	my ($class, $cmd, @args) = @_;
-	__PACKAGE__->findSubpackages; # load them
+	my ($class, @args) = @_;
+	__PACKAGE__->findSubpackages; # load them	
 	
+	my $config = Nova::Config->new(\@args);
+	
+	my $cmd = shift @args;
 	die "No such command '$cmd'\n" unless exists $COMMANDS{lc $cmd};
-	$COMMANDS{lc $cmd}->run(@args);
+	$COMMANDS{lc $cmd}->run($config, @args);
 }
 
 sub _init {
@@ -29,14 +32,13 @@ sub _init {
 	@$self{qw(sub name help)} = @_;
 }
 
-sub setup {
-	my ($self) = @_;
-	$self->{config} = Nova::Config->new($self->{args});
-}
+sub setup { }
 
 sub run {
-	my ($self, @args) = @_;
+	my ($self, $config, @args) = @_;
+	$self->{config} = $config;
 	$self->{args} = \@args;
+	
 	$self->setup();
 	$self->{sub}->($self, @{$self->{args}});
 }

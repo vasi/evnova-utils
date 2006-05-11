@@ -163,9 +163,4 @@ sub _mapping {
 }
 
 
-
-# Deal with:
-# - Spelling of 'Visibility'
-# - ModVals
-
 1;

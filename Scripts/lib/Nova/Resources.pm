@@ -69,7 +69,7 @@ sub get {
 	
 	die "No such resource $id of type $type\n"
 		unless exists $self->{cache}{'resource',$type,$id};
-	return $self->{cache}{'resource',$type,$id};
+	return $self->connect($self->{cache}{'resource',$type,$id});
 }
 
 # Get all resources of a type
@@ -78,7 +78,9 @@ sub type {
 	$type = deaccent($type);
 	
 	die "No such type $type\n" unless exists $self->{cache}{'type',$type};
-	return map { $self->get($type, $_) } @{$self->{cache}{'type',$type}};
+	return $self->connect(
+		map { $self->get($type, $_) } @{$self->{cache}{'type',$type}}
+	);
 }
 
 # Get a list of all known types
@@ -91,6 +93,13 @@ sub types {
 sub source {
 	my ($self) = @_;
 	return $self->{source};
+}
+
+# Connect resources to the collection
+sub connect {
+	my ($self, @res) = @_;
+	map { $_->connection($self) } @res;
+	return @res;
 }
 
 # Find a resource from a specification

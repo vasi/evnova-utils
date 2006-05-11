@@ -112,6 +112,11 @@ sub AUTOLOAD {
 	}
 }
 
+sub collection {
+	my ($self, $val) = @_;
+	$self->{collection} = $val if defined $val;
+	return $self->{collection};
+}
 
 package Nova::Resource::Ship;
 use base 'Nova::Resource';

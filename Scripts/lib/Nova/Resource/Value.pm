@@ -25,7 +25,6 @@ sub new {
 	NRVL->new(@args);
 }
 
-
 package NRV;
 use base 'Nova::Base';
 
@@ -71,11 +70,16 @@ sub value {
 }
 
 # Return the value in printable format
-sub dump {
+sub show {
 	my ($self) = @_;
 	return $self->{val};
 }
 
+# Format appropriate for dumping to ConText
+sub dump {
+	my ($self) = @_;
+	return $self->show; # default
+}
 
 package NRVS; # string
 use base 'NRV';
@@ -89,6 +93,14 @@ sub _init {
 	$self->{val} =~ s/\\r/\n/g;
 }
 
+sub dump {
+	my ($self) = @_;
+	my $val = $self->{val};
+	$val =~ s/"/\\q/g;
+	$val =~ s/\n/\\r/g;
+	return sprintf '"%s"', $val;
+}
+
 
 package NRVH; # hex
 use base 'NRV';
@@ -99,7 +111,7 @@ sub _init {
 	$self->{'length'} = $length;
 }
 
-sub dump {
+sub show {
 	my ($self) = @_;
 	return sprintf "0x%0*x", $self->{'length'}, $self->{val};
 }
@@ -108,7 +120,7 @@ sub dump {
 package NRVC; # color
 use base 'NRV';
 
-sub dump {
+sub show {
 	my ($self) = @_;
 	return sprintf "#%06x", $self->{val};
 }
@@ -122,7 +134,7 @@ sub _init {
 	$self->SUPER::_init(\@vals);
 }
 
-sub dump {
+sub show {
 	my ($self) = @_;
 	return join('',
 		map { sprintf "\n  %3d: %s", $_, $self->{val}[$_] }
@@ -130,5 +142,9 @@ sub dump {
 	);
 }
 
+sub dump {
+	my ($self) = @_;
+	return join ' ', map { NRVS->new($_)->dump } @{$self->{val}};
+}
 
 1;

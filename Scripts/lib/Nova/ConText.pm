@@ -6,7 +6,6 @@ use warnings;
 use base 'Nova::Base';
 
 use Nova::ConText::Type;
-use Nova::Util qw(deaccent);
 
 use English qw($INPUT_RECORD_SEPARATOR);
 
@@ -73,26 +72,23 @@ sub read {
 	($self->{rs}, $enc) = $self->_file_type($file);
 	open my $fh, "<:$enc", $file or die "Can't open '$file': $!\n";
 	
-	my $reader;
+	my (@types, $type);
 	while (defined(my $line = $self->getline($fh))) {
 		if ($line =~ /^• Begin (\S{4})$/) {
-			my $type = deaccent($1);
-			$reader = Nova::ConText::Type->new($type);
-			my $headers = $self->getline($fh) or die "No headers!\n";
-			$headers{$type} = $reader->headers($headers);
+			$type = Nova::ConText::Type->new($1);
+			push @types, $type;
 			
-		} elsif (defined $reader) {
-			my $resource = $reader->resource($line);
-			if (defined $resource) {
-				push @resources, $resource;
-			} else {
-				undef $reader;
-			}
+			my $headers = $self->getline($fh) or die "No headers!\n";
+			$type->readHeaders($headers);
+			
+		} elsif (defined $type) {
+			my $ret = $type->readResource($line);
+			undef $type unless defined $ret; # stop when we hit a bad line
 		}
 	}
 	
 	close $fh;
-	return (\%headers, \@resources);
+	return @types;
 }
 
 # my ($recordSeparator, $encoding) = $class->_file_type($file);

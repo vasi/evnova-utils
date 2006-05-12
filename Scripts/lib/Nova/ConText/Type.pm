@@ -9,6 +9,7 @@ use base 'Nova::Base';
 use Nova::Resource;
 use Nova::Resource::Value;
 use Nova::Util qw(deaccent);
+use Data::Dumper;
 
 use utf8;
 
@@ -28,19 +29,19 @@ Nova::ConText::Type - parse resources of a given type from a ConText file
 
 our %REGISTERED;
 
-sub new {
-	my ($class, $type) = @_;
-	if ($class eq __PACKAGE__ && exists $REGISTERED{$type}) {
-		return $REGISTERED{$type}->new($type);
-	} else {
-		return $class->SUPER::new($type);
+sub _init {
+	my ($self, $type) = @_;
+	$self->{realType} = $type;
+	$self->{type} = deaccent($type);
+	$self->{resources} = [ ];
+	
+	if (exists $REGISTERED{$self->type}) {
+		bless $self, $REGISTERED{$self->type}; # rebless
 	}
 }
 
-sub _init {
-	my ($self, $type) = @_;
-	$self->{type} = $type;
-}
+sub type 		{ $_[0]->{type}		}
+sub realType	{ $_[0]->{realType} }
 
 # my @fields = $class->_parseLine($line);
 #
@@ -52,10 +53,10 @@ sub _parseLine {
 	return @fields;
 }
 
-# my $headers = $reader->headers($line);
+# $reader->readHeaders($line);
 #
 # Parse the headers of this type.
-sub headers {
+sub readHeaders {
 	my ($self, $line) = @_;
 	my @values = $self->_parseLine($line);
 	pop @values while $values[-1]->value eq 'EOR';
@@ -65,7 +66,6 @@ sub headers {
 	@headers = grep { !$seen{$_}++ } @headers;	# uniquify
 	
 	$self->{headers} = \@headers;
-	return $self->{headers};
 }
 
 # my $valuesHash = $reader->_mapping($headers, $valuesList);
@@ -73,15 +73,17 @@ sub headers {
 # Map the values to headers
 sub _mapping {
 	my ($self, $headers, $values) = @_;
-	die "Different number of headers and fields\n"
-		unless scalar(@$headers) == scalar(@$values);
-	return { map { lc $headers->[$_] => $values->[$_] } (0..$#$values) };
+	unless (scalar(@$headers) == scalar(@$values)) {
+		print Dumper($headers, $values);
+		die "Different number of headers and fields\n";
+	}
+	return { map { $headers->[$_] => $values->[$_] } (0..$#$values) };
 }
 
-# my $resource = $reader->resource($line);
+# my $resource = $reader->readResource($line);
 #
 # Parse a resource of this type, return as a hash of fields.
-sub resource {
+sub readResource {
 	my ($self, $line) = @_;
 	my @values = $self->_parseLine($line);
 	
@@ -93,7 +95,7 @@ sub resource {
 	pop @values while $values[-1]->value eq '•'; # end-of-record
 	
 	my $valuesHash = $self->_mapping($self->{headers}, \@values);
-	return $valuesHash;
+	push @{$self->{resources}}, $valuesHash;
 }
 
 # Nova::ConText::Type->register($type, $package);
@@ -104,6 +106,17 @@ sub register {
 	$REGISTERED{$type} = $package;
 }
 
+# List of hashes representing resources
+sub resourceHashes {
+	my ($self) = @_;
+	return @{$self->{resources}};
+}
+
+# Headers (columns) of this type
+sub headers {
+	my ($self) = @_;
+	return @{$self->{headers}};
+}
 
 package Nova::ConText::Type::StringList;
 use base 'Nova::ConText::Type';
@@ -124,11 +137,10 @@ use base 'Nova::ConText::Type';
 Nova::ConText::Type->register('syst', __PACKAGE__);
 
 # Mis-spelled field
-sub headers {
+sub readHeaders {
 	my ($self, @args) = @_;
-	$self->SUPER::headers(@args);
+	$self->SUPER::readHeaders(@args);
 	map { s/Visiblility/Visibility/ } @{$self->{headers}};
-	return $self->{headers};
 }
 
 
@@ -143,14 +155,26 @@ sub _mapping {
 	
 	my %forceHex = map { $_ => 1 } (17, 30, 43);
 	
-	for my $modtype (grep /^modtype/, keys %$hash) {
+	for my $modtype (grep /^ModType/, keys %$hash) {
 		next unless $forceHex{$hash->{$modtype}->value};
-		(my $modval = $modtype) =~ s/modtype/modval/;
+		(my $modval = $modtype) =~ s/ModType/ModVal/;
 		my $val = $hash->{$modval}->value;
 		$hash->{$modval} = Nova::Resource::Value::Hex->new($val, 4);
 	}
 	
 	return $hash;
+}
+
+
+package Nova::ConText::Type::Rank;
+use base 'Nova::ConText::Type';
+Nova::ConText::Type->register('rank', __PACKAGE__);
+
+# Missing some fields in ConText!
+sub _mapping {
+	my ($self, $headers, $values) = @_;
+	push @$values, ('') x ($#$headers - $#$values);
+	return $self->SUPER::_mapping($headers, $values);
 }
 
 

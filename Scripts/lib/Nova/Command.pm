@@ -118,8 +118,4 @@ command {
 	$self->printCategory($_, $_) for grep { "$_" } keys %CATEGORIES;
 } help => 'get help on available commands';
 
-command {
-	print "foo\n";
-} misc => 'test';
-
 1;

@@ -33,13 +33,13 @@ sub setup {
 sub resources { $_[0]->{resources} }
 
 command {
-	my ($self, $type, $id) = @_;
-	print $self->resources->get($type => $id)->dump;
-} 'dump' => 'dump a resource';
+	my ($self, $type, $id, @fields) = @_;
+	print $self->resources->get($type => $id)->show(@fields);
+} show => 'show a resource';
 
 command {
 	my ($self, @types) = @_;
-	map { printf "%s %5d: %s\n", $_->type, $_->id, $_->name }
+	map { printf "%s %5d: %s\n", $_->type, $_->id, $_->fullName }
 		$self->resources->type(@types);
 } listAll => 'list all known resources of the given types';
 
@@ -48,5 +48,11 @@ command {
 	$self->resources->deleteCache;
 	$self->loadContext;
 } reload => 'reload the ConText';
+
+command {
+	my ($self) = @_;
+	my $r = $self->resources->get(ship => 128);
+	printf "%s\n", $r->fullname;
+} misc => 'test';
 
 1;

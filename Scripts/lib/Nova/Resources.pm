@@ -42,20 +42,26 @@ sub fromConText {
 	my $cache = Nova::Cache->cache($source);
 	
 	unless ($cache->{done}) {
-		my ($headers, $resources) = Nova::ConText->new($file)->read;
-		my %types;
+		my @types = Nova::ConText->new($file)->read;
+		my @typeNames;
 		
-		while (my ($k, $v) = each %$headers) {
-			$cache->{'header',$k} = $v;
+		for my $type (@types) {
+			my $t = $type->type;
+			push @typeNames, $t;
+			
+			my @headers = $type->headers;
+			$cache->{'header',$t} = \@headers;
+			$cache->{'realType',$t} = $type->realType;
+			
+			my @ids;
+			for my $h ($type->resourceHashes) {
+				my $id = $h->{ID}->value;
+				push @ids, $id;
+				$cache->{'resource',$t,$id} = [ @$h{@headers} ];
+			}
+			$cache->{'type',$t} = [ sort { $a <=> $b } @ids ];
 		}
-		for my $r (@$resources) {
-			my $type = $r->{type}->value;
-			my $id = $r->{id}->value;
-			push @{$types{$type}}, $id;
-			$cache->{'resource',$type,$id} = $r;
-		}
-		$cache->{'type',$_} = $types{$_} for keys %types;
-		$cache->{types} = [ sort keys %types ];
+		$cache->{types} = [ sort @typeNames ];
 		$cache->{done} = 1;
 	}
 	return $class->new($source, $cache);
@@ -79,13 +85,14 @@ sub get {
 		$c->{'resource',$type,$id},	# fields
 		$c->{'header',$type},		# headers
 		$self,						# collection
+		$c->{'realType',$type},		# real type
 	);
 }
 
-# Get all resources some types
+# Get all resources of some types
 sub type {
 	my ($self, @types) = @_;
-	@types = map { deaccent(@_) } @types;
+	@types = map { deaccent($_) } @types;
 	@types = $self->types unless @types; # default to all
 	
 	my @resources;

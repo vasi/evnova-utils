@@ -110,7 +110,6 @@ use base 'Nova::ConText::Type';
 Nova::ConText::Type->register('str#', __PACKAGE__);
 
 sub _mapping {
-$DB::single = 1;
 	my ($self, $headers, $values) = @_;
 	my @strings = splice @$values, $#$headers;
 	@strings = map { $_->value } @strings;
@@ -125,10 +124,10 @@ use base 'Nova::ConText::Type';
 Nova::ConText::Type->register('syst', __PACKAGE__);
 
 # Mis-spelled field
-sub _headers {
+sub headers {
 	my ($self, @args) = @_;
-	$self->SUPER::_headers(@args);
-	map { s/visiblility/visibility/ } @{$self->{headers}};
+	$self->SUPER::headers(@args);
+	map { s/Visiblility/Visibility/ } @{$self->{headers}};
 	return $self->{headers};
 }
 

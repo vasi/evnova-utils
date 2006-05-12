@@ -10,19 +10,19 @@ sub fromString {
 }
 sub new {
 	my ($class, @args) = @_;
-	NRV->fromString(@args);
+	NRV->new(@args);
 }
 
 package Nova::Resource::Value::Hex;
 sub new {
 	my ($class, @args) = @_;
-	NRVH->fromString(@args);
+	NRVH->new(@args);
 }
 
 package Nova::Resource::Value::List;
 sub new {
 	my ($class, @args) = @_;
-	NRVL->fromString(@args);
+	NRVL->new(@args);
 }
 
 
@@ -124,9 +124,9 @@ sub _init {
 
 sub dump {
 	my ($self) = @_;
-	return "\n" . join('',
-		map { sprintf "  %3d: %s\n", $_, $self->{val}[$_] }
-		(0..$#{$self->{val}})
+	return join('',
+		map { sprintf "\n  %3d: %s", $_, $self->{val}[$_] }
+			(0..$#{$self->{val}})
 	);
 }
 

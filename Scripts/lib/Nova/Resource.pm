@@ -53,8 +53,8 @@ sub dump {
 	
 	my $dump = '';
 	for my $field (@fields) {
-		die "No such field $field\n" unless exists $self->{lc $field};
-		$dump .= sprintf "%s: %s\n", $field, $self->{lc $field}->dump;
+		die "No such field $field\n" unless exists $self->{fields}{lc $field};
+		$dump .= sprintf "%s: %s\n", $field, $self->{fields}{lc $field}->dump;
 	}
 	return $dump;
 }

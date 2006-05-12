@@ -28,19 +28,33 @@ our %CACHES;
 
 sub cache {
 	my ($class, @ids) = @_;
-	unshift @ids, scalar(caller);
-	my $id = join '_', map { uri_escape($_, '^a-zA-Z0-9') } @ids;
+	my $file = $class->_cacheFile(@ids);
 	
-	unless (exists $CACHES{$id}) {
-		my $dir = catdir($ENV{HOME}, $CACHEDIR);
-		mkpath($dir);
-		my $file = catfile($dir, $id);
-		
+	unless (exists $CACHES{$file}) {
 		my %h;
 		tie %h, MLDBM => $file or die "Can't tie cache: $!\n";
-		$CACHES{$id} = \%h;
+		$CACHES{$file} = \%h;
 	}
-	return $CACHES{$id};
+	return $CACHES{$file};
 }
+
+sub _cacheFile {
+	my ($class, @ids) = @_;
+	unshift @ids, scalar(caller(1));
+	my $id = join '_', map { uri_escape($_, '^a-zA-Z0-9') } @ids;
+	
+	my $dir = catdir($ENV{HOME}, $CACHEDIR);
+	mkpath($dir) unless -d $dir;
+	my $file = catfile($dir, $id);
+	return $file;
+}
+
+sub deleteCache {
+	my ($class, @ids) = @_;
+	my $file = $class->_cacheFile(@ids);
+	delete $CACHES{$file};
+	unlink $file;
+}
+	
 
 1;

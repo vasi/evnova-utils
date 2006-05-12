@@ -28,15 +28,13 @@ our %SUBS;
 our %REGISTERED;
 
 sub _init {
-	my ($self, @fields) = @_;
-	$self->{ordered} = \@fields;
-	$self->{byname} = { map { lc($_->key) => $_ } @fields };
-	$self->{type} = $self->_raw('type');
+	my $self = shift;
+	@$self{qw(fields headers collection)} = @_;
+	$self->{type} = $self->{fields}{type}->value;
 	
 	# Rebless, if necessary
 	if (exists $REGISTERED{$self->type}) {
 		bless $self, $REGISTERED{$self->type};
-		print $self->{type}, "\n";
 	}
 	return $self;
 }
@@ -51,13 +49,12 @@ sub register {
 # if none are specified).
 sub dump {
 	my ($self, @fields) = @_;
-	@fields = $self->allFields unless @fields;
+	@fields = $self->headers unless @fields;
 	
 	my $dump = '';
 	for my $field (@fields) {
-		$field = lc $field;
-		die "No such field $field\n" unless exists $self->{byname}{$field};
-		$dump .= $self->{byname}{$field}->dump . "\n";
+		die "No such field $field\n" unless exists $self->{lc $field};
+		$dump .= sprintf "%s: %s\n", $field, $self->{lc $field}->dump;
 	}
 	return $dump;
 }
@@ -68,24 +65,18 @@ sub type {
 	return $self->{type};
 }
 
-# List all fields of this resource
-sub allFields {
-	my ($self) = @_;
-	return map { $_->key } @{$self->{ordered}};
-}
-
 # Get the raw value of a field
 sub _raw {
 	my ($self, $field) = @_;
 	$field = lc $field;
-	die "No such field $field\n" unless exists $self->{byname}{$field};
-	return $self->{byname}{$field}->value;
+	die "No such field $field\n" unless exists $self->{fields}{$field};
+	return $self->{fields}{$field}->value;
 }
 
-# Get a single field
-sub field {
-	my ($self, $field) = @_;
-	$self->$field();
+# Get the collection
+sub collection {
+	my ($self) = @_;
+	return $self->{collection};
 }
 
 # Eliminate warning on DESTROY
@@ -112,19 +103,27 @@ sub AUTOLOAD {
 	}
 }
 
-sub collection {
-	my ($self, $val) = @_;
-	$self->{collection} = $val if defined $val;
-	return $self->{collection};
+# Get the headers (field names)
+sub headers {
+	my ($self) = @_;
+	return @{$self->{headers}};
 }
+
+# Get a single field
+sub field {
+	my ($self, $field) = @_;
+	$self->$field();
+}
+
+
 
 package Nova::Resource::Ship;
 use base 'Nova::Resource';
 Nova::Resource->register(__PACKAGE__, 'ship');
 
-sub name {
+sub fullName {
 	my ($self) = @_;
-	my $name = $self->SUPER::name;
+	my $name = $self->name;
 	my $sub = $self->subTitle;
 	return $name unless $sub;
 	return "$name, $sub";

@@ -14,17 +14,17 @@ my $CONFIG_FILE = '.nova';
 
 sub _init {
 	my ($self, $args) = @_;
+	$self->{persistent} = { };
 	eval {
 		my $config = YAML::LoadFile($self->configFile);
-		%$self = %$config;
+		$self->{persistent} = $config;
 	};
 	
 	# Handle options
-	$DB::single = 1;
 	{
 		local @ARGV = @$args;
 		GetOptions(
-			'context|c=s'	=> \$self->{conText},
+			'context|c=s'	=> sub { $self->runtime(conText => $_[1]) },
 		) or die "Bad options!\n";
 		@$args = @ARGV;
 	}
@@ -36,15 +36,33 @@ sub configFile {
 
 sub DESTROY {
 	my ($self) = @_;
-	YAML::DumpFile($self->configFile, $self);
+	YAML::DumpFile($self->configFile, $self->{persistent});
 }
 
-# Get the context file.
+sub option {
+	my ($self, $name) = @_;
+	return $self->{runtime}{$name} if defined $self->{runtime}{$name};
+	return $self->{persistent}{$name};
+}
+
+sub persist {
+	my ($self, $name, $val) = @_;
+	$self->{persistent}{$name} = $val;
+}
+	
+sub runtime {
+	my ($self, $name, $val) = @_;
+	$self->{runtime}{$name} = $val;
+}
+	
+# Get/set the context file.
 sub conText {
 	my ($self, $val) = @_;
-	$self->{conText} = realpath($val) if defined $val;
-	die "No ConText set in config\n" unless defined $self->{conText};
-	return $self->{conText};
+	$self->persist(conText => realpath($val)) if defined $val;
+	
+	my $context = $self->option('conText');
+	die "No ConText set in config\n" unless defined $context;
+	return $context;
 }
 
 

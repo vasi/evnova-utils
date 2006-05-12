@@ -1,9 +1,32 @@
 # Copyright (c) 2006 Dave Vasilevsky
-
 package Nova::Resource::Value;
 use strict;
 use warnings;
 
+# Wrap shorter pkgnames
+sub fromString {
+	my ($class, @args) = @_;
+	NRV->fromString(@args);
+}
+sub new {
+	my ($class, @args) = @_;
+	NRV->fromString(@args);
+}
+
+package Nova::Resource::Value::Hex;
+sub new {
+	my ($class, @args) = @_;
+	NRVH->fromString(@args);
+}
+
+package Nova::Resource::Value::List;
+sub new {
+	my ($class, @args) = @_;
+	NRVL->fromString(@args);
+}
+
+
+package NRV;
 use base 'Nova::Base';
 
 =head1 NAME
@@ -26,13 +49,13 @@ sub fromString {
 	
 	my ($subclass, @data) = (undef, $str);
 	if ($str =~ /^"(.*)"$/) {
-		($subclass, @data) = (String => $1);
+		($subclass, @data) = (S => $1);
 	} elsif ($str =~ /^#(.*)$/) {
-		($subclass, @data) = (Color => hex($1));
+		($subclass, @data) = (C => hex($1));
 	} elsif ($str =~ /^0x(.*)$/) {
-		($subclass, @data) = (Hex => hex($1), length($1));
+		($subclass, @data) = (H => hex($1), length($1));
 	}
-	$subclass = defined $subclass ? "${class}::$subclass" : $class;
+	$subclass = defined $subclass ? "$class$subclass" : $class;
 	return $subclass->new(@data);
 }
 
@@ -54,8 +77,8 @@ sub dump {
 }
 
 
-package Nova::Resource::Value::String;
-use base 'Nova::Resource::Value';
+package NRVS; # string
+use base 'NRV';
 
 sub _init {
 	my ($self, $val) = @_;
@@ -67,8 +90,8 @@ sub _init {
 }
 
 
-package Nova::Resource::Value::Hex;
-use base 'Nova::Resource::Value';
+package NRVH; # hex
+use base 'NRV';
 
 sub _init {
 	my ($self, $val, $length) = @_;
@@ -82,8 +105,8 @@ sub dump {
 }
 
 
-package Nova::Resource::Value::Color;
-use base 'Nova::Resource::Value';
+package NRVC; # color
+use base 'NRV';
 
 sub dump {
 	my ($self) = @_;
@@ -91,8 +114,8 @@ sub dump {
 }
 
 
-package Nova::Resource::Value::List;
-use base 'Nova::Resource::Value';
+package NRVL; # list
+use base 'NRV';
 
 sub _init {
 	my ($self, @vals) = @_;

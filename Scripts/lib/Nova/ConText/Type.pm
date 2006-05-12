@@ -7,8 +7,8 @@ use warnings;
 use base 'Nova::Base';
 
 use Nova::Resource;
-use Nova::Resource::Field;
 use Nova::Resource::Value;
+use Nova::Util qw(deaccent);
 
 use utf8;
 
@@ -44,7 +44,7 @@ sub _init {
 
 # my @fields = $class->_parseLine($line);
 #
-# Parse a line into fields
+# Parse a line into values
 sub _parseLine {
 	my ($class, $line) = @_;
 	my @items = split /\t/, $line;
@@ -52,7 +52,7 @@ sub _parseLine {
 	return @fields;
 }
 
-# my @headers = $reader->headers($line);
+# my $headers = $reader->headers($line);
 #
 # Parse the headers of this type.
 sub headers {
@@ -65,36 +65,35 @@ sub headers {
 	@headers = grep { !$seen{$_}++ } @headers;	# uniquify
 	
 	$self->{headers} = \@headers;
+	return $self->{headers};
 }
 
-# my @fields = $reader->_mapping($headers, $fields);
+# my $valuesHash = $reader->_mapping($headers, $valuesList);
 #
-# Get the mapping from headers to values
+# Map the values to headers
 sub _mapping {
 	my ($self, $headers, $values) = @_;
-	use Data::Dumper; print Dumper($headers, $values)
-		unless scalar(@$headers) == scalar(@$values);
 	die "Different number of headers and fields\n"
 		unless scalar(@$headers) == scalar(@$values);
-	return map {
-		Nova::Resource::Field->new($headers->[$_], $values->[$_])
-	} (0..$#$values);
+	return { map { lc $headers->[$_] => $values->[$_] } (0..$#$values) };
 }
 
-# my @resources = $reader->resource($line);
+# my $resource = $reader->resource($line);
 #
-# Parse a resource of this type.
+# Parse a resource of this type, return as a hash of fields.
 sub resource {
 	my ($self, $line) = @_;
 	my @values = $self->_parseLine($line);
 	
 	# stop if no record
-	return undef unless @values && $values[0]->value eq $self->{type};
+	return undef unless @values;
+	$values[0] = Nova::Resource::Value->new(deaccent($values[0]->value));
+	return undef unless $values[0]->value eq $self->{type};
 	
 	pop @values while $values[-1]->value eq '•'; # end-of-record
 	
-	my @fields = $self->_mapping($self->{headers}, \@values);
-	return Nova::Resource->new(@fields);
+	my $valuesHash = $self->_mapping($self->{headers}, \@values);
+	return $valuesHash;
 }
 
 # Nova::ConText::Type->register($type, $package);
@@ -108,12 +107,11 @@ sub register {
 
 package Nova::ConText::Type::StringList;
 use base 'Nova::ConText::Type';
-Nova::ConText::Type->register('STR#', __PACKAGE__);
+Nova::ConText::Type->register('str#', __PACKAGE__);
 
 sub _mapping {
 	my ($self, $headers, $values) = @_;
-	my ($stridx) = grep { $headers->[$_] eq 'Strings' } (0..$#$headers);
-	my @strings = splice @$values, $stridx;
+	my @strings = splice @$values, $#$headers;
 	@strings = map { $_->value } @strings;
 	push @$values, Nova::Resource::Value::List->new(@strings);
 	
@@ -123,43 +121,36 @@ sub _mapping {
 
 package Nova::ConText::Type::Syst;
 use base 'Nova::ConText::Type';
-Nova::ConText::Type->register('sÿst', __PACKAGE__);
+Nova::ConText::Type->register('syst', __PACKAGE__);
 
 # Mis-spelled field
-sub headers {
+sub _headers {
 	my ($self, @args) = @_;
 	$self->SUPER::headers(@args);
-	$self->{headers} = [ map {
-		$_ eq 'Visiblility' ? 'Visibility' : $_
-	} @{$self->{headers}} ];
+	map { s/visiblility/visibility/ } @{$self->{headers}};
+	return $self->{headers};
 }
 
 
 package Nova::ConText::Type::Outf;
 use base 'Nova::ConText::Type';
-Nova::ConText::Type->register('öutf', __PACKAGE__);
+Nova::ConText::Type->register('outf', __PACKAGE__);
 
 # Some things need to be hex
 sub _mapping {
 	my ($self, $headers, $values) = @_;
-	my @fields = $self->SUPER::_mapping($headers, $values);
-	my %byName = map { $_->key => $_ } @fields;
+	my $hash = $self->SUPER::_mapping($headers, $values);
 	
 	my %forceHex = map { $_ => 1 } (17, 30, 43);
-	my %switch;
 	
-	for my $modtype (grep /^ModType/, keys %byName) {
-		next unless $forceHex{$byName{$modtype}->value};
-		(my $modval = $modtype) =~ s/ModType/ModVal/;
-		my $val = $byName{$modval}->value;
-		$switch{$modval} = Nova::Resource::Field->new(
-			$modval,
-			Nova::Resource::Value::Hex->new($val, 4)
-		);
+	for my $modtype (grep /^modtype/, keys %$hash) {
+		next unless $forceHex{$hash->{$modtype}->value};
+		(my $modval = $modtype) =~ s/modtype/modval/;
+		my $val = $hash->{$modval}->value;
+		$hash->{$modval} = Nova::Resource::Value::Hex->new($val, 4);
 	}
 	
-	@fields = map { $switch{$_->key} || $_ } @fields;
-	return @fields
+	return $hash;
 }
 
 

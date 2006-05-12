@@ -38,6 +38,12 @@ command {
 } 'dump' => 'dump a resource';
 
 command {
+	my ($self, @types) = @_;
+	map { printf "%s %5d: %s\n", $_->type, $_->id, $_->name }
+		$self->resources->type(@types);
+} listAll => 'list all known resources of the given types';
+
+command {
 	my ($self) = @_;
 	$self->resources->deleteCache;
 	$self->loadContext;

@@ -42,11 +42,15 @@ sub fromConText {
 	my $cache = Nova::Cache->cache($source);
 	
 	unless ($cache->{done}) {
-		my @resources = Nova::ConText->new($file)->read;
+		my ($headers, $resources) = Nova::ConText->new($file)->read;
 		my %types;
-		for my $r (@resources) {
-			my $type = deaccent($r->type);
-			my $id = $r->ID;
+		
+		while (my ($k, $v) = each %$headers) {
+			$cache->{'header',$k} = $v;
+		}
+		for my $r (@$resources) {
+			my $type = $r->{type}->value;
+			my $id = $r->{id}->value;
 			push @{$types{$type}}, $id;
 			$cache->{'resource',$type,$id} = $r;
 		}
@@ -59,7 +63,7 @@ sub fromConText {
 
 sub deleteCache {
 	my ($self) = @_;
-	unlink($self->source);
+	Nova::Cache->deleteCache($self->source);
 }
 
 # Get a single resource by type and ID
@@ -67,20 +71,30 @@ sub get {
 	my ($self, $type, $id) = @_;
 	$type = deaccent($type);
 	
+	my $c = $self->{cache};
 	die "No such resource $id of type $type\n"
-		unless exists $self->{cache}{'resource',$type,$id};
-	return $self->connect($self->{cache}{'resource',$type,$id});
+		unless exists $c->{'resource',$type,$id};
+	
+	return Nova::Resource->new(
+		$c->{'resource',$type,$id},	# fields
+		$c->{'header',$type},		# headers
+		$self,						# collection
+	);
 }
 
-# Get all resources of a type
+# Get all resources some types
 sub type {
-	my ($self, $type) = @_;
-	$type = deaccent($type);
+	my ($self, @types) = @_;
+	@types = map { deaccent(@_) } @types;
+	@types = $self->types unless @types; # default to all
 	
-	die "No such type $type\n" unless exists $self->{cache}{'type',$type};
-	return $self->connect(
-		map { $self->get($type, $_) } @{$self->{cache}{'type',$type}}
-	);
+	my @resources;
+	for my $type (@types) {
+		die "No such type $type\n" unless exists $self->{cache}{'type',$type};
+		push @resources,
+			map { $self->get($type, $_) } @{$self->{cache}{'type',$type}};
+	}
+	return @resources;
 }
 
 # Get a list of all known types
@@ -95,16 +109,11 @@ sub source {
 	return $self->{source};
 }
 
-# Connect resources to the collection
-sub connect {
-	my ($self, @res) = @_;
-	map { $_->connection($self) } @res;
-	return @res;
-}
-
 # Find a resource from a specification
 sub find {
 	my ($self, $type, $spec) = @_;
+	$type = deaccent($type);
+	
 	my @found;
 	if ($spec =~ /^\d+$/) {
 		@found = ($self->get($type, $spec));

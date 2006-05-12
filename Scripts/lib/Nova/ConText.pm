@@ -6,6 +6,7 @@ use warnings;
 use base 'Nova::Base';
 
 use Nova::ConText::Type;
+use Nova::Util qw(deaccent);
 
 use English qw($INPUT_RECORD_SEPARATOR);
 
@@ -66,18 +67,20 @@ Return a list of Resource objects read from the given file.
 sub read {
 	my ($self) = @_;
 	my $file = $self->{file};
-	my @resources;
+	my (@resources, %headers);
 	
 	my $enc;
 	($self->{rs}, $enc) = $self->_file_type($file);
-	open my $fh, "<:$enc", $file or die "Can't open $file: $!\n";
+	open my $fh, "<:$enc", $file or die "Can't open '$file': $!\n";
 	
 	my $reader;
 	while (defined(my $line = $self->getline($fh))) {
 		if ($line =~ /^• Begin (\S{4})$/) {
-			$reader = Nova::ConText::Type->new($1);
+			my $type = deaccent($1);
+			$reader = Nova::ConText::Type->new($type);
 			my $headers = $self->getline($fh) or die "No headers!\n";
-			$reader->headers($headers);
+			$headers{$type} = $reader->headers($headers);
+			
 		} elsif (defined $reader) {
 			my $resource = $reader->resource($line);
 			if (defined $resource) {
@@ -89,7 +92,7 @@ sub read {
 	}
 	
 	close $fh;
-	return @resources;
+	return (\%headers, \@resources);
 }
 
 # my ($recordSeparator, $encoding) = $class->_file_type($file);
@@ -98,7 +101,7 @@ sub read {
 sub _file_type {
 	my ($class, $file) = @_;
 	
-	open my $fh, '<:bytes', $file or die "Can't open $file: $!\n";
+	open my $fh, '<:bytes', $file or die "Can't open '$file': $!\n";
 	local $INPUT_RECORD_SEPARATOR = \1024; # Read a block
 	my $block = <$fh>;
 	close $fh;

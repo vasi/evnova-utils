@@ -1,4 +1,4 @@
-# Copyright (c) 2006 Dave Vasilevsky
+﻿# Copyright (c) 2006 Dave Vasilevsky
 
 package Nova::Resources;
 use strict;
@@ -12,6 +12,7 @@ use Nova::Resource;
 use Nova::Util qw(deaccent);
 
 use Cwd qw(realpath);
+use utf8;
 
 =head1 NAME
 
@@ -70,6 +71,35 @@ sub fromConText {
 sub deleteCache {
 	my ($self) = @_;
 	Nova::Cache->deleteCache($self->source);
+}
+
+# Dump in ConText format
+sub dumpToConText {
+	my ($self, $file) = @_;
+	
+	open my $fh, '>:encoding(MacRoman)', $file
+		or die "Can't write to '$file': $!\n";
+	
+	my $context = Nova::ConText->new($file);
+	my $c = $self->{cache};
+	for my $type ($self->types) {
+		my $realtype = $c->{'realType',$type};
+		my @headers = @{$c->{'header',$type};
+		my $typeObj = Nova::ConText::Type->new($realtype);
+		$typeObj
+	
+		
+		my $
+		printf $fh "• Begin %s\r", 
+		printf $fh "%s\r", join("\t", map { "\"$_\"" } @headers);
+		
+		for my $r ($self->type($type)) {
+			printf $fh "%s\r", $r->dump;
+		}
+	}
+	printf $fh "• End Output\r";
+	
+	close $fh;
 }
 
 # Get a single resource by type and ID

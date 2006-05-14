@@ -118,6 +118,10 @@ sub _file_type {
 	return ($rs, $enc);
 }
 
+sub dump {
+
+}
+
 =back
 
 =cut

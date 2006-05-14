@@ -144,7 +144,7 @@ sub show {
 
 sub dump {
 	my ($self) = @_;
-	return join ' ', map { NRVS->new($_)->dump } @{$self->{val}};
+	return join "\t", map { NRVS->new($_)->dump } @{$self->{val}};
 }
 
 1;

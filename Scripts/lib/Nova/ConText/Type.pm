@@ -30,10 +30,11 @@ Nova::ConText::Type - parse resources of a given type from a ConText file
 our %REGISTERED;
 
 sub _init {
-	my ($self, $type) = @_;
+	my ($self, $type, %params) = @_;
 	$self->{realType} = $type;
 	$self->{type} = deaccent($type);
 	$self->{resources} = [ ];
+	while my (
 	
 	if (exists $REGISTERED{$self->type}) {
 		bless $self, $REGISTERED{$self->type}; # rebless

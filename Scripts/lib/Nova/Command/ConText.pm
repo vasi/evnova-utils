@@ -51,8 +51,7 @@ command {
 
 command {
 	my ($self) = @_;
-	my $r = $self->resources->get(ship => 128);
-	printf "%s\n", $r->fullname;
+	$self->resources->dumpToConText('../out.txt');
 } misc => 'test';
 
 1;

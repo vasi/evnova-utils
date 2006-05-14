@@ -78,7 +78,7 @@ sub dump {
 		}
 	}
 	push @fields, '"•"';
-	return join(' ', @fields);
+	return join("\t", @fields);
 }
 
 # The un-accented type of this resource

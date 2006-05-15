@@ -11,8 +11,8 @@ Nova::Resource::Value - A typed value in a resource
 
   my $value = Nova::Resource::Value->fromConText($str);
 
-  my $dump = $value->toConText;
-  my $printable = $value->show;
+  my $conText = $value->toConText;
+  my $dump = $value->dump;
   my $value = $value->value;
 
 =cut
@@ -81,10 +81,10 @@ sub initWithContext {
 }
 
 # Return the value in printable format
-sub show { $_[0]->value }
+sub dump { $_[0]->value }
 
 # Format for dumping to ConText
-sub toConText { $_[0]->show }
+sub toConText { $_[0]->dump }
 
 package NRVS; # string
 use base 'NRV';
@@ -120,7 +120,7 @@ sub init {
 	$self->length($length);
 }
 
-sub show {
+sub dump {
 	my ($self) = @_;
 	return sprintf "0x%0*x", $self->length, $self->value;
 }
@@ -129,7 +129,7 @@ sub show {
 package NRVC; # color
 use base 'NRV';
 
-sub show {
+sub dump {
 	my ($self) = @_;
 	return sprintf "#%06x", $self->value;
 }
@@ -138,7 +138,7 @@ sub show {
 package NRVL; # list
 use base 'NRV';
 
-sub show {
+sub dump {
 	my ($self) = @_;
 	return join('',
 		map { sprintf "\n  %3d: %s", $_, $self->value->[$_] }

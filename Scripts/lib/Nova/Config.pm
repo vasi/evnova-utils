@@ -45,10 +45,13 @@ sub init {
 	# Handle options
 	{
 		local @ARGV = @$args;
+		my $verbose = 0;
 		GetOptions(
 			'context|c=s'	=> sub { $self->runtime(conText => $_[1]) },
+			'verbose|v+'	=> \$verbose,
 		) or die "Bad options!\n";
 		@$args = @ARGV;
+		$self->verbose($verbose);
 	}
 }
 
@@ -93,6 +96,13 @@ sub conText {
 	my $context = $self->option('conText');
 	die "No ConText set in config\n" unless defined $context;
 	return $context;
+}
+
+# Get/set the verbosity
+sub verbose {
+	my ($self, $val) = @_;
+	$self->runtime(verbose => $val) if defined $val;
+	return $self->option('verbose');
 }
 
 

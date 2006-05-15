@@ -57,8 +57,13 @@ command {
 
 command {
 	my ($self, $type, $id, @fields) = @_;
-	print $self->resources->get($type => $id)->show(@fields);
-} show => 'show a resource';
+	print $self->resources->find($type => $id)->dump(@fields);
+} 'dump' => 'dump a resource';
+
+command {
+	my ($self, $type, $id) = @_;
+	print $self->resources->find($type => $id)->show($self->config->verbose);
+} show => 'display a resource nicely';
 
 command {
 	my ($self, @types) = @_;

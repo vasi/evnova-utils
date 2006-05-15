@@ -59,15 +59,21 @@ sub register {
 
 # Textual representation of the given fields of this resource (or all fields,
 # if none are specified).
-sub show {
+sub dump {
 	my ($self, @fields) = @_;
 	@fields = $self->fieldNames unless @fields;
 	
 	my $dump = '';
 	for my $field (@fields) {
-		$dump .= sprintf "%s: %s\n", $field, $self->_raw_field($field)->show;
+		$dump .= sprintf "%s: %s\n", $field, $self->_raw_field($field)->dump;
 	}
 	return $dump;
+}
+
+# Pretty human-readable representation of this resource
+sub show {
+	my ($self, $verb) = @_;
+	$self->dump;
 }
 
 # Get/set the raw Resource::Value of a field

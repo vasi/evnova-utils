@@ -1,5 +1,5 @@
 # Copyright (c) 2006 Dave Vasilevsky
-package Nova::Resource::Weap;
+package Nova::Resource::Type::Weap;
 use strict;
 use warnings;
 
@@ -8,7 +8,7 @@ __PACKAGE__->register('weap');
 
 use Storable;
 
-use Nova::Resource::Outf;
+use Nova::Resource::Type::Outf;
 use Nova::Cache;
 
 # Weapons to outfits cache

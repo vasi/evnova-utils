@@ -1,5 +1,5 @@
 # Copyright (c) 2006 Dave Vasilevsky
-package Nova::Resource::Misn;
+package Nova::Resource::Type::Misn;
 use strict;
 use warnings;
 

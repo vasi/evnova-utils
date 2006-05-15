@@ -1,5 +1,5 @@
 # Copyright (c) 2006 Dave Vasilevsky
-package Nova::Resource::Ship;
+package Nova::Resource::Type::Ship;
 use strict;
 use warnings;
 

@@ -28,7 +28,6 @@ Nova::Resource - a resource from a Nova data file
 =cut
 
 our %REGISTERED;
-__PACKAGE__->subPackages;
 
 # my $resource = Nova::Resource->new(%params);
 #
@@ -237,5 +236,12 @@ sub uniqName {
 	my ($self) = @_;
 	return sprintf "%5d: %s", $self->ID, $self->fullName;
 }
+
+
+
+# Load the subpackages
+package Nova::Resource::Type;
+use base qw(Nova::Base);
+__PACKAGE__->subPackages;
 
 1;

@@ -1,5 +1,5 @@
 # Copyright (c) 2006 Dave Vasilevsky
-package Nova::Resource::Outf;
+package Nova::Resource::Type::Outf;
 use strict;
 use warnings;
 

@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use base 'Nova::Base';
-__PACKAGE__->fields(qw(collection));
+__PACKAGE__->fields(qw(collection readOnly));
 
 use Nova::Util qw(deaccent);
 
@@ -28,15 +28,18 @@ Nova::Resource - a resource from a Nova data file
 
 our %REGISTERED;
 
-# my $resource = Nova::Resource->new($fieldNames, $\fieldsHash, $collection);
+# my $resource = Nova::Resource->new(%params);
 #
-# $fieldsHash points to the cache entry
-# $collection is the Resources object, for referral to other resources
+# fieldNames is an array ref of field names
+# fields points to the cache entry
+# collection is the Resources object, for referral to other resources
+# readOnly is true if we should be read-only
 sub init {
-	my ($self, $fieldNames, $fields, $collection) = @_;
-	$self->{fieldNames} = $fieldNames;
-	$self->collection($collection);
-	$self->{fields} = $fields;
+	my ($self, %params) = @_;
+	$self->{fieldNames} = $params{fieldNames};
+	$self->collection($params{collection});
+	$self->{fields} = $params{fields};
+	$self->readOnly($params{readOnly});
 	
 	# Rebless, if necessary
 	my $t = deaccent($self->type);
@@ -73,6 +76,8 @@ sub _raw_field {
 	# Gotta be careful, with the damn hash pointer
 	die "No such field '$field'\n" unless exists ${$self->{fields}}->{$lc};
 	if (defined $val) {
+		die "Read-only!\n" if $self->readOnly;
+		
 		my $valobj = ${$self->{fields}}->{$lc};
 		$valobj = $valobj->new($val);	# keep the same type
 		

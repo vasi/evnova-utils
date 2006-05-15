@@ -82,6 +82,7 @@ sub _update {
 # Add a type of resource, with the given fields
 sub addType {
 	my ($self, $type, @fields) = @_;
+	die "Read-only!\n" if $self->{readOnly};
 	my $deac = deaccent($type);
 	
 	my $c = $self->cache;
@@ -97,6 +98,7 @@ sub addType {
 # Add a resource.
 sub addResource {	
 	my ($self, $fieldHash) = @_;
+	die "Read-only!\n" if $self->{readOnly};
 	my $type = deaccent($fieldHash->{type}->value);
 	my $id = $fieldHash->{id}->value;
 	
@@ -112,6 +114,7 @@ sub addResource {
 # Remove a resource.
 sub deleteResource {	
 	my ($self, $type, $id) = @_;
+	die "Read-only!\n" if $self->{readOnly};
 	$type = deaccent($type);
 	
 	my $c = $self->cache;
@@ -125,6 +128,18 @@ sub deleteCache {
 	Nova::Cache->deleteCache($self->source);
 }
 
+# Disconnect this collection from the DB (so it can be modified in-memory)
+sub noCache {
+	my ($self) = @_;
+	$self->cache({ %{$self->cache} });
+}
+
+# Make this collection read-only
+sub readOnly {
+	my ($self) = @_;
+	$self->{readOnly} = 1;
+}
+
 # Get a single resource by type and ID
 sub get {
 	my ($self, $type, $id) = @_;
@@ -135,9 +150,10 @@ sub get {
 		unless exists $c->{'resource',$type,$id};
 	
 	return Nova::Resource->new(
-		$c->{'fields',$type},			# field names
-		\$c->{'resource',$type,$id},	# fields
-		$self,							# collection
+		fieldNames	=> $c->{'fields',$type},
+		fields		=> \$c->{'resource',$type,$id},
+		collection	=> $self,
+		readOnly	=> $self->readOnly,
 	);
 }
 

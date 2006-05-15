@@ -37,6 +37,7 @@ sub _loadContext {
 	my ($self) = @_;
 	my $ct = Nova::ConText->new($self->config->conText);
 	$self->resources($ct->read);
+#	$self->resources->readOnly;
 }
 
 sub setup {

@@ -83,17 +83,20 @@ sub inFields {
 	my ($self, @vals) = @_;
 	my @strings = splice @vals, $#{$self->resFields};
 	@strings = map { $_->value } @strings;
-	push @vals, Nova::Resource::Value::List->new(@strings);
+	push @vals, Nova::Resource::Value::List->new(\@strings);
 	
 	return $self->SUPER::inFields(@vals);
 }
 
 sub outFields {
 	my ($self, %fields) = @_;
+	my @strings = @{$fields{strings}->value};
+	$fields{n} = Nova::Resource::Value->new(scalar(@strings));
 	my @vals = $self->SUPER::outFields(%fields);
-	my $strs = pop @vals;
-	my @strs = map { Nova::Resource::Value::String->new($_) } @{$strs->value};
-	return (@vals, @strs);
+	pop @vals;
+	
+	@strings = map { Nova::Resource::Value::String->new($_) } @strings;
+	return (@vals, @strings);
 }
 
 
@@ -138,7 +141,7 @@ __PACKAGE__->register('rank');
 # Missing some values in ConText!
 sub inFields {
 	my ($self, @vals) = @_;
-	push @vals, ('') x 2;
+	push @vals, (Nova::Resource::Value::String->new('')) x 2;
 	$self->SUPER::inFields(@vals);
 }
 

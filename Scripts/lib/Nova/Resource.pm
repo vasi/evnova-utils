@@ -73,7 +73,7 @@ sub _raw_field {
 	# Gotta be careful, with the damn hash pointer
 	die "No such field '$field'\n" unless exists ${$self->{fields}}->{$lc};
 	if (defined $val) {
-		my $valobj = {$self->{fields}}->{$lc};
+		my $valobj = ${$self->{fields}}->{$lc};
 		$valobj = $valobj->new($val);	# keep the same type
 		
 		# update so that MLDBM notices
@@ -133,6 +133,12 @@ sub AUTOLOAD {
 sub fieldNames {
 	my ($self) = @_;
 	return @{$self->{fieldNames}};
+}
+
+# Get a hash of field names to values. Used for dumping.
+sub fieldHash {
+	my ($self) = @_;
+	return %${$self->{fields}};
 }
 
 # Get a full name, suitable for printing

@@ -129,6 +129,59 @@ sub _open_file {
 	$self->fh($fh);
 }
 
+# Print a line
+sub _writeLine {
+	my ($self, @vals) = @_;
+#$DB::single = 1;
+	my $fh = $self->fh;
+	printf $fh "%s\r", join "\t", map { $_->toConText } @vals;
+}
+
+# Write a single type to a ConText file
+sub _writeType {
+	my ($self, $type) = @_;
+	my @ris = $self->collection->type($type);
+	return unless @ris;
+	
+	# Header
+	my $fh = $self->fh;
+	print $fh "\x{2022} Begin $type\r";
+	
+	# Field names
+	my $typeObj = Nova::ConText::Type->new($type);
+	my @fields = $ris[0]->fieldNames;
+	@fields = $typeObj->outFieldNames(@fields);
+	push @fields, 'EOR';
+	@fields = map { Nova::Resource::Value::String->new($_) } @fields;
+	$self->_writeLine(@fields);
+	
+	# Resources
+	for my $r (@ris) {
+		my %fields = $r->fieldHash;
+		my @vals = $typeObj->outFields(%fields);
+		push @vals, Nova::Resource::Value::String->new("\x{2022}");
+		$self->_writeLine(@vals);
+	}
+}
+
+# Write a Nova::Resources to a ConText file
+sub write {
+	my ($self, $rs) = @_;
+	$self->collection($rs);
+	
+	my $file = $self->file;
+	open my $fh, '>:encoding(MacRoman)', $file
+		or die "Can't open '$file': $!\n";
+	$self->fh($fh);
+	
+	for my $type ($rs->types) {
+		$self->_writeType($type);
+	}
+	
+	print $fh "\x{2022} End Output\r";
+	close $fh;
+}
+
 =back
 
 =cut

@@ -22,6 +22,10 @@ sub fromConText {
 	my ($class, @args) = @_;
 	NRV->fromConText(@args);
 }
+sub new {
+	my ($class, @args) = @_;
+	NRV->new(@args);
+}
 
 package Nova::Resource::Value::List;
 sub new {
@@ -33,6 +37,12 @@ package Nova::Resource::Value::Hex;
 sub new {
 	my ($class, @args) = @_;
 	NRVH->new(@args);
+}
+
+package Nova::Resource::Value::String;
+sub new {
+	my ($class, @args) = @_;
+	NRVS->new(@args);
 }
 
 
@@ -65,7 +75,10 @@ sub fromConText {
 sub init { $_[0]->value($_[1]) }
 
 # Initialize with data from ConText, may need parsing
-sub initWithContext { $_[0]->init($_[1]) }
+sub initWithContext {
+	my ($self, @args) = @_;
+	$self->init(@args);
+}
 
 # Return the value in printable format
 sub show { $_[0]->value }
@@ -124,11 +137,6 @@ sub show {
 
 package NRVL; # list
 use base 'NRV';
-
-sub init {
-	my ($self, @vals) = @_;
-	$self->SUPER::init(\@vals);
-}
 
 sub show {
 	my ($self) = @_;

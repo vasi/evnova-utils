@@ -89,7 +89,7 @@ sub addType {
 	$c->{'fields',$deac} = \@fields;
 	$c->{'ids',$deac} = [ ];
 	$c->{filled} = 1;
-	$self->{typeSort} = 1;
+	$self->{typeSort} = 0;
 }
 
 # $rs->addResource($fieldHash);
@@ -104,7 +104,7 @@ sub addResource {
 	$c->{'resource',$type,$id} = $fieldHash;
 	$c->{'ids',$type} = [ $id, @{$c->{'ids',$type}} ];
 	$c->{filled} = 1;
-	$self->{idSort}{$type} = 1;
+	$self->{idSort}{$type} = 0;
 }
 
 # $rs->deleteResource($type, $id);
@@ -153,10 +153,11 @@ sub type {
 		
 		# Sort and uniquify only on-demand
 		my @ids = @{$self->cache->{'ids',$type}};
-		if ($self->{idSort}{$type}) {
+		unless ($self->{idSort}{$type}) {
 			my %ids = map { $_ => 1 } @ids;
 			@ids = sort { $a <=> $b } keys %ids;
 			$self->cache->{'ids',$type} = \@ids;
+			$self->{idSort}{$type} = 1;
 		}
 		
 		push @resources, map { $self->get($type, $_) } @ids;
@@ -170,12 +171,13 @@ sub types {
 	
 	# Sort and uniquify only on-demand
 	my @types = @{$self->cache->{types}};
-	if ($self->{typeSort}) {
+	unless ($self->{typeSort}) {
 		my %types = map { $_ => 1 } @types;
-		@types = sort keys %types;
+		@types = map { $_->[0] } sort { $a->[1] cmp $b->[1] }
+			map { [ $_, deaccent($_) ] } keys %types; # schwartzian
 		$self->cache->{types} = \@types;
 		
-		delete $self->{typeSort};
+		$self->{typeSort} = 1;
 	}
 	return @types;
 }

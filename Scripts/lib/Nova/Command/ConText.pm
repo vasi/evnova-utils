@@ -64,6 +64,22 @@ command {
 
 command {
 	my ($self) = @_;
+	
+	{ # Change a STR#
+		my $r = $self->resources->get('str#' => 128);
+		my @s = @{$r->strings};
+		$r->strings([@s, 'foo']);
+	}
+	
+	# Change everything
+	for my $r ($self->resources->type) {
+		$r->file('TestData');
+	}
+	
+	# Write it
+	my $out = "../out.txt";
+	my $ct = Nova::ConText->new($out);
+	$ct->write($self->resources);
 } misc => 'test';
 
 1;

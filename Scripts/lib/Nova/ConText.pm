@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use base 'Nova::Base';
-Nova::ConText->fields(qw(fh file line_sep type collection));
+__PACKAGE__->fields(qw(fh file line_sep type collection));
 
 use Nova::ConText::Type;
 use Nova::Resource;
@@ -38,7 +38,7 @@ sub init {
 sub _parseLine {
 	my ($class, $line) = @_;
 	my @items = split /\t/, $line;
-	my @fields = map { Nova::Resource::Value->fromString($_) } @items;
+	my @fields = map { Nova::Resource::Value->fromConText($_) } @items;
 	return @fields;
 }
 
@@ -46,7 +46,8 @@ sub _parseLine {
 sub _readLine {
 	my ($self) = @_;
 	local $INPUT_RECORD_SEPARATOR = $self->line_sep;
-	my $line = <$self->fh>;
+	my $fh = $self->fh;
+	my $line = <$fh>;
 	return $line unless defined $line;
 	
 	chop $line; # may be \r, so not chomp
@@ -81,10 +82,11 @@ sub _readResource {
 # Read a Nova::Resources from a ConText file
 sub read {
 	my ($self) = @_;
-	$self->_open_file($self->$file);
+	$self->_open_file;
 	$self->collection(Nova::Resources->new($self->file));
 	$self->type(undef);
 	
+	return $self->collection if $self->collection->isFilled;
 	while (defined(my $line = $self->_readLine)) {
 		if ($line =~ /^• Begin (\S{4})$/) {
 			$self->_readType($1);
@@ -97,17 +99,18 @@ sub read {
 	return $self->collection;
 }
 
-# my $fh = $self->_open_file($file);
+# my $fh = $self->_open_file();
 #
 # Detect the type of file we're reading, and return a filehandle for reading
 # it.
 sub _open_file {
-	my ($class, $file) = @_;
+	my ($self) = @_;
+	my $file = $self->file;
 	
-	open my $dec, '<:bytes', $file or die "Can't open '$file': $!\n";
+	open my $guess, '<:bytes', $file or die "Can't open '$file': $!\n";
 	local $INPUT_RECORD_SEPARATOR = \1024; # Read a block
-	my $block = <$dec>;
-	close $dec;
+	my $block = <$guess>;
+	close $guess;
 	
 	# Use first line-ending
 	my ($rs) = ($block =~ /([\r\n])/);

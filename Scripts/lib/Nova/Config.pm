@@ -1,10 +1,10 @@
-# Copyright (c) 2006 Dave Vasilevsky
+﻿# Copyright (c) 2006 Dave Vasilevsky
 package Nova::Config;
 use strict;
 use warnings;
 
 use base qw(Nova::Base);
-Nova::Config->fields(qw(modified));
+__PACKAGE__->fields(qw(modified));
 
 use YAML;
 use File::Spec::Functions qw(catfile);

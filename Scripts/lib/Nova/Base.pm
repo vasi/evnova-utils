@@ -1,8 +1,11 @@
-# Copyright (c) 2006 Dave Vasilevsky
+﻿# Copyright (c) 2006 Dave Vasilevsky
 
 package Nova::Base;
 use strict;
 use warnings;
+
+use File::Spec::Functions qw(catdir abs2rel);
+use File::Find;
 
 =head1 NAME
 
@@ -87,6 +90,7 @@ sub subPackages {
 				return if $found{$subpkg}++;
 				
 				eval "require $subpkg";
+				die $@ if $@;
 				push @found, $subpkg;
 			}
 		}, $subdir);
@@ -105,9 +109,14 @@ sub fields {
 	for my $field (@fields) {
 		my $sub = sub { $#_ ? ($_[0]->{$field} = $_[1])
 				: $_[0]->{$field} };
-		no strict 'refs';
-		*{"${pkg}::$field"} = $sub;
-		*{"${pkg}::_accessor_$field"} = $sub;
+		
+		for my $subname ($field, "_accessor_$field") {
+			my $fullname = "${pkg}::$subname";
+			no strict 'refs';
+			*_temp = *$fullname;
+			next if exists &_temp;
+			*$fullname = $sub;
+		}
 	}
 }	
 

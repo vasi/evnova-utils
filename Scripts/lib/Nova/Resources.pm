@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use base 'Nova::Base';
-Nova::Resources->fields(qw(source cache));
+__PACKAGE__->fields(qw(source cache));
 
 use Nova::Cache;
 use Nova::Resource;
@@ -98,8 +98,8 @@ sub addType {
 # Add a resource.
 sub addResource {	
 	my ($self, $fieldHash) = @_;
-	my $type = deaccent($fieldHash->{type});
-	my $id = $fieldHash->{id};
+	my $type = deaccent($fieldHash->{type}->value);
+	my $id = $fieldHash->{id}->value;
 	
 	my $c = $self->cache;
 	$c->{'resource',$type,$id} = $fieldHash;
@@ -136,10 +136,9 @@ sub get {
 		unless exists $c->{'resource',$type,$id};
 	
 	return Nova::Resource->new(
-		$c->{'resource',$type,$id},	# fields
-		$c->{'header',$type},		# headers
-		$self,						# collection
-		$c->{'realType',$type},		# real type
+		$c->{'fields',$type},			# field names
+		\$c->{'resource',$type,$id},	# fields
+		$self,							# collection
 	);
 }
 

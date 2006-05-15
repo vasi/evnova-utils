@@ -27,15 +27,16 @@ default ConText file
 
 package Nova::Command::ConText::Using;
 use base 'Nova::Command::ConText';
-Nova::Command::ConText->fields(qw(resources));
+__PACKAGE__->fields(qw(resources));
 
-use Nova::Resources;
+use Nova::ConText;
 use Nova::Command qw(command);
 
 # Load the current context file
 sub _loadContext {
 	my ($self) = @_;
-	$self->{resources} = Nova::Resources->fromConText($self->config->conText);
+	my $ct = Nova::ConText->new($self->config->conText);
+	$self->resources($ct->read);
 }
 
 sub setup {

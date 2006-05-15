@@ -1,11 +1,11 @@
-# Copyright (c) 2006 Dave Vasilevsky
+﻿# Copyright (c) 2006 Dave Vasilevsky
 
 package Nova::Resource;
 use strict;
 use warnings;
 
 use base 'Nova::Base';
-Nova::Resource->fields(qw(collection));
+__PACKAGE__->fields(qw(collection));
 
 use Nova::Util qw(deaccent);
 use utf8;
@@ -48,15 +48,15 @@ sub init {
 
 # Register a package to handle some types
 sub register {
-	my ($class, $package, @types) = @_;
-	$REGISTERED{$_} = $package for @types;
+	my ($pkg, @types) = @_;
+	$REGISTERED{$_} = $pkg for @types;
 }
 
 # Textual representation of the given fields of this resource (or all fields,
 # if none are specified).
 sub show {
 	my ($self, @fields) = @_;
-	@fields = $self->fields unless @fields;
+	@fields = $self->fieldNames unless @fields;
 	
 	my $dump = '';
 	for my $field (@fields) {
@@ -71,17 +71,17 @@ sub _raw_field {
 	my $lc = lc $field;
 	
 	# Gotta be careful, with the damn hash pointer
-	die "No such field $field\n" unless exists ${$self->{fields}}->{$lc};
+	die "No such field '$field'\n" unless exists ${$self->{fields}}->{$lc};
 	if (defined $val) {
 		my $valobj = {$self->{fields}}->{$lc};
 		$valobj = $valobj->new($val);	# keep the same type
 		
 		# update so that MLDBM notices
 		my %fields = %${$self->{fields}};
-		%fields{$lc} = $valobj;
+		$fields{$lc} = $valobj;
 		${$self->{fields}} = { %fields };
 	}
-	return ${$self->{fields}}->{$field};
+	return ${$self->{fields}}->{$lc};
 }
 
 # Eliminate warning on DESTROY
@@ -130,7 +130,7 @@ sub AUTOLOAD {
 }
 
 # Get the field names
-sub fields {
+sub fieldNames {
 	my ($self) = @_;
 	return @{$self->{fieldNames}};
 }
@@ -144,7 +144,7 @@ sub fullName {
 
 package Nova::Resource::Ship;
 use base 'Nova::Resource';
-Nova::Resource->register(__PACKAGE__, 'sh�p');
+__PACKAGE__->register('shïp');
 
 # Add the subtitle to the full name, if it seems like a good idea
 sub fullName {

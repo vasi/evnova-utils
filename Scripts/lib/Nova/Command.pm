@@ -1,17 +1,13 @@
-# Copyright (c) 2006 Dave Vasilevsky
+﻿# Copyright (c) 2006 Dave Vasilevsky
 package Nova::Command;
 use strict;
 use warnings;
 
 use base qw(Nova::Base Exporter);
 our @EXPORT_OK = qw(command);
-Nova::Config->fields(qw(help name config code));
+__PACKAGE__->fields(qw(help name config code args));
 
-use Nova::Resources;
 use Nova::Config;
-
-use File::Spec::Functions qw(catdir abs2rel);
-use File::Find;
 
 =head1 NAME
 
@@ -32,7 +28,7 @@ our %CATEGORIES;	# Known categories of commands (for help)
 # Run the command line
 sub execute {
 	my ($class, @args) = @_;
-	__PACKAGE__->subPackages; # load them	
+	$class->subPackages; # load them	
 	
 	my $config = Nova::Config->new(\@args);
 	
@@ -49,11 +45,11 @@ sub setup {
 # Run this command
 sub run {
 	my ($self, $config, @args) = @_;
-	$self->{config} = $config;
-	$self->{args} = \@args;
+	$self->config($config);
+	$self->args(\@args);
 	
 	$self->setup();
-	$self->{sub}->($self, @{$self->{args}});
+	$self->code->($self, @{$self->args});
 }
 
 # command { ... } foo => "do foo";

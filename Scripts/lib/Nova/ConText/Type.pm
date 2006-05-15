@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use base 'Nova::Base';
-Nova::ConText::Type->fields(qw(resFields type));
+__PACKAGE__->fields(qw(type resFields));
 
 use Nova::Resource;
 use Nova::Resource::Value;
@@ -43,25 +43,25 @@ sub init {
 # Get the field names which should be used, given the ones read from the ConText
 sub inFieldNames {
 	my ($self, @rawFields) = @_;
-	return $self->resFields(@rawFields);
+	return $self->resFields(\@rawFields);
 }
 
 # Get a hash of fields, given the values to be used for each field name
 sub inFields {
 	my ($self, @vals) = @_;
-	return map { lc $self->resFields->[$_] => $vals[$_] } (0..$#vals);
+	return map { lc ($self->resFields->[$_]) => $vals[$_] } (0..$#vals);
 }
 
 # Get the field names to output to ConText, given the fields in a resource
 sub outFieldNames {
 	my ($self, @resFields) = @_;
-	return $self->resFields(@_);
+	return $self->resFields(\@resFields);
 }
 
 # Get the field values to output, given a hash of fields
 sub outFields {
 	my ($self, %fields) = @_;
-	return map { $fields[lc $_] } $self->resFields;
+	return map { $fields{lc $_} } @{$self->resFields};
 }
 
 # $pkg->register($type);

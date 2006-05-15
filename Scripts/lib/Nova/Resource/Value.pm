@@ -20,7 +20,7 @@ Nova::Resource::Value - A typed value in a resource
 # Wrap shorter pkgnames
 sub fromConText {
 	my ($class, @args) = @_;
-	NRV->fromString(@args);
+	NRV->fromConText(@args);
 }
 
 package Nova::Resource::Value::List;
@@ -38,7 +38,7 @@ sub new {
 
 package NRV;
 use base qw(Nova::Base);
-NRV->fields(qw(value));
+__PACKAGE__->fields(qw(value));
 
 # my $value = Nova::Resource::Value->fromConText($str);
 #
@@ -54,8 +54,11 @@ sub fromConText {
 	} elsif ($str =~ /^0x(.*)$/) {
 		($subclass, @data) = (H => hex($1), length($1));
 	}
+	
 	$subclass = defined $subclass ? "$class$subclass" : $class;
-	return $subclass->new->initWithContext(@data);
+	my $obj = $subclass->new;
+	$obj->initWithContext(@data);
+	return $obj;
 }
 
 # Initialize
@@ -96,12 +99,12 @@ sub toConText {
 
 package NRVH; # hex
 use base 'NRV';
-NRVH->fields(qw(length));
+__PACKAGE__->fields(qw(length));
 
 sub init {
 	my ($self, $val, $length) = @_;
 	$self->SUPER::init($val);
-	$self->length($length)(;
+	$self->length($length);
 }
 
 sub show {

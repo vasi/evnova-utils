@@ -1,4 +1,4 @@
-# Copyright (c) 2006 Dave Vasilevsky
+﻿# Copyright (c) 2006 Dave Vasilevsky
 
 package Nova::Cache;
 use strict;
@@ -32,15 +32,20 @@ our %CACHES;
 # the desired cache.
 sub cache {
 	my ($class, @ids) = @_;
-	my $file = $class->_cacheFile(@ids);
-	
+	my $cache = $class->_cacheFile(@ids);
+	return $class->_cache_attach($cache);
+}
+
+# Attach to a cache
+sub _cache_attach {
+	my ($class, $file) = @_;
 	unless (exists $CACHES{$file}) {
 		my %h;
 		tie %h, MLDBM => $file or die "Can't tie cache: $!\n";
 		$CACHES{$file} = \%h;
 	}
 	return $CACHES{$file};
-}
+}	
 
 # Get a cache, treating the first identifier as the name of a file. This allows
 # the returned cache to be emptied if the cache is not up to date with the file.
@@ -49,11 +54,8 @@ sub cacheForFile {
 	@ids = ($file, @ids);
 	
 	my $cache = $class->_cacheFile(@ids);
-	
-	if (-M $cache > -M $file) {
-		$class->deleteCache(@ids);
-	}
-	return $class->cache(@ids);
+	unlink $cache unless -f $cache && -M $cache <= -M $file;
+	return $class->_cache_attach($cache);
 }
 
 # Get the cache file for a given @ids list.

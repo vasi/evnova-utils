@@ -7,10 +7,9 @@ use warnings;
 use base 'Nova::Base';
 __PACKAGE__->fields(qw(type resFields));
 
+use Nova::Util qw(deaccent);
 use Nova::Resource;
 use Nova::Resource::Value;
-
-use utf8;
 
 =head1 NAME
 
@@ -35,8 +34,9 @@ sub init {
 	my ($self, $type) = @_;
 	$self->type($type);
 	
-	if (exists $REGISTERED{$self->type}) {
-		bless $self, $REGISTERED{$self->type}; # rebless
+	my $t = deaccent($type);
+	if (exists $REGISTERED{$t}) {
+		bless $self, $REGISTERED{$t}; # rebless
 	}
 }
 
@@ -75,7 +75,7 @@ sub register {
 
 package Nova::ConText::Type::StringList;
 use base 'Nova::ConText::Type';
-__PACKAGE__->register('STR#');
+__PACKAGE__->register('str#');
 
 sub inFields {
 	my ($self, @vals) = @_;
@@ -97,7 +97,7 @@ sub outFields {
 
 package Nova::ConText::Type::Syst;
 use base 'Nova::ConText::Type';
-__PACKAGE__->register('sÿst');
+__PACKAGE__->register('syst');
 
 # Mis-spelled field
 sub inFieldNames {
@@ -109,7 +109,7 @@ sub inFieldNames {
 
 package Nova::ConText::Type::Outf;
 use base 'Nova::ConText::Type';
-__PACKAGE__->register('oütf');
+__PACKAGE__->register('outf');
 
 # Some things need to be hex
 sub inFields {
@@ -131,7 +131,7 @@ sub inFields {
 
 package Nova::ConText::Type::Rank;
 use base 'Nova::ConText::Type';
-__PACKAGE__->register('ränk');
+__PACKAGE__->register('rank');
 
 # Missing some values in ConText!
 sub inFields {

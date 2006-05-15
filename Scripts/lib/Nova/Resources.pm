@@ -12,7 +12,6 @@ use Nova::Resource;
 use Nova::Util qw(deaccent);
 
 use Cwd qw(realpath);
-use utf8;
 
 =head1 NAME
 

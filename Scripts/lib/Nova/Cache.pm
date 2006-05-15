@@ -1,5 +1,4 @@
 ﻿# Copyright (c) 2006 Dave Vasilevsky
-
 package Nova::Cache;
 use strict;
 use warnings;
@@ -41,6 +40,7 @@ sub _cache_attach {
 	my ($class, $file) = @_;
 	unless (exists $CACHES{$file}) {
 		my %h;
+$DB::single = 1;
 		tie %h, MLDBM => $file or die "Can't tie cache: $!\n";
 		$CACHES{$file} = \%h;
 	}

@@ -13,7 +13,6 @@ use Nova::Resources;
 
 use English qw($INPUT_RECORD_SEPARATOR);
 use Encode;
-use utf8;	# Inline utf8 characters
 
 =head1 NAME
 
@@ -88,7 +87,7 @@ sub read {
 	
 	return $self->collection if $self->collection->isFilled;
 	while (defined(my $line = $self->_readLine)) {
-		if ($line =~ /^• Begin (\S{4})$/) {
+		if ($line =~ /^\x{2022} Begin (\S{4})$/) { # utf bullet
 			$self->_readType($1);
 		} elsif (defined $self->type) {
 			$self->type(undef) unless $self->_readResource($line);
@@ -120,7 +119,7 @@ sub _open_file {
 	# Look for letter-umlaut to indicate utf8
 	my $enc;
 	my $dec = eval { decode_utf8($block, $Encode::FB_CROAK) };
-	if (defined $dec && $dec =~ /[äëïöüÿ]/) {
+	if (defined $dec && $dec =~ /[\x{e4}\x{eb}\x{ef}\x{f6}\x{fc}\x{ff}]/) {
 		$enc = ':utf8';
 	} else {
 		$enc = ':encoding(MacRoman)'; # assume MacRoman if not unicode

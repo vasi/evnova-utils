@@ -26,7 +26,7 @@ Nova::Util - Miscellaneous utilities
 # Eg: mïsn => misn
 sub deaccent {
 	my ($s) = @_;
-	$s =~ tr/äëïöüÿ/aeiouy/;
+	$s =~ tr/\x{e4}\x{eb}\x{ef}\x{f6}\x{fc}\x{ff}/aeiouy/;
 	return lc $s;
 }
 

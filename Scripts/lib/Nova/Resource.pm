@@ -8,7 +8,6 @@ use base 'Nova::Base';
 __PACKAGE__->fields(qw(collection));
 
 use Nova::Util qw(deaccent);
-use utf8;
 
 =head1 NAME
 
@@ -40,8 +39,9 @@ sub init {
 	$self->{fields} = $fields;
 	
 	# Rebless, if necessary
-	if (exists $REGISTERED{$self->type}) {
-		bless $self, $REGISTERED{$self->type};
+	my $t = deaccent($self->type);
+	if (exists $REGISTERED{$t}) {
+		bless $self, $REGISTERED{$t};
 	}
 	return $self;
 }
@@ -144,7 +144,7 @@ sub fullName {
 
 package Nova::Resource::Ship;
 use base 'Nova::Resource';
-__PACKAGE__->register('shïp');
+__PACKAGE__->register('ship');
 
 # Add the subtitle to the full name, if it seems like a good idea
 sub fullName {

@@ -40,7 +40,15 @@ sub _cache_attach {
 	my ($class, $file) = @_;
 	unless (exists $CACHES{$file}) {
 		my %h;
-		tie %h, MLDBM => $file or die "Can't tie cache: $!\n";
+		my $tries = 0;
+		{
+			eval { tie %h, MLDBM => $file or die "Can't tie cache: $!\n" };
+			if ($@) {
+				die $@ if $tries++;
+				unlink $file;
+				redo;
+			}
+		}	
 		$CACHES{$file} = \%h;
 	}
 	return $CACHES{$file};
@@ -55,6 +63,16 @@ sub cacheForFile {
 	my $cache = $class->_cacheFile(@ids);
 	unlink $cache unless -f $cache && -M $cache <= -M $file;
 	return $class->_cache_attach($cache);
+}
+
+# Storable caching! Return a filename.
+sub storableCache {
+	my ($class, $file, @ids) = @_;
+	@ids = ($file, @ids);
+	
+	my $cache = $class->_cacheFile(@ids);
+	unlink $cache unless -f $cache && -M $cache <= -M $file;
+	return $cache;
 }
 
 # Get the cache file for a given @ids list.

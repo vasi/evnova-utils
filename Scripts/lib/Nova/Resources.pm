@@ -146,15 +146,20 @@ sub get {
 	$type = deaccent($type);
 	
 	my $c = $self->cache;
-	die "No such resource $id of type $type\n"
-		unless exists $c->{'resource',$type,$id};
+	return undef unless exists $c->{'resource',$type,$id};
 	
 	return Nova::Resource->new(
 		fieldNames	=> $c->{'fields',$type},
 		fields		=> \$c->{'resource',$type,$id},
 		collection	=> $self,
-		readOnly	=> $self->readOnly,
+		readOnly	=> $self->{readOnly},
 	);
+}
+
+# Does a resource exist?
+sub exists {
+	my ($self, $type, $id) = @_;
+	return exists $self->cache->{'resource',$type,$id};
 }
 
 # Get all resources of some types
@@ -207,7 +212,7 @@ sub find {
 	if ($spec =~ /^\d+$/) {
 		@found = ($self->get($type, $spec));
 	} else {
-		@found = grep { $_->name =~ /$spec/i } $self->type($type);
+		@found = grep { $_->fullName =~ /$spec/i } $self->type($type);
 	}
 	return wantarray ? @found : $found[0];
 }

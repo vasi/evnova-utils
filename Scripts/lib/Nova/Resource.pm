@@ -27,6 +27,7 @@ Nova::Resource - a resource from a Nova data file
 =cut
 
 our %REGISTERED;
+__PACKAGE__->subPackages;
 
 # my $resource = Nova::Resource->new(%params);
 #
@@ -134,6 +135,12 @@ sub AUTOLOAD {
 	}
 }
 
+# Get/set a field
+sub field {
+	my ($self, $field, $val) = @_;
+	return defined $val ? $self->$field($val) : $self->$field;
+}
+
 # Get the field names
 sub fieldNames {
 	my ($self) = @_;
@@ -152,19 +159,36 @@ sub fullName {
 	return $self->name;
 }
 
+# The source file for this resource and friends
+sub source { $_[0]->collection->source }
 
-package Nova::Resource::Ship;
-use base 'Nova::Resource';
-__PACKAGE__->register('ship');
-
-# Add the subtitle to the full name, if it seems like a good idea
-sub fullName {
-	my ($self) = @_;
-	my $name = $self->SUPER::fullName;
-	my $sub = $self->subTitle;
-	return $name unless $sub;
-	return "$name, $sub";
+# my @props = $r->multi($prefix);
+#
+# Get a list of properties with the same prefix
+sub multi {
+	my ($self, $prefix) = @_;
+	my @k = grep /^$prefix/i, $self->fieldNames;
+	return grep { $_ != -1 && $_ != -2 } map { $self->$_ } @k;
 }
 
+# my @objs = $r->multiObjs($primary, @secondaries);
+#
+# Get a list of object-like hashes
+sub multiObjs {
+	my ($self, $primary, @secondaries) = @_;
+	my @k = grep /^$primary/i, $self->fieldNames;
+	@k = grep { my $v = $self->$_; $v != -1 && $v != 0 } @k;
+	
+	my @ret;
+	for my $k (@k) {
+		my %h;
+		for my $v ($primary, @secondaries) {
+			(my $kv = $k) =~ s/^$primary/$v/;
+			$h{$v} = $self->$kv;
+		}
+		push @ret, \%h;
+	}
+	return @ret;
+}
 
 1;

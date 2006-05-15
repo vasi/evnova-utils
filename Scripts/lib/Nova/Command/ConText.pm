@@ -47,6 +47,12 @@ sub setup {
 }
 
 command {
+	my ($self) = @_;
+	$self->resources->deleteCache;
+	$self->_loadContext;
+} reload => 'reload the ConText';
+
+command {
 	my ($self, $type, $id, @fields) = @_;
 	print $self->resources->get($type => $id)->show(@fields);
 } show => 'show a resource';
@@ -58,29 +64,15 @@ command {
 } listAll => 'list all known resources of the given types';
 
 command {
-	my ($self) = @_;
-	$self->resources->deleteCache;
-	$self->_loadContext;
-} reload => 'reload the ConText';
+	my ($self, $type, $find) = @_;
+	map { printf "%s %5d: %s\n", $_->type, $_->id, $_->fullName }
+		$self->resources->find($type => $find);
+} list => 'list resources matching a specification';
 
 command {
-	my ($self) = @_;
-	
-	{ # Change a STR#
-		my $r = $self->resources->get('str#' => 128);
-		my @s = @{$r->strings};
-		$r->strings([@s, 'foo']);
-	}
-	
-	# Change everything
-	for my $r ($self->resources->type) {
-		$r->file('TestData');
-	}
-	
-	# Write it
-	my $out = "../out.txt";
-	my $ct = Nova::ConText->new($out);
-	$ct->write($self->resources);
-} misc => 'test';
+	my ($self, $find) = @_;
+	my $ship = $self->resources->find(ship => $find);
+	$ship->mass(1);
+} mass => 'show the total mass available on a ship';
 
 1;

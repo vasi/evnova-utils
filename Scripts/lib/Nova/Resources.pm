@@ -86,10 +86,10 @@ sub addType {
 	
 	my $c = $self->cache;
 	$c->{types} = [ $self->types, $type ];
-	$c->{'fields',$type} = \@fields;
+	$c->{'fields',$deac} = \@fields;
 	$c->{'ids',$deac} = [ ];
+	$c->{filled} = 1;
 	$self->{typeSort} = 1;
-	$self->{filled} = 1;
 }
 
 # $rs->addResource($fieldHash);
@@ -102,9 +102,9 @@ sub addResource {
 	
 	my $c = $self->cache;
 	$c->{'resource',$type,$id} = $fieldHash;
-	$c->{'ids',$type} = [ $id, $self->type($type) ];
+	$c->{'ids',$type} = [ $id, @{$c->{'ids',$type}} ];
+	$c->{filled} = 1;
 	$self->{idSort}{$type} = 1;
-	$self->{filled} = 1;
 }
 
 # $rs->deleteResource($type, $id);
@@ -116,7 +116,7 @@ sub deleteResource {
 	
 	my $c = $self->cache;
 	delete $c->{'resource',$type,$id};
-	$c->{'ids',$type} = [ grep { $_ != $id } $self->type($type) ];
+	$c->{'ids',$type} = [ grep { $_ != $id } @{$c->{'ids',$type}} ];
 }
 
 # Empty the cache for this collection. This object then ceases to be valid.

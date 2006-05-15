@@ -43,7 +43,8 @@ sub init {
 # Get the field names which should be used, given the ones read from the ConText
 sub inFieldNames {
 	my ($self, @rawFields) = @_;
-	return $self->resFields(\@rawFields);
+	$self->resFields(\@rawFields);
+	return @rawFields;
 }
 
 # Get a hash of fields, given the values to be used for each field name
@@ -55,7 +56,8 @@ sub inFields {
 # Get the field names to output to ConText, given the fields in a resource
 sub outFieldNames {
 	my ($self, @resFields) = @_;
-	return $self->resFields(\@resFields);
+	$self->resFields(\@resFields);
+	return @resFields;
 }
 
 # Get the field values to output, given a hash of fields
@@ -102,7 +104,7 @@ __PACKAGE__->register('syst');
 # Mis-spelled field
 sub inFieldNames {
 	my ($self, @fields) = @_;
-	@fields = map { s/Visiblility/Visibility/ } @fields;
+	map { s/Visiblility/Visibility/ } @fields;
 	$self->SUPER::inFieldNames(@fields);
 }
 
@@ -118,9 +120,9 @@ sub inFields {
 	
 	my %forceHex = map { $_ => 1 } (17, 30, 43);
 	
-	for my $modtype (grep /^ModType/, keys %fields) {
+	for my $modtype (grep /^modtype/, keys %fields) {
 		next unless $forceHex{$fields{$modtype}->value};
-		(my $modval = $modtype) =~ s/ModType/ModVal/;
+		(my $modval = $modtype) =~ s/modtype/modval/;
 		my $val = $fields{$modval}->value;
 		$fields{$modval} = Nova::Resource::Value::Hex->new($val, 4);
 	}

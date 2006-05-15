@@ -7,7 +7,8 @@ use warnings;
 use base 'Nova::Base';
 __PACKAGE__->fields(qw(collection readOnly));
 
-use Nova::Util qw(deaccent);
+use Nova::Util qw(deaccent commaNum);
+use Carp;
 
 =head1 NAME
 
@@ -90,6 +91,12 @@ sub _raw_field {
 	return ${$self->{fields}}->{$lc};
 }
 
+# Do we have the given field?
+sub hasField {
+	my ($self, $field) = @_;
+	return exists ${$self->{fields}}->{lc $field};
+}
+
 # Eliminate warning on DESTROY
 sub DESTROY { }
 
@@ -99,7 +106,7 @@ sub DESTROY { }
 # case is ignored.
 sub _caseInsensitiveMethod {
 	my ($pkg, $sub) = @_;
-	$pkg = ref $pkg || $pkg;
+	$pkg = ref($pkg) || $pkg;
 	
 	# Save the methods for each package we look at
 	no strict 'refs';
@@ -125,6 +132,7 @@ sub AUTOLOAD {
 	my $fullsub = our $AUTOLOAD;
 	my ($pkg, $sub) = ($fullsub =~ /(.*)::(.*)/);
 	
+	confess "AUTOLOAD has no object!\n" unless ref($self);
 	my $code = $self->_caseInsensitiveMethod($sub);
 	if (defined $code) {
 		# Try to call an existing sub with the same name (case-insensitive)
@@ -189,6 +197,39 @@ sub multiObjs {
 		push @ret, \%h;
 	}
 	return @ret;
+}
+
+# Pretty print a field for output
+sub format {
+	my ($self, $field) = @_;
+	my $meth = "format$field";
+	my $code = $self->_caseInsensitiveMethod($meth);
+	
+	if (defined $code) {
+		return $code->($self);
+	} else {
+		return $self->field($field);
+	}
+}
+
+sub formatCost {
+	my ($self) = @_;
+	return commaNum($self->cost);
+}
+
+# Get info that is appropriate to display when ranking this object on the
+# given field.
+sub rankInfo {
+	my ($self, $rankField) = @_;
+	return '' unless $self->hasField('cost');
+	return '' if lc $rankField eq 'cost';
+	return $self->formatCost;
+}
+
+# Get the ID and name
+sub uniqName {
+	my ($self) = @_;
+	return sprintf "%5d: %s", $self->ID, $self->fullName;
 }
 
 1;

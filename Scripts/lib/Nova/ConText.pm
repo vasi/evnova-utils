@@ -4,13 +4,16 @@ use strict;
 use warnings;
 
 use base 'Nova::Base';
+Nova::ConText->fields(qw(fh file line_sep type collection));
 
 use Nova::ConText::Type;
+use Nova::Resource;
+use Nova::Resource::Value;
+use Nova::Resources;
 
 use English qw($INPUT_RECORD_SEPARATOR);
-
-use utf8;	# Inline utf8 characters
 use Encode;
+use utf8;	# Inline utf8 characters
 
 =head1 NAME
 
@@ -19,92 +22,97 @@ Nova::ConText - parse resources from ConText files
 =head1 SYNOPSIS
 
   my $context = Nova::ConText->new($file);
-  my @resources = $context->read;
-
-=head1 DESCRIPTION
-
-Reads ConText files, producing Nova::Resource objects. Can accept either Mac
-or Unix line endings, as well as either MacRoman or UTF-8 encoding.
-
-=head1 METHODS
-
-=over 4
-
-=item new
-
-  my $context = Nova::ConText->new($file);
-
-Construct a new ConText object, which will extract resource descriptions from
-the given file.
+  my $resources = $context->read;
+  $context->write($resources);
 
 =cut
 
-sub _init {
+sub init {
 	my ($self, $file) = @_;
-	$self->{file} = $file;
+	$self->file($file);
 }
 
+# my @fields = $class->_parseLine($line);
+#
+# Parse a line into values
+sub _parseLine {
+	my ($class, $line) = @_;
+	my @items = split /\t/, $line;
+	my @fields = map { Nova::Resource::Value->fromString($_) } @items;
+	return @fields;
+}
 
-sub getline {
-	my ($self, $fh) = @_;
-	local $INPUT_RECORD_SEPARATOR = $self->{rs};
-	my $line = <$fh>;
+# Read a line of input
+sub _readLine {
+	my ($self) = @_;
+	local $INPUT_RECORD_SEPARATOR = $self->line_sep;
+	my $line = <$self->fh>;
 	return $line unless defined $line;
 	
 	chop $line; # may be \r, so not chomp
 	return $line;
 }
 
-=item read
+# Read a type header from a ConText file
+sub _readType {
+	my ($self, $type) = @_;
+	$self->type(Nova::ConText::Type->new($type));
+	
+	my @vals = $self->_parseLine($self->_readLine);
+	my @fields = map { $_->value } @vals;
+	pop @fields; # end of record
+	
+	@fields = $self->type->inFieldNames(@fields);
+	$self->collection->addType($type, @fields);
+}
 
-  my @resources = $context->read;
+# Read a resource from a ConText file. Return true on success.
+sub _readResource {
+	my ($self, $line) = @_;
+	my @vals = $self->_parseLine($line);
+	return 0 if $vals[0]->value ne $self->type->type;
+	
+	pop @vals; # end of record
+	my %fields = $self->type->inFields(@vals);
+	$self->collection->addResource(\%fields);
+	return 1;
+}
 
-Return a list of Resource objects read from the given file.
-
-=cut
-
+# Read a Nova::Resources from a ConText file
 sub read {
 	my ($self) = @_;
-	my $file = $self->{file};
-	my (@resources, %headers);
+	$self->_open_file($self->$file);
+	$self->collection(Nova::Resources->new($self->file));
+	$self->type(undef);
 	
-	my $enc;
-	($self->{rs}, $enc) = $self->_file_type($file);
-	open my $fh, "<:$enc", $file or die "Can't open '$file': $!\n";
-	
-	my (@types, $type);
-	while (defined(my $line = $self->getline($fh))) {
+	while (defined(my $line = $self->_readLine)) {
 		if ($line =~ /^• Begin (\S{4})$/) {
-			$type = Nova::ConText::Type->new($1);
-			push @types, $type;
-			
-			my $headers = $self->getline($fh) or die "No headers!\n";
-			$type->readHeaders($headers);
-			
-		} elsif (defined $type) {
-			my $ret = $type->readResource($line);
-			undef $type unless defined $ret; # stop when we hit a bad line
+			$self->_readType($1);
+		} elsif (defined $self->type) {
+			$self->type(undef) unless $self->_readResource($line);
 		}
 	}
 	
-	close $fh;
-	return @types;
+	close $self->fh;
+	return $self->collection;
 }
 
-# my ($recordSeparator, $encoding) = $class->_file_type($file);
+# my $fh = $self->_open_file($file);
 #
-# Detect the type of file we're reading
-sub _file_type {
+# Detect the type of file we're reading, and return a filehandle for reading
+# it.
+sub _open_file {
 	my ($class, $file) = @_;
 	
-	open my $fh, '<:bytes', $file or die "Can't open '$file': $!\n";
+	open my $dec, '<:bytes', $file or die "Can't open '$file': $!\n";
 	local $INPUT_RECORD_SEPARATOR = \1024; # Read a block
-	my $block = <$fh>;
-	close $fh;
+	my $block = <$dec>;
+	close $dec;
 	
 	# Use first line-ending
 	my ($rs) = ($block =~ /([\r\n])/);
 	die "No line-ending found\n" unless defined $rs;
+	$self->line_sep($rs);
 	
 	# Look for letter-umlaut to indicate utf8
 	my $enc;
@@ -115,11 +123,8 @@ sub _file_type {
 		$enc = ':encoding(MacRoman)'; # assume MacRoman if not unicode
 	}
 	
-	return ($rs, $enc);
-}
-
-sub dump {
-
+	open my $fh, "<$enc", $file or die "Can't open '$file': $!\n";
+	$self->fh($fh);
 }
 
 =back

@@ -6,20 +6,34 @@ use warnings;
 use base 'Nova::Command';
 use Nova::Command qw(command);
 
+=head1 NAME
+
+Nova::Command::ConText - commands related to ConText files
+
+=cut
+
 command {
 	my ($self, $val) = @_;
 	$self->config->conText($val) if defined $val;
 	printf "%s\n", $self->config->conText;
 } 'context' => 'get/set the ConText file';
 
+=head1 NAME
+
+Nova::Command::ConText::Using - commands that use the contents of the
+default ConText file
+
+=cut
 
 package Nova::Command::ConText::Using;
 use base 'Nova::Command::ConText';
+Nova::Command::ConText->fields(qw(resources));
 
 use Nova::Resources;
 use Nova::Command qw(command);
 
-sub loadContext {
+# Load the current context file
+sub _loadContext {
 	my ($self) = @_;
 	$self->{resources} = Nova::Resources->fromConText($self->config->conText);
 }
@@ -27,10 +41,8 @@ sub loadContext {
 sub setup {
 	my ($self) = @_;
 	$self->SUPER::setup;
-	$self->loadContext;
+	$self->_loadContext;
 }
-
-sub resources { $_[0]->{resources} }
 
 command {
 	my ($self, $type, $id, @fields) = @_;
@@ -46,12 +58,11 @@ command {
 command {
 	my ($self) = @_;
 	$self->resources->deleteCache;
-	$self->loadContext;
+	$self->_loadContext;
 } reload => 'reload the ConText';
 
 command {
 	my ($self) = @_;
-	$self->resources->dumpToConText('../out.txt');
 } misc => 'test';
 
 1;

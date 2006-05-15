@@ -5,12 +5,25 @@ use Data::Dumper;
 
 use lib 'lib';
 
-use Nova::Util qw(methods);
 
-sub cmd_foo { print "foo\n" }
-sub cmd_bar { print "bar\n" }
+use MLDBM qw(DB_File Storable);
 
-my @commands = grep /^cmd_/, methods(__PACKAGE__);
-for my $c (@commands) {
-	${main::}{$c}();
+unlink '/tmp/foo';
+{
+	my %h;
+	tie %h, MLDBM => '/tmp/foo';
+	$h{foo} = { first => 5 };
+	
+	my $obj;
+	$obj->{fields} = \$h{foo};
+	
+	printf "%s\n", exists ${$obj->{fields}}->{first};
+	${$obj->{fields}}->{bar} = {iggy => 'blah'};
+	${$obj->{fields}} = { %${$obj->{fields}} };
+	print Dumper(${$obj->{fields}});
+}
+{
+	my %h;
+	tie %h, MLDBM => '/tmp/foo';
+	print Dumper(\%h);
 }

@@ -5,9 +5,9 @@ use strict;
 use warnings;
 
 use base 'Nova::Base';
+Nova::Resources->fields(qw(source cache));
 
 use Nova::Cache;
-use Nova::ConText;
 use Nova::Resource;
 use Nova::Util qw(deaccent);
 
@@ -16,90 +16,114 @@ use utf8;
 
 =head1 NAME
 
-Nova::Resource - a collection of resources
+Nova::Resources - a collection of resources
 
 =head1 SYNOPSIS
 
-  my $resources = Nova::Resources->fromConText($file);
-  
-  my $res = $resources->get($type, $id);
-  my @res = $resources->type($type);
-  my @res = $resources->find($type => $spec);
-  my @types = $resources->types;
-  
-  my $source = $resources->source;
+  my $rs = Nova::Resources->new($source);
+
+  $rs->addType($type, @fields);
+  $rs->addResource($fieldHash);
+  $rs->deleteResource($type, $id);
+
+  my $r = $rs->get($type, $id);
+  $r = $rs->find($type, $spec);
+
+  my @types = $rs->types;
+  my @resources = $rs->type(@types);
 
 =cut
 
-sub _init {
-	my ($self, $source, $cache) = @_;
-	$self->{source} = $source;
-	$self->{cache} = $cache;
-}
-
-sub fromConText {
-	my ($class, $file) = @_;
-	my $source = realpath($file);
-	my $cache = Nova::Cache->cache($source);
+# my $rs = Nova::Resources->new($source);
+#
+# Source is the file from which this collection will be filled
+sub init {
+	my ($self, $source) = @_;
+	$source = realpath($source);
+	$self->source($source);
+	$self->cache(Nova::Cache->cacheForFile($source));
 	
-	unless ($cache->{done}) {
-		my @types = Nova::ConText->new($file)->read;
-		my @typeNames;
-		
-		for my $type (@types) {
-			my $t = $type->type;
-			push @typeNames, $t;
-			
-			my @headers = $type->headers;
-			$cache->{'header',$t} = \@headers;
-			$cache->{'realType',$t} = $type->realType;
-			
-			my @ids;
-			for my $h ($type->resourceHashes) {
-				my $id = $h->{ID}->value;
-				push @ids, $id;
-				$cache->{'resource',$t,$id} = [ @$h{@headers} ];
-			}
-			$cache->{'type',$t} = [ sort { $a <=> $b } @ids ];
-		}
-		$cache->{types} = [ sort @typeNames ];
-		$cache->{done} = 1;
-	}
-	return $class->new($source, $cache);
+	$self->cache->{types} = [] unless exists $self->cache->{types};
 }
 
+# my $bool = $rs->isFilled;
+#
+# Do we have a filled cache to play with? Or do we need to have resource data
+# inserted?
+sub isFilled {
+	my ($self) = @_;
+	return defined $self->cache->{filled};
+}
+
+# $rs->batch(sub {  });
+#
+# Perform a series of operations, without updating our cache each time.
+# During a batch operation, any accesses to resources are not guaranteed to
+# yield consistent data! So don't try :-)
+sub batch {
+	my ($self, $code) = @_;
+	$self->{batch} = 1;
+	$code->();
+	delete $self->{batch};
+	$self->_update;
+}
+
+# $rs->_update;
+#
+# Update the cache to reflect batch changes made since the last update.
+sub _update {
+	my ($self) = @_;
+	return if exists $self->{batch}; # postpone
+	
+	# for now, nothing is batched
+}
+
+# $rs->addType($type, @fields);
+#
+# Add a type of resource, with the given fields
+sub addType {
+	my ($self, $type, @fields) = @_;
+	my $deac = deaccent($type);
+	
+	my $c = $self->cache;
+	$c->{types} = [ $self->types, $type ];
+	$c->{'fields',$type} = \@fields;
+	$c->{'ids',$deac} = [ ];
+	$self->{typeSort} = 1;
+	$self->{filled} = 1;
+}
+
+# $rs->addResource($fieldHash);
+#
+# Add a resource.
+sub addResource {	
+	my ($self, $fieldHash) = @_;
+	my $type = deaccent($fieldHash->{type});
+	my $id = $fieldHash->{id};
+	
+	my $c = $self->cache;
+	$c->{'resource',$type,$id} = $fieldHash;
+	$c->{'ids',$type} = [ $id, $self->type($type) ];
+	$self->{idSort}{$type} = 1;
+	$self->{filled} = 1;
+}
+
+# $rs->deleteResource($type, $id);
+#
+# Remove a resource.
+sub deleteResource {	
+	my ($self, $type, $id) = @_;
+	$type = deaccent($type);
+	
+	my $c = $self->cache;
+	delete $c->{'resource',$type,$id};
+	$c->{'ids',$type} = [ grep { $_ != $id } $self->type($type) ];
+}
+
+# Empty the cache for this collection. This object then ceases to be valid.
 sub deleteCache {
 	my ($self) = @_;
 	Nova::Cache->deleteCache($self->source);
-}
-
-# Dump in ConText format
-sub dumpToConText {
-	my ($self, $file) = @_;
-	
-	open my $fh, '>:encoding(MacRoman)', $file
-		or die "Can't write to '$file': $!\n";
-	
-	my $context = Nova::ConText->new($file);
-	my $c = $self->{cache};
-	for my $type ($self->types) {
-		my $realtype = $c->{'realType',$type};
-		my @headers = @{$c->{'header',$type};
-		my $typeObj = Nova::ConText::Type->new($realtype);
-		$typeObj
-	
-		
-		my $
-		printf $fh "• Begin %s\r", 
-		printf $fh "%s\r", join("\t", map { "\"$_\"" } @headers);
-		
-		for my $r ($self->type($type)) {
-			printf $fh "%s\r", $r->dump;
-		}
-	}
-	printf $fh "• End Output\r";
-	
-	close $fh;
 }
 
 # Get a single resource by type and ID
@@ -107,7 +131,7 @@ sub get {
 	my ($self, $type, $id) = @_;
 	$type = deaccent($type);
 	
-	my $c = $self->{cache};
+	my $c = $self->cache;
 	die "No such resource $id of type $type\n"
 		unless exists $c->{'resource',$type,$id};
 	
@@ -122,14 +146,22 @@ sub get {
 # Get all resources of some types
 sub type {
 	my ($self, @types) = @_;
-	@types = map { deaccent($_) } @types;
 	@types = $self->types unless @types; # default to all
 	
 	my @resources;
 	for my $type (@types) {
-		die "No such type $type\n" unless exists $self->{cache}{'type',$type};
-		push @resources,
-			map { $self->get($type, $_) } @{$self->{cache}{'type',$type}};
+		$type = deaccent($type);
+		die "No such type $type\n" unless exists $self->cache->{'ids',$type};
+		
+		# Sort and uniquify only on-demand
+		my @ids = @{$self->cache->{'ids',$type}};
+		if ($self->{idSort}{$type}) {
+			my %ids = map { $_ => 1 } @ids;
+			@ids = sort { $a <=> $b } keys %ids;
+			$self->cache->{'ids',$type} = \@ids;
+		}
+		
+		push @resources, map { $self->get($type, $_) } @ids;
 	}
 	return @resources;
 }
@@ -137,13 +169,17 @@ sub type {
 # Get a list of all known types
 sub types {
 	my ($self) = @_;
-	return @{$self->{cache}{types}};
-}
-
-# Get an identifier for the place this collection came from
-sub source {
-	my ($self) = @_;
-	return $self->{source};
+	
+	# Sort and uniquify only on-demand
+	my @types = @{$self->cache->{types}};
+	if ($self->{typeSort}) {
+		my %types = map { $_ => 1 } @types;
+		@types = sort keys %types;
+		$self->cache->{types} = \@types;
+		
+		delete $self->{typeSort};
+	}
+	return @types;
 }
 
 # Find a resource from a specification

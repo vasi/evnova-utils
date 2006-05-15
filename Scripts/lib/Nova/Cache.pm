@@ -26,6 +26,10 @@ Nova::Cache - utilities for caching
 our $CACHEDIR = '.nova-cache';
 our %CACHES;
 
+# my $cache = Nova::Cache->cache(@ids);
+#
+# Get a cache, given a list of identifiers. The ids serve to uniquely identify
+# the desired cache.
 sub cache {
 	my ($class, @ids) = @_;
 	my $file = $class->_cacheFile(@ids);
@@ -38,6 +42,21 @@ sub cache {
 	return $CACHES{$file};
 }
 
+# Get a cache, treating the first identifier as the name of a file. This allows
+# the returned cache to be emptied if the cache is not up to date with the file.
+sub cacheForFile {
+	my ($class, $file, @ids) = @_;
+	@ids = ($file, @ids);
+	
+	my $cache = $class->_cacheFile(@ids);
+	
+	if (-M $cache > -M $file) {
+		$class->deleteCache(@ids);
+	}
+	return $class->cache(@ids);
+}
+
+# Get the cache file for a given @ids list.
 sub _cacheFile {
 	my ($class, @ids) = @_;
 	unshift @ids, scalar(caller(1));
@@ -49,6 +68,7 @@ sub _cacheFile {
 	return $file;
 }
 
+# Delete the current file that we're caching
 sub deleteCache {
 	my ($class, @ids) = @_;
 	my $file = $class->_cacheFile(@ids);

@@ -8,7 +8,7 @@ use base qw(Exporter);
 
 use utf8;
 
-our @EXPORT_OK = qw(deaccent methods);
+our @EXPORT_OK = qw(deaccent);
 
 =head1 NAME
 
@@ -22,28 +22,12 @@ Nova::Util - Miscellaneous utilities
 
 # $str = deaccent($str);
 #
-# Remove accents from a resource type
+# Remove accents from a resource type, and canonicalizes is to lower-case.
+# Eg: mïsn => misn
 sub deaccent {
 	my ($s) = @_;
 	$s =~ tr/äëïöüÿ/aeiouy/;
 	return lc $s;
-}
-
-# my @methods = methods($pkg);
-#
-# List all the methods/subroutines in a package.
-sub methods {
-	my ($pkg) = @_;
-	my @methods;
-	
-	no strict 'refs';
-	while (my ($k, $v) = each %{"${pkg}::"}) {
-		next if $k =~ /::/ or $k eq '_temp'; # sub-modules
-		*_temp = $v;
-		next unless defined &_temp;
-		push @methods, $k;
-	}
-	return @methods;
 }
 
 1;

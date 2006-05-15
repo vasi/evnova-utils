@@ -3,20 +3,24 @@ package Nova::Resource::Value;
 use strict;
 use warnings;
 
+=head1 NAME
+
+Nova::Resource::Value - A typed value in a resource
+
+=head1 SYNOPSIS
+
+  my $value = Nova::Resource::Value->fromConText($str);
+
+  my $dump = $value->toConText;
+  my $printable = $value->show;
+  my $value = $value->value;
+
+=cut
+
 # Wrap shorter pkgnames
-sub fromString {
+sub fromConText {
 	my ($class, @args) = @_;
 	NRV->fromString(@args);
-}
-sub new {
-	my ($class, @args) = @_;
-	NRV->new(@args);
-}
-
-package Nova::Resource::Value::Hex;
-sub new {
-	my ($class, @args) = @_;
-	NRVH->new(@args);
 }
 
 package Nova::Resource::Value::List;
@@ -25,25 +29,21 @@ sub new {
 	NRVL->new(@args);
 }
 
+package Nova::Resource::Value::Hex;
+sub new {
+	my ($class, @args) = @_;
+	NRVH->new(@args);
+}
+
+
 package NRV;
-use base 'Nova::Base';
+use base qw(Nova::Base);
+NRV->fields(qw(value));
 
-=head1 NAME
-
-Nova::Resource::Value - A typed value in a resource
-
-=head1 SYNOPSIS
-
-  my $value = Nova::Resource::Value->fromString($str);
-  my $dump = $value->dump;
-  my $value = $value->value;
-
-=cut
-
-# my $value = Nova::Resource::Value->fromString($str);
+# my $value = Nova::Resource::Value->fromConText($str);
 #
-# Parse a string to create a Value.
-sub fromString {
+# Parse a ConText string to create a Value.
+sub fromConText {
 	my ($class, $str) = @_;
 	
 	my ($subclass, @data) = (undef, $str);
@@ -55,65 +55,58 @@ sub fromString {
 		($subclass, @data) = (H => hex($1), length($1));
 	}
 	$subclass = defined $subclass ? "$class$subclass" : $class;
-	return $subclass->new(@data);
+	return $subclass->new->initWithContext(@data);
 }
 
-sub _init {
-	my ($self, $val) = @_;
-	$self->{val} = $val;
-}
+# Initialize
+sub init { $_[0]->value($_[1]) }
 
-# Return the value as a scalar
-sub value {
-	my ($self) = @_;
-	return $self->{val};
-}
+# Initialize with data from ConText, may need parsing
+sub initWithContext { $_[0]->init($_[1]) }
 
 # Return the value in printable format
-sub show {
-	my ($self) = @_;
-	return $self->{val};
-}
+sub show { $_[0]->value }
 
-# Format appropriate for dumping to ConText
-sub dump {
-	my ($self) = @_;
-	return $self->show; # default
-}
+# Format for dumping to ConText
+sub toConText { $_[0]->show }
 
 package NRVS; # string
 use base 'NRV';
 
-sub _init {
+sub initWithContext {
 	my ($self, $val) = @_;
-	$self->SUPER::_init($val);
 	
 	# Fix escaped values
-	$self->{val} =~ s/\\q/\"/g;
-	$self->{val} =~ s/\\r/\n/g;
+	$val =~ s/\\q/\"/g;
+	$val =~ s/\\r/\n/g;
+	$val =~ s/\\t/\t/g;
+	
+	$self->SUPER::initWithContext($val);
 }
 
-sub dump {
+sub toConText {
 	my ($self) = @_;
-	my $val = $self->{val};
+	my $val = $self->value;
 	$val =~ s/"/\\q/g;
 	$val =~ s/\n/\\r/g;
+	$val =~ s/\t/\\t/g;
 	return sprintf '"%s"', $val;
 }
 
 
 package NRVH; # hex
 use base 'NRV';
+NRVH->fields(qw(length));
 
-sub _init {
+sub init {
 	my ($self, $val, $length) = @_;
-	$self->SUPER::_init($val);
-	$self->{'length'} = $length;
+	$self->SUPER::init($val);
+	$self->length($length)(;
 }
 
 sub show {
 	my ($self) = @_;
-	return sprintf "0x%0*x", $self->{'length'}, $self->{val};
+	return sprintf "0x%0*x", $self->length, $self->value;
 }
 
 
@@ -122,29 +115,29 @@ use base 'NRV';
 
 sub show {
 	my ($self) = @_;
-	return sprintf "#%06x", $self->{val};
+	return sprintf "#%06x", $self->value;
 }
 
 
 package NRVL; # list
 use base 'NRV';
 
-sub _init {
+sub init {
 	my ($self, @vals) = @_;
-	$self->SUPER::_init(\@vals);
+	$self->SUPER::init(\@vals);
 }
 
 sub show {
 	my ($self) = @_;
 	return join('',
-		map { sprintf "\n  %3d: %s", $_, $self->{val}[$_] }
-			(0..$#{$self->{val}})
+		map { sprintf "\n  %3d: %s", $_, $self->value->[$_] }
+			(0..$#{$self->value})
 	);
 }
 
-sub dump {
+sub toConText {
 	my ($self) = @_;
-	return join "\t", map { NRVS->new($_)->dump } @{$self->{val}};
+	return join "\t", map { NRVS->new($_)->toConText } @{$self->value};
 }
 
 1;

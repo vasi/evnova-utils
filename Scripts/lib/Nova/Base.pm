@@ -15,28 +15,13 @@ Nova::Base - base class for EV Nova packages
 
   my $obj = SubClass->new(@params);
 
-=head1 DESCRIPTION
-
-Nova::Base provides basic object construction.
-
 =cut
 
 BEGIN {
 	binmode STDOUT, ':utf8';
 }
 
-=head1 METHODS
-
-=over 4
-
-=item new
-
-  my $obj = SubClass->new(@params);
-
-Construct a new object.
-
-=cut
-
+# my $obj = SubClass->new(@params);
 sub new {
 	my $proto = shift;
 	my $class = ref($proto) || $proto;
@@ -44,27 +29,86 @@ sub new {
 	my $self = {};
 	bless($self, $class);
 
-	$self->_init(@_);
+	$self->init(@_);
 
 	return $self;
 }
 
-=item _init
-
-  $obj->_init(@params);
-
-Protected method.
-
-Called by the constructor to initialize the object.
-
-=cut
-
-sub _init {
-	# Intentionally left blank
+# Called by the constructor to initialize the object.
+# By default, treat the args as field initializers.
+sub init {
+	my ($self, %params) = @_;
+	while (my ($k, $v) = each %params) {
+		$self->$k($v);
+	}
 }
 
-=back
+# my @methods = $pkg->methods;
+#
+# List all the methods/subroutines in a package.
+sub methods {
+	my ($pkg) = @_;
+	$pkg = ref($pkg) || $pkg;
+	my @methods;
+	
+	no strict 'refs';
+	while (my ($k, $v) = each %{"${pkg}::"}) {
+		next if $k =~ /::/ or $k eq '_temp'; # sub-modules
+		*_temp = $v;
+		next unless defined &_temp;
+		push @methods, $k;
+	}
+	return @methods;
+}
 
-=cut
+# my @subpkgs = $pkg->subPackages;
+#
+# Find 'sub-packages' of this package. Eg: Foo->subPackages could include
+# Foo::Bar and Foo::Iggy::Blah. Each sub-package is require'd, and returned
+# as a string.
+sub subPackages {
+	my $pkg = shift;
+	(my $pkgdir = $pkg) =~ s,::,/,g;
+	
+	my %found;
+	my @found; # keep ordered
+	for my $dir (@INC) {
+		my $subdir = catdir($dir, $pkgdir);
+		next unless -d $subdir;
+		
+		find({
+			follow => 1, no_chdir => 1,
+			wanted => sub {
+				return unless /\.pm$/;
+				
+				my $subpkg = abs2rel($File::Find::name, $dir);
+				$subpkg =~ s,/,::,g;
+				$subpkg =~ s,\.pm$,,;
+				return if $found{$subpkg}++;
+				
+				eval "require $subpkg";
+				push @found, $subpkg;
+			}
+		}, $subdir);
+	}
+	
+	return @found;
+}
+
+
+# $pkg->fields(qw(title @authors %editions));
+# 
+# Setup fields for a class
+sub fields {
+	my ($pkg, @fields) = @_;
+	
+	for my $field (@fields) {
+		my $sub = sub { $#_ ? ($_[0]->{$field} = $_[1])
+				: $_[0]->{$field} };
+		no strict 'refs';
+		*{"${pkg}::$field"} = $sub;
+		*{"${pkg}::_accessor_$field"} = $sub;
+	}
+}	
 
 1;

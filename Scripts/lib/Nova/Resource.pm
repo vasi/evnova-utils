@@ -5,7 +5,9 @@ use strict;
 use warnings;
 
 use base 'Nova::Base';
-use Nova::Util qw(deaccent methods);
+Nova::Resource->fields(qw(collection));
+
+use Nova::Util qw(deaccent);
 use utf8;
 
 =head1 NAME
@@ -14,7 +16,7 @@ Nova::Resource - a resource from a Nova data file
 
 =head1 SYNOPSIS
 
-  my $resource = Nova::Resource->new(@fields);
+  my $resource = Nova::Resource->new($fieldNames, \$fieldsHash, $collection);
   print $resource->dump;
   
   my $value = $resource->field("Flags");
@@ -27,15 +29,15 @@ Nova::Resource - a resource from a Nova data file
 
 our %REGISTERED;
 
-sub _init {
-	my ($self, $fields, $headers, $collection, $realType) = @_;
-	$self->{headers} = $headers;
-	$self->{collection} = $collection;
-	$self->{fields} = {
-		map { lc $headers->[$_] => $fields->[$_] } (0..$#$fields)
-	};
-	$self->{type} = $self->{fields}{type}->value;
-	$self->{realType} = $realType;
+# my $resource = Nova::Resource->new($fieldNames, $\fieldsHash, $collection);
+#
+# $fieldsHash points to the cache entry
+# $collection is the Resources object, for referral to other resources
+sub init {
+	my ($self, $fieldNames, $fields, $collection) = @_;
+	$self->{fieldNames} = $fieldNames;
+	$self->collection($collection);
+	$self->{fields} = $fields;
 	
 	# Rebless, if necessary
 	if (exists $REGISTERED{$self->type}) {
@@ -54,66 +56,56 @@ sub register {
 # if none are specified).
 sub show {
 	my ($self, @fields) = @_;
-	@fields = $self->headers unless @fields;
+	@fields = $self->fields unless @fields;
 	
 	my $dump = '';
 	for my $field (@fields) {
-		die "No such field $field\n" unless exists $self->{fields}{lc $field};
-		$dump .= sprintf "%s: %s\n", $field, $self->{fields}{lc $field}->show;
+		$dump .= sprintf "%s: %s\n", $field, $self->_raw_field($field)->show;
 	}
 	return $dump;
 }
 
-# Dump a line in ConText format
-sub dump {
-	my ($self) = @_;
+# Get/set the raw Resource::Value of a field
+sub _raw_field {
+	my ($self, $field, $val) = @_;
+	my $lc = lc $field;
 	
-	my @fields;
-	for my $field ($self->headers) {
-		my $field = lc $field;
-		if ($field eq 'type') {
-			push @fields, $self->{realType};
-		} else {
-			push @fields, $self->{fields}{$field}->dump;
-		}
+	# Gotta be careful, with the damn hash pointer
+	die "No such field $field\n" unless exists ${$self->{fields}}->{$lc};
+	if (defined $val) {
+		my $valobj = {$self->{fields}}->{$lc};
+		$valobj = $valobj->new($val);	# keep the same type
+		
+		# update so that MLDBM notices
+		my %fields = %${$self->{fields}};
+		%fields{$lc} = $valobj;
+		${$self->{fields}} = { %fields };
 	}
-	push @fields, '"â€¢"';
-	return join("\t", @fields);
-}
-
-# The un-accented type of this resource
-sub type { $_[0]->{type} }
-
-# Get the raw value of a field
-sub _raw {
-	my ($self, $field) = @_;
-	$field = lc $field;
-	die "No such field $field\n" unless exists $self->{fields}{$field};
-	return $self->{fields}{$field}->value;
-}
-
-# Get the collection
-sub collection {
-	my ($self) = @_;
-	return $self->{collection};
+	return ${$self->{fields}}->{$field};
 }
 
 # Eliminate warning on DESTROY
 sub DESTROY { }
 
+# $self->_caseInsensitiveMethod($subname);
+#
+# Find a method in the inheritance tree which equals the given name when
+# case is ignored.
 sub _caseInsensitiveMethod {
 	my ($pkg, $sub) = @_;
 	$pkg = ref $pkg || $pkg;
 	
+	# Save the methods for each package we look at
 	no strict 'refs';
 	my $subs = \${"${pkg}::_SUBS"};
 	unless (defined $$subs) {
-		$$subs->{lc $_} = \&{"${pkg}::$_"} for methods($pkg);
+		$$subs->{lc $_} = \&{"${pkg}::$_"} for $pkg->methods;
 	}
 	if (exists $$subs->{lc $sub}) {
 		return $$subs->{lc $sub};
 	}
 	
+	# Try going up in the inheritance tree
 	for my $base (@{"${pkg}::ISA"}) {
 		if ($base->can('_caseInsensitiveMethod')) {
 			return $base->_caseInsensitiveMethod($sub);
@@ -133,22 +125,17 @@ sub AUTOLOAD {
 		$code->($self, @args);
 	} else {
 		# Otherwise, get the field with that name
-		return $self->_raw($sub);
+		return $self->_raw_field($sub, @args)->value;
 	}
 }
 
-# Get the headers (field names)
-sub headers {
+# Get the field names
+sub fields {
 	my ($self) = @_;
-	return @{$self->{headers}};
+	return @{$self->{fieldNames}};
 }
 
-# Get a single field
-sub field {
-	my ($self, $field) = @_;
-	$self->$field();
-}
-
+# Get a full name, suitable for printing
 sub fullName {
 	my ($self) = @_;
 	return $self->name;
@@ -157,8 +144,9 @@ sub fullName {
 
 package Nova::Resource::Ship;
 use base 'Nova::Resource';
-Nova::Resource->register(__PACKAGE__, 'ship');
+Nova::Resource->register(__PACKAGE__, 'sh•p');
 
+# Add the subtitle to the full name, if it seems like a good idea
 sub fullName {
 	my ($self) = @_;
 	my $name = $self->SUPER::fullName;

@@ -14,7 +14,6 @@ Nova::Resource::Spec::Govt - A specification for a govt
 
 =cut
 
-
 sub init {
 	my ($self, @args) = @_;
 	$self->SUPER::init(@args);
@@ -37,7 +36,7 @@ sub init {
 	bless $self, $REGISTERED{$self->type};
 }
 
-sub descFormat { "govt %s" }
+sub descFormat { $TYPES{$_[0]->type}[0] };
 
 sub desc {
 	my ($self) = @_;
@@ -45,32 +44,17 @@ sub desc {
 	return sprintf $self->descFormat, $g;
 }
 
+sub govts {
+	my ($self) = @_;
+	my $meth = $TYPES{$self->type}[1];
+	return $self->govt->$meth;
+}
 
-package Nova::Resource::Spec::Govt::Ally;
-use base qw(Nova::Resource::Spec::Govt);
-__PACKAGE__->register(15);
-sub descFormat { "ally of govt %s" }
-
-package Nova::Resource::Spec::Govt::Not;
-use base qw(Nova::Resource::Spec::Govt);
-__PACKAGE__->register(20);
-sub descFormat { "any govt but %s" }
-
-package Nova::Resource::Spec::Govt::Enemy;
-use base qw(Nova::Resource::Spec::Govt);
-__PACKAGE__->register(25);
-sub descFormat { "enemy of govt %s" }
-
-package Nova::Resource::Spec::Govt::Class;
-use base qw(Nova::Resource::Spec::Govt);
-__PACKAGE__->register(30);
-sub descFormat { "class-mate of govt %s" }
-
-package Nova::Resource::Spec::Govt::NotClass;
-use base qw(Nova::Resource::Spec::Govt);
-__PACKAGE__->register(31);
-sub descFormat { "non-class-mate of govt %s" }
-
-
-
-1;
+our %TYPES = (
+	0	=> [ 'govt %s',						'self'			],
+	15	=> [ 'ally of govt %s',				'allies'		],
+	20	=> [ 'any govt but %s',				'others'		],
+	25	=> [ 'enemy of govt %s',			'enemies'		],
+	30	=> [ 'class-mate of govt %s',		'classMates'	],
+	31	=> [ 'non-class-mate of govt %s',	'nonClassMates' ],
+);

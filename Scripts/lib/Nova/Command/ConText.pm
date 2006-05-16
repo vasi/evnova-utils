@@ -94,6 +94,12 @@ command {
 	);
 } rank => 'rank resources by a property';
 
+command {
+	my ($self) = @_;
+	my $g = $self->resources->find(govt => 'dani');
+	my @enemies = $g->enemies;
+	print $_->name, "\n" for @enemies;
+} misc => 'test';
 
 #command {
 

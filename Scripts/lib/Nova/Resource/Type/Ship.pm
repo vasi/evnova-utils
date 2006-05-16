@@ -6,6 +6,9 @@ use warnings;
 use base 'Nova::Resource';
 __PACKAGE__->register('ship');
 
+use Nova::Util qw(columns);
+use List::Util qw(sum);
+
 # Add the subtitle to the full name, if it seems like a good idea
 sub fullName {
 	my ($self) = @_;
@@ -46,43 +49,60 @@ sub outfits {
 	return @ret;
 }
 
+# Subs for massing
+sub _massAddItem {
+	my ($self, $data, $count, $mass, $type, $item) = @_;
+	my $add = $count * $mass;
+	push @{$data->{parts}},
+		[ $add, '=', $count, 'x', $mass, $type, $item->ID, ':', $item->name ];
+	$data->{mass} += $add;
+}
+
+sub _massPush {
+	my ($self, $data, $mass, $name) = @_;
+	push @{$data->{parts}},	[ $mass, ('') x 4, $name, ('') x 10 ]; # High enough
+}
+
+sub _massInit {
+	my ($self) = @_;
+	my $mass = $self->freeMass;
+	my $data = { mass => $mass, parts => [ ] };
+	# parts are: totMass, '=', count, 'x', massPer, type, ID, ':', name
+	
+	$self->_massPush($data, $mass, 'free');
+	return $data;
+}
+
+sub _massFinish {
+	my ($self, $data, $print) = @_;
+	my $total = sum map { $_->[0] } @{$data->{parts}};
+	$self->_massPush($data, $total, 'TOTAL');
+	columns("%d %s  %s %s  %s - %-s %s%s %-s", $data->{parts}, sub { @$_ },
+		total => 1) if $print;
+	return $total;
+}
+
 # Get the total mass of a ship
 sub mass {
 	my ($self, $verb) = @_;
 	$verb = 0 unless defined $verb;
 	
 	printf "Massing ship %4d: %s\n", $self->ID, $self->fullName if $verb >= 2;
-	
-	my $mass = $self->freeMass;
-	printf "  %3d              - free\n", $mass if $verb;
+	my $mass = $self->_massInit;
 	
 	for my $w ($self->weapons) {
-		my $weap = $w->{weap};
-		my $wMass = $weap->mass($verb >= 2);
-		my $add = $w->{count} * $wMass;
-		$mass += $add;
-		printf "  %3d = %4d x %3d - weapon %s\n", $add, $w->{count},
-			$wMass, $weap->uniqName if $verb;
-		
+		$self->_massAddItem($mass, $w->{count}, $w->{weap}->mass($verb >= 2),
+			weapon => $w->{weap});
 		next unless $w->{ammo};
-		my $aMass = $weap->ammoMass($verb >= 2);
-		$add = $w->{ammo} * $aMass;
-		printf "  %3d = %4d x %3d - ammo   %s\n", $add, $w->{ammo},
-			$aMass, $weap->uniqName if $verb;
-	}
-	
+		$self->_massAddItem($mass, $w->{ammo}, $w->{weap}->ammoMass($verb >= 2),
+			ammo => $w->{weap});
+	}	
 	for my $o ($self->outfits) {
-		my $outf = $o->{outf};
-		my $add = $o->{count} * $outf->mass;
-		printf "  %3d = %4d x %3d - outfit %s\n", $add, $o->{count},
-			$outf->mass, $outf->uniqName if $verb;
+		$self->_massAddItem($mass, $o->{count}, $o->{outf}->mass,
+			outfit => $o->{outf});
 	}
 	
-	if ($verb) {
-		print "  ", "-" x 50, "\n";
-		printf "  %3d              - TOTAL\n", $mass;
-	}
-	return $mass;
+	return $self->_massFinish($mass, $verb);
 }
 
 1;

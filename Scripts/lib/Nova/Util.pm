@@ -7,8 +7,9 @@ use warnings;
 use base qw(Exporter);
 
 use utf8;
+use List::Util qw(max);
 
-our @EXPORT_OK = qw(deaccent commaNum termWidth);
+our @EXPORT_OK = qw(deaccent commaNum termWidth columns);
 
 =head1 NAME
 
@@ -43,8 +44,46 @@ sub commaNum {
 sub termWidth {
 	if (eval { require Fink::CLI }) {
 		return Fink::CLI::get_term_width();
+	} elsif (exists $ENV{COLUMNS}) {
+		return $ENV{COLUMNS};
 	} else {
 		return 80;
+	}
+}
+
+# columns($fmt, \@list, $colGen, %opts);
+#
+# Print something in columns.
+# Opts include:
+#	rank:	field to rank by
+#	total:	last field is a total
+sub columns {
+	my ($fmt, $list, $colGen, %opts) = @_;
+	
+	my @data = map { {
+		cols => [ $colGen->($_) ],
+		($opts{rank} ? (rank => $opts{rank}->($_)) : ()),
+	} } @$list;
+	@data = sort { $b->{rank} <=> $a->{rank} } @data if $opts{rank};
+	
+	my $col = 0;
+	my $newfmt = '';
+	while ($fmt =~ /%[^%]/) {
+		my $max = max map { length($_->{cols}[$col]) } @data;
+		$fmt =~ s/^(.*?%[^%\w]?)([\w\.])//;
+		$newfmt .= "$1$max$2";
+		++$col;
+	}
+	$newfmt .= $fmt;
+	
+	my $width = termWidth;
+	for my $i (0..$#data) {
+		my @cols = @{$data[$i]->{cols}};
+		my $line = sprintf $newfmt, @cols;
+		$width = length($line);
+		
+		print '-' x $width, "\n" if $i == $#data && $opts{total};
+		printf "$line\n";
 	}
 }
 

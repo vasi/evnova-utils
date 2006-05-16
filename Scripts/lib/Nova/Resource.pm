@@ -231,13 +231,6 @@ sub rankInfo {
 	return $self->formatCost;
 }
 
-# Get the ID and name
-sub uniqName {
-	my ($self) = @_;
-	return sprintf "%5d: %s", $self->ID, $self->fullName;
-}
-
-
 
 # Load the subpackages
 package Nova::Resource::Type;

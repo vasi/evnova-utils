@@ -6,19 +6,13 @@ use warnings;
 use base 'Nova::Resource';
 __PACKAGE__->register('weap');
 
-use Storable;
-
 use Nova::Resource::Type::Outf;
 use Nova::Cache;
 
 # Weapons to outfits cache
 sub _w2o {
-	my ($self) = @_;
-	return $self->collection->{_w2o} if exists $self->collection->{_w2o};
-	
-	my $file = Nova::Cache->storableCache($self->source, 'w2o');
-	my $cache = eval { retrieve $file };
-	unless (defined $cache) {
+	$_[0]->precalc(w2o => sub {
+		my ($self, $cache) = @_;
 		for my $outf (reverse $self->collection->type('outf')) {
 			my $mass = $outf->mass;
 			for my $mod ($outf->mods) {
@@ -30,9 +24,7 @@ sub _w2o {
 				}
 			}
 		}
-		store $cache, $file;
-	}
-	return ($self->collection->{_w2o} = $cache);
+	});
 }
 
 # What weapon does the ammo come from?

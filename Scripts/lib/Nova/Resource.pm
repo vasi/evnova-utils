@@ -8,6 +8,8 @@ use base 'Nova::Base';
 __PACKAGE__->fields(qw(collection readOnly));
 
 use Nova::Util qw(deaccent commaNum);
+
+use Storable;
 use Carp;
 
 =head1 NAME
@@ -231,6 +233,27 @@ sub rankInfo {
 	return $self->formatCost;
 }
 
+# Pre-calculated value
+sub precalc {
+	my ($self, $name, $code) = @_;
+	return $self->collection->store($name) if $self->collection->store($name);
+	
+	my $file = Nova::Cache->storableCache($self->source, $name);
+	my $cache = eval { retrieve $file };
+	unless (defined $cache) {
+		$cache = { };
+		$code->($self, $cache);
+		store $cache, $file;
+	}
+	return $self->collection->store($name => $cache);
+}
+
+sub govtObj {
+	my ($self) = @_;
+	require Nova::Resource::Type::Govt;
+	return Nova::Resource::Type::Govt->fromCollection($self->collection,
+		$self->govt);
+}
 
 # Load the subpackages
 package Nova::Resource::Type;

@@ -61,7 +61,9 @@ command {
 
 command {
 	my ($self, $type, @specs) = @_;
-	print $self->resources->find($type => @specs)->show($self->config->verbose);
+	my @res = $self->resources->find($type => @specs);
+	my $verb = $self->config->verbose;
+	print join "\n" x ($verb + 1), map { $_->show($verb) } @res;
 } show => 'display a resource nicely';
 
 command {
@@ -91,5 +93,8 @@ command {
 		rank => sub { $_->$prop }
 	);
 } rank => 'rank resources by a property';
+
+
+#command {
 
 1;

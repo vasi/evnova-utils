@@ -231,4 +231,11 @@ sub find {
 	return wantarray ? @found : $found[0];
 }
 
+# Store an arbitrary value to a key
+sub store {
+	my ($self, $key, $val) = @_;
+	$self->{store}{$key} = $val if defined $val;
+	return $self->{store}{$key};
+}
+
 1;

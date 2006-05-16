@@ -203,16 +203,30 @@ sub types {
 	return @types;
 }
 
+# Return IDs for one spec
+sub _findOne {
+	my ($self, $type, $spec) = @_;
+	
+	if ($spec =~ /^[\d,-]+$/) {
+		my @specs = split /,/, $spec;
+		return map { /^(\d+)-(\d+)$/ ? ($1..$2) : $_ } @specs;
+	} else {
+		return map { $_->ID }
+			grep { $_->fullName =~ /$spec/i } $self->type($type);
+	}
+}
+
 # Find a resource from a specification
 sub find {
-	my ($self, $type, $spec) = @_;
+	my ($self, $type, @specs) = @_;
 	$type = deaccent($type);
 	
 	my @found;
-	if ($spec =~ /^\d+$/) {
-		@found = ($self->get($type, $spec));
+	if (@specs) {
+		my %ids = map { $_ => 1 } map { $self->_findOne($type, $_) } @specs;
+		@found = map { $self->get($type => $_) } sort { $a <=> $b } keys %ids;
 	} else {
-		@found = grep { $_->fullName =~ /$spec/i } $self->type($type);
+		@found = $self->type($type);
 	}
 	return wantarray ? @found : $found[0];
 }

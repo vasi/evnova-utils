@@ -72,7 +72,7 @@ sub dump {
 # Pretty human-readable representation of this resource
 sub show {
 	my ($self, $verb) = @_;
-	$self->dump;
+	$self->dump();
 }
 
 # Get/set the raw Resource::Value of a field

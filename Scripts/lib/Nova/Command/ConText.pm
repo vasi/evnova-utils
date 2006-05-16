@@ -56,13 +56,13 @@ command {
 } reload => 'reload the ConText';
 
 command {
-	my ($self, $type, $id, @fields) = @_;
-	print $self->resources->find($type => $id)->dump(@fields);
+	my ($self, $type, $spec, @fields) = @_;
+	print $self->resources->find($type => $spec)->dump(@fields);
 } 'dump' => 'dump a resource';
 
 command {
-	my ($self, $type, $id) = @_;
-	print $self->resources->find($type => $id)->show($self->config->verbose);
+	my ($self, $type, @specs) = @_;
+	print $self->resources->find($type => @specs)->show($self->config->verbose);
 } show => 'display a resource nicely';
 
 command {
@@ -72,14 +72,14 @@ command {
 } listAll => 'list all known resources of the given types';
 
 command {
-	my ($self, $type, $find) = @_;
+	my ($self, $type, @specs) = @_;
 	map { printf "%s %s\n", $_->type, $_->uniqName }
-		$self->resources->find($type => $find);
+		$self->resources->find($type => @specs);
 } list => 'list resources matching a specification';
 
 command {
-	my ($self, $find) = @_;
-	my $ship = $self->resources->find(ship => $find);
+	my ($self, @specs) = @_;
+	my $ship = $self->resources->find(ship => @specs);
 	$ship->mass(1);
 } mass => 'show the total mass available on a ship';
 

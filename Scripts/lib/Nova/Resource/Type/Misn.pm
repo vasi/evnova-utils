@@ -9,7 +9,7 @@ __PACKAGE__->register('misn');
 sub show {
 	my ($self, $verb) = @_;
 	
-	
+	return '';
 }
 
 

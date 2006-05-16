@@ -7,25 +7,6 @@ use base 'Nova::Resource';
 __PACKAGE__->register('weap');
 
 use Nova::Resource::Type::Outf;
-use Nova::Cache;
-
-# Weapons to outfits cache
-sub _w2o {
-	$_[0]->precalc(w2o => sub {
-		my ($self, $cache) = @_;
-		for my $outf (reverse $self->collection->type('outf')) {
-			my $mass = $outf->mass;
-			for my $mod ($outf->mods) {
-				my $mv = $mod->{ModVal};
-				if ($mod->{ModType} == MT_WEAPON) {
-					$cache->{$mv}->{weapon} = $mass;
-				} elsif ($mod->{ModType} == MT_AMMO) {
-					$cache->{$mv}->{ammo} = $mass;
-				}
-			}
-		}
-	});
-}
 
 # What weapon does the ammo come from?
 sub ammoSource {
@@ -48,12 +29,15 @@ sub mass {
 	my ($self, $verb) = @_;
 	$verb = 0 unless defined $verb;
 	
-	my $w2o = $self->_w2o;
-	unless (exists $w2o->{$self->ID}->{weapon}) {
-		warn sprintf "No outfit found for weapon ID %d\n", $self->ID if $verb;
-		return 0;
+	for my $outf (reverse $self->collection->type('outf')) {
+		for my $mod ($outf->mods) {
+			next unless $mod->{ModType} == MT_WEAPON;
+			return $outf->mass if $mod->{ModVal} == $self->ID;
+		}
 	}
-	return $w2o->{$self->ID}->{weapon};
+
+	warn sprintf "No outfit found for weapon ID %d\n", $self->ID if $verb;
+	return 0;
 }
 
 # How much mass per ammo?
@@ -64,12 +48,15 @@ sub ammoMass {
 	my $source = $self->ammoSource;
 	return 0 unless defined $source;
 	
-	my $w2o = $self->_w2o;
-	unless (exists $w2o->{$source->ID}->{ammo}) {
-		warn sprintf "No outfit found for ammo ID %d\n", $self->ID if $verb;
-		return 0;
+	for my $outf (reverse $self->collection->type('outf')) {
+		for my $mod ($outf->mods) {
+			next unless $mod->{ModType} == MT_AMMO;
+			return $outf->mass if $mod->{ModVal} == $source->ID;
+		}
 	}
-	return $w2o->{$source->ID}->{ammo};
+
+	warn sprintf "No outfit found for ammo ID %d\n", $self->ID if $verb;
+	return 0;
 }
 
 

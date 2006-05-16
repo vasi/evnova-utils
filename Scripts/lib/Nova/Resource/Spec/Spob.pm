@@ -12,21 +12,14 @@ Nova::Resource::Spec::Spob - A specification for a spob
 
 =cut
 
-our %REGISTERED;
-sub register {
-	my ($class, $type) = @_;
-	$REGISTERED{$type} = $class;
-}
-__PACKAGE__->register(0);
-
-
 sub init {
 	my ($self, @args) = @_;
 	$self->SUPER::init(@args);
 	
-	my $spec = $self->spec;
-	
+	my $spob = $self->collection->get(spob => $self->spec);
+	my $syst = $spob->syst;
+	$self->desc(sprintf "%s (%d) in %s (%d)", $spob->name, $spob->ID,
+		$syst->name, $syst->ID);
 }
-
 
 1;

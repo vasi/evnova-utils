@@ -132,7 +132,6 @@ sub _open_file {
 # Print a line
 sub _writeLine {
 	my ($self, @vals) = @_;
-#$DB::single = 1;
 	my $fh = $self->fh;
 	printf $fh "%s\r", join "\t", map { $_->toConText } @vals;
 }

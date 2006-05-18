@@ -46,22 +46,22 @@ sub init {
 	}
 }
 
-# my @methods = $pkg->methods;
+# my %methods = $pkg->methods;
 #
 # List all the methods/subroutines in a package.
 sub methods {
 	my ($pkg) = @_;
 	$pkg = ref($pkg) || $pkg;
-	my @methods;
+	my %methods;
 	
 	no strict 'refs';
 	while (my ($k, $v) = each %{"${pkg}::"}) {
 		next if $k =~ /::/ or $k eq '_temp'; # sub-modules
 		*_temp = $v;
 		next unless defined &_temp;
-		push @methods, $k;
+		$methods{$k} = \&_temp;
 	}
-	return @methods;
+	return %methods;
 }
 
 # my @subpkgs = $pkg->subPackages;

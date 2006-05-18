@@ -21,9 +21,16 @@ sub init {
 
 sub collection { $_[0]->resource->collection }
 
+
+# Is this spec the default?
+sub default {
+	my ($self) = @_;
+	return $self->spec == -1;
+}
+
 sub dump {
 	my ($self, $verb) = @_;
-	return '' unless $verb || $self->spec != -1;
+	return '' if !$verb && $self->default;
 	return sprintf "%s: %s\n", $self->field, $self->desc;
 }
 

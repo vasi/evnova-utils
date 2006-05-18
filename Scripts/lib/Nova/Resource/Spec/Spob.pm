@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use base qw(Nova::Resource::Spec);
-__PACKAGE__->fields(qw(desc));
 
 use Nova::Resource::Spec::Govt;
 

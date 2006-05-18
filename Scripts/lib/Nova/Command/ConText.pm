@@ -63,7 +63,12 @@ command {
 	my ($self, $type, @specs) = @_;
 	my @res = $self->resources->find($type => @specs);
 	my $verb = $self->config->verbose;
-	print join "\n" x ($verb + 1), map { $_->show($verb) } @res;
+	
+	# Could take a while, so display incrementally
+	for my $i (0..$#res) {
+		print $res[$i]->show($verb);
+		print "\n" x ($verb + 1) if $i != $#res;
+	}
 } show => 'display a resource nicely';
 
 command {

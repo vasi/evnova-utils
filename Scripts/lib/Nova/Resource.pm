@@ -137,25 +137,21 @@ sub _caseInsensitiveMethod {
 
 sub AUTOLOAD {
 	my ($self, @args) = @_;
-	confess "AUTOLOAD has no object!\n" unless ref($self);
-	
 	my $fullsub = our $AUTOLOAD;
 	my ($pkg, $sub) = ($fullsub =~ /(.*)::(.*)/);
 	
-	# If we have a function with the same name (case-insensitive), use it!
+	confess "AUTOLOAD has no object!\n" unless ref($self);
 	my $code = $self->_caseInsensitiveMethod($sub);
-	unless (defined $code) {
-		# Otherwise, create a new sub to get the field with the given name
-		$code = sub {
-			my ($self, @args) = @_;
-			return $self->_raw_field($sub, @args)->value;
-		};
+	if (defined $code) {
+		# Try to call an existing sub with the same name (case-insensitive)
+		$code->($self, @args);
+	} else {
+		# Otherwise, get the field with that name
+		return $self->_raw_field($sub, @args)->value;
 	}
 	
-	# Insert the new method
-	no strict 'refs';
-	*$fullsub = $code;
-	goto &$fullsub;
+	# We can't use the insert-and-goto trick, since it interferes with
+	# overriding methods.
 }
 
 # Get/set a field

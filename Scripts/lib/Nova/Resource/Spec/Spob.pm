@@ -29,18 +29,21 @@ sub desc {
 		} else {
 			return "none";
 		}
-	} elsif ($spec < 5000) {
+	} elsif ($spec >= 128 && $spec < 5000) {
 		my $spob = $self->collection->get(spob => $spec);
 		my $syst = $spob->syst;
 		return sprintf "%s (%d) in %s (%d)", $spob->name, $spob->ID,
 			$syst->name, $syst->ID;
-	} elsif ($spec < 9999) {
+	} elsif ($spec >= 5000 && $spec < 9999) {
 		my $syst = $self->collection->get(syst => $spec - 5000 + 128);
 		return sprintf "stellar in system adjacent to %s (%d)", $syst->Name,
 			$syst->ID;
-	} else {
+	} elsif ($spec >= 10000) {
 		return Nova::Resource::Spec::Govt->new($self->resource, $self->field)
 			->desc;
+	} else {
+		# Damn weirdos
+		return "invalid value";
 	}
 }
 

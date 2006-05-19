@@ -47,35 +47,45 @@ sub show {
 	return $ret;
 }
 
+sub default {
+	my ($self, $field) = @_;
+	my $meth = "default$field";
+	return $self->$meth($field) if $self->can($meth);
+	return '';
+}
+
+sub defaultAvailRecord		{ 0		}
+sub defaultAvailRating		{ 0, -1	}
+sub defaultAvailRandom		{ 100	}
+sub defaultAvailShipType	{ 0, -1	}
+
+sub showStelSpec {
+	return Nova::Resource::Spec::Spob->new(@_[0,1])->dump($_[2] > 2);
+}
+
+sub showText {
+	my ($self, $field, $verb) = @_;
+	my $descid = $self->field($field);
+	if ($descid < 128) {
+		return $verb < 2 ? '' : "$field: $descid\n";
+	}
+	my $desc = $self->collection->get(desc => $descid);
+	my $text = $desc->Description;
+	return "$field: $text\n\n";
+}
+
 sub showField {
 	my ($self, $field, $verb) = @_;
 	my $meth = "show$field";
 	return $self->$meth($field, $verb) if $self->can($meth);
 
 	if ($field =~ /Stel$/) {
-		return Nova::Resource::Spec::Spob->new($self, $field)
-			->dump($verb > 2);
+		$self->showStelSpec($field, $verb);
 	} elsif ($field =~ /(Text|Brief)$/) {
-		my $descid = $self->field($field);
-		if ($descid < 128) {
-			return $verb < 2 ? '' : "$field: $descid\n";
-		}
-		my $desc = $self->collection->get(desc => $descid);
-		my $text = $desc->Description;
-		return "$field: $text\n\n";
+		$self->showText($field, $verb);
 	} else {
-		my %defaults = (
-			AvailRecord		=> 0,
-			AvailRating		=> [0, -1],
-			AvailRandom		=> 100,
-			AvailShipType	=> [0, -1],
-		);
-		my $defaults = [ '' ];
-		$defaults = $defaults{$field} if exists $defaults{$field};
-		$defaults = [ $defaults ] unless ref $defaults;
-		
 		my $val = $self->field($field);
-		return '' if $verb < 2 && grep { $_ eq $val } @$defaults;
+		return '' if $verb < 2 && grep { $_ eq $val } $self->default($field);
 		return "$field: $val\n";
 	}
 }

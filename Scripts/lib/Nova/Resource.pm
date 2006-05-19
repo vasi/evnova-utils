@@ -9,6 +9,7 @@ __PACKAGE__->fields(qw(collection readOnly));
 
 use Nova::Util qw(deaccent commaNum);
 
+use Scalar::Util qw(blessed);
 use Storable;
 use Carp;
 
@@ -77,13 +78,19 @@ sub show {
 	$self->dump();
 }
 
+# Check if we have a field
+sub _has_field {
+	my ($self, $field) = @_;
+	return exists ${$self->{fields}}->{lc $field};
+}
+
 # Get/set the raw Resource::Value of a field
 sub _raw_field {
 	my ($self, $field, $val) = @_;
 	my $lc = lc $field;
 	
 	# Gotta be careful, with the damn hash pointer
-	die "No such field '$field'\n" unless exists ${$self->{fields}}->{$lc};
+	die "No such field '$field'\n" unless $self->_has_field($field);
 	if (defined $val) {
 		die "Read-only!\n" if $self->readOnly;
 		
@@ -135,20 +142,25 @@ sub _caseInsensitiveMethod {
 	return undef;
 }
 
+sub can {
+	my ($self, $meth) = @_;
+	my $code = $self->_caseInsensitiveMethod($meth);
+	return $code if defined $code;
+	
+	# Can't test for field presence without a blessed object!
+	return undef unless blessed $self;
+	return undef unless $self->_has_field($meth);
+	return sub {
+		my ($self, @args) = @_;
+		$self->_raw_field($meth, @args)->value;
+	};
+}
+
 sub AUTOLOAD {
 	my ($self, @args) = @_;
 	my $fullsub = our $AUTOLOAD;
-	my ($pkg, $sub) = ($fullsub =~ /(.*)::(.*)/);
-	
-	confess "AUTOLOAD has no object!\n" unless ref($self);
-	my $code = $self->_caseInsensitiveMethod($sub);
-	if (defined $code) {
-		# Try to call an existing sub with the same name (case-insensitive)
-		$code->($self, @args);
-	} else {
-		# Otherwise, get the field with that name
-		return $self->_raw_field($sub, @args)->value;
-	}
+	my ($pkg, $sub) = ($fullsub =~ /(.*)::(.*)/);	
+	$self->can($sub)->(@_);
 	
 	# We can't use the insert-and-goto trick, since it interferes with
 	# overriding methods.

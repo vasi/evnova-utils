@@ -57,7 +57,7 @@ sub methods {
 	no strict 'refs';
 	while (my ($k, $v) = each %{"${pkg}::"}) {
 		next if $k =~ /::/ or $k eq '_temp'; # sub-modules
-		*_temp = $v;
+		local *_temp = $v;
 		next unless defined &_temp;
 		$methods{$k} = \&_temp;
 	}
@@ -106,18 +106,37 @@ sub subPackages {
 sub fields {
 	my ($pkg, @fields) = @_;
 	
+	local *_alias;
 	for my $field (@fields) {
 		my $sub = sub { $#_ ? ($_[0]->{$field} = $_[1])
 				: $_[0]->{$field} };
 		
 		for my $subname ($field, "_accessor_$field") {
-			my $fullname = "${pkg}::$subname";
-			no strict 'refs';
-			*_temp = *$fullname;
-			next if exists &_temp;
-			*$fullname = $sub;
+			$pkg->makeSub($subname, $sub);
 		}
 	}
-}	
+}
+
+# $pkg->symref($var);
+#
+# Get a symbolic reference
+sub symref {
+	my ($pkg, $var) = @_;
+	$pkg = ref($pkg) || $pkg;
+	my $name = "${pkg}::$var";
+	
+	no strict 'refs'; no warnings 'once';
+	return *$name;
+}
+
+# $pkg->makeSub($name, $code);
+#
+# Insert a subroutine into the symbol table. Will NOT insert the subroutine
+# if over an existing method.
+sub makeSub {
+	my ($pkg, $name, $code) = @_;
+	local *_ref = $pkg->symref($name);
+	*_ref = $code unless exists &_ref;
+}
 
 1;

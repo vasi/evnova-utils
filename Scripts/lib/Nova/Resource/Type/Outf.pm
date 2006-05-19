@@ -20,7 +20,6 @@ sub modTypeName {
 
 
 BEGIN {
-
 	sub modTypes {
 		my ($data) = @_;
 		my @mts = split /\n/, $data;
@@ -34,8 +33,7 @@ BEGIN {
 			$const = "MT_$const";
 			push @EXPORT, $const;
 			
-			no strict 'refs';
-			*{__PACKAGE__ . "::$const"} = sub { $n };
+			__PACKAGE__->makeSub($const, sub { $n });
 		}
 	}
 

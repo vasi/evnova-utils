@@ -101,9 +101,15 @@ command {
 
 command {
 	my ($self) = @_;
-	my $g = $self->resources->find(govt => 'dani');
-	my @enemies = $g->enemies;
-	print $_->name, "\n" for @enemies;
+	my @fields;
+	
+	for my $type ($self->resources->types) {
+		my @rs = $self->resources->type($type);
+		next unless @rs;
+		push @fields, $rs[0]->fieldNames;
+	}
+	@fields = sort @fields;
+	print "$_\n" for @fields;
 } misc => 'test';
 
 #command {

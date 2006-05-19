@@ -21,9 +21,8 @@ sub fullName {
 
 sub show {
 	my ($self, $verb) = @_;
-	my $ret = '';
+	my $ret = $self->SUPER::show($verb);
 	
-	$ret .= sprintf "%s (%d)\n", $self->fullName, $self->ID;
 	$ret .= $self->showField($_, $verb) for qw(
 		AvailStel AvailLoc AvailRecord AvailRating AvailRandom
 		AvailShipType AvailBits OnSuccess
@@ -47,17 +46,25 @@ sub show {
 	return $ret;
 }
 
-sub default {
-	my ($self, $field) = @_;
-	my $meth = "default$field";
-	return $self->$meth($field) if $self->can($meth);
-	return '';
+sub showFieldByName {
+	my ($self, $field, $verb) = @_;
+	if ($field =~ /(Text|Brief)$/) {
+		return $self->showText($field, $verb);
+	} elsif ($field =~ /Stel$/) {
+		return $self->showStelSpec($field, $verb);
+	} else {
+		return $self->SUPER::showFieldByName($field, $verb);
+	}
 }
 
-sub defaultAvailRecord		{ 0		}
-sub defaultAvailRating		{ 0, -1	}
-sub defaultAvailRandom		{ 100	}
-sub defaultAvailShipType	{ 0, -1	}
+sub fieldDefaults {
+	return (
+		AvailRecord		=> 0,
+		AvailRating		=> [ 0, -1 ],
+		AvailRandom		=> 100,
+		AvailShipType	=> [ 0, -1 ],
+	);
+}
 
 sub showStelSpec {
 	return Nova::Resource::Spec::Spob->new(@_[0,1])->dump($_[2] > 2);
@@ -72,22 +79,6 @@ sub showText {
 	my $desc = $self->collection->get(desc => $descid);
 	my $text = $desc->Description;
 	return "$field: $text\n\n";
-}
-
-sub showField {
-	my ($self, $field, $verb) = @_;
-	my $meth = "show$field";
-	return $self->$meth($field, $verb) if $self->can($meth);
-
-	if ($field =~ /Stel$/) {
-		$self->showStelSpec($field, $verb);
-	} elsif ($field =~ /(Text|Brief)$/) {
-		$self->showText($field, $verb);
-	} else {
-		my $val = $self->field($field);
-		return '' if $verb < 2 && grep { $_ eq $val } $self->default($field);
-		return "$field: $val\n";
-	}
 }
 
 # Fake field

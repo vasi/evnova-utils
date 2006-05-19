@@ -72,12 +72,6 @@ sub dump {
 	return $dump;
 }
 
-# Pretty human-readable representation of this resource
-sub show {
-	my ($self, $verb) = @_;
-	$self->dump();
-}
-
 # Check if we have a field
 sub _has_field {
 	my ($self, $field) = @_;
@@ -120,11 +114,9 @@ sub DESTROY { }
 # case is ignored.
 sub _caseInsensitiveMethod {
 	my ($pkg, $sub) = @_;
-	$pkg = ref($pkg) || $pkg;
 	
 	# Save the methods for each package we look at
-	no strict 'refs';
-	my $subs = \${"${pkg}::_SUBS"};
+	my $subs = $pkg->symref('_CASE_INSENSITIVE_SUBS');
 	unless (defined $$subs) {
 		my %methods = $pkg->methods;
 		$$subs->{lc $_} = $methods{$_} for keys %methods;
@@ -134,7 +126,7 @@ sub _caseInsensitiveMethod {
 	}
 	
 	# Try going up in the inheritance tree
-	for my $base (@{"${pkg}::ISA"}) {
+	for my $base (@{$pkg->symref('ISA')}) {
 		if ($base->can('_caseInsensitiveMethod')) {
 			return $base->_caseInsensitiveMethod($sub);
 		}
@@ -159,8 +151,10 @@ sub can {
 sub AUTOLOAD {
 	my ($self, @args) = @_;
 	my $fullsub = our $AUTOLOAD;
-	my ($pkg, $sub) = ($fullsub =~ /(.*)::(.*)/);	
-	$self->can($sub)->(@_);
+	my ($pkg, $sub) = ($fullsub =~ /(.*)::(.*)/);
+	my $code = $self->can($sub);
+	die "No such method '$sub'\n" unless defined $code;
+	goto &$code;
 	
 	# We can't use the insert-and-goto trick, since it interferes with
 	# overriding methods.
@@ -249,7 +243,7 @@ sub rankInfo {
 	return $self->formatCost;
 }
 
-# Pre-calculated value
+# Wrapper for methods using precalculation optimization
 sub precalc {
 	my ($self, $name, $code) = @_;
 	return $self->collection->store($name) if $self->collection->store($name);
@@ -264,11 +258,69 @@ sub precalc {
 	return $self->collection->store($name => $cache);
 }
 
+# The object representing the govt (if applicable)
 sub govtObj {
 	my ($self) = @_;
 	require Nova::Resource::Type::Govt;
 	return Nova::Resource::Type::Govt->fromCollection($self->collection,
 		$self->govt);
+}
+
+# Show this object
+sub show {
+	my ($self, $verb) = @_;
+	return sprintf "%s (%d)\n", $self->fullName, $self->ID;
+	# Override in subclasses
+}
+
+# Show a single field
+sub showField {
+	my ($self, $field, $verb) = @_;
+	
+	# Try by special function
+	my $meth = "show$field";
+	return $self->$meth($field, $verb) if $self->can($meth);
+	
+	# Try by name
+	my $ret = $self->showFieldByName($field, $verb);
+	return $ret if defined $ret;
+	
+	# Default display
+	my $val = $self->field($field);
+	return '' if $verb < 2 && exists $self->fieldDefault($field)->{$val};
+	return "$field: $val\n";
+}
+
+# Try to show a field by name. Return undef if cant.
+sub showFieldByName {
+	my ($self, $field, $verb) = @_;
+	return undef;
+	# Override in subclasses
+}
+
+# Get the default values for a field. Returned as a hash-ref, where keys
+# exist for only the defaults values.
+sub fieldDefault {
+	my ($self, $field) = @_;	
+	
+	my $defaults = $self->symref('_DEFAULT_FIELDS');
+	unless (defined $$defaults) {
+		my %hash = $self->fieldDefaults;
+		while (my ($k, $v) = each %hash) {
+			my @d = ref($v) ? @$v : ($v);
+			$$defaults->{lc $k}{$_} = $1 for @d;
+		}
+	}
+	
+	return { '' => 1 } unless exists $$defaults->{lc $field};
+	return $$defaults->{lc $field}
+}
+
+# Get the defaults for all relevant fields
+sub fieldDefaults {
+	my ($self) = @_;
+	return ();
+	# Override in subclasses
 }
 
 # Load the subpackages

@@ -32,7 +32,7 @@ __PACKAGE__->fields(qw(resources));
 use Nova::ConText;
 use Nova::Command qw(command);
 
-use Nova::Util qw(columns);
+use Nova::Util qw(columns prettyPrint);
 
 # Load the current context file
 sub _loadContext {
@@ -66,7 +66,7 @@ command {
 	
 	# Could take a while, so display incrementally
 	for my $i (0..$#res) {
-		print $res[$i]->show($verb);
+		prettyPrint $res[$i]->show($verb);
 		print "\n" x ($verb + 1) if $i != $#res;
 	}
 } show => 'display a resource nicely';

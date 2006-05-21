@@ -53,10 +53,10 @@ sub init {
 	return $self;
 }
 
-# Register a package to handle some types
+# Register a package to handle some type
 sub register {
-	my ($pkg, @types) = @_;
-	$REGISTERED{$_} = $pkg for @types;
+	my ($pkg, $type) = @_;
+	$REGISTERED{deaccent($type)} = $pkg;
 }
 
 # Textual representation of the given fields of this resource (or all fields,
@@ -269,7 +269,7 @@ sub govtObj {
 # Show this object
 sub show {
 	my ($self, $verb) = @_;
-	return sprintf "%s (%d)\n", $self->fullName, $self->ID;
+	return sprintf "%d: %s\n", $self->ID, $self->fullName;
 	# Override in subclasses
 }
 
@@ -294,7 +294,12 @@ sub showField {
 # Try to show a field by name. Return undef if cant.
 sub showFieldByName {
 	my ($self, $field, $verb) = @_;
-	return undef;
+	
+	if ($field =~ /^Flags/) {
+		return $self->showFlagsField($field, $verb);
+	} else {
+		return undef;
+	}
 	# Override in subclasses
 }
 
@@ -321,6 +326,58 @@ sub fieldDefaults {
 	my ($self) = @_;
 	return ();
 	# Override in subclasses
+}
+
+# Show a flags field
+sub showFlagsField {
+	my ($self, $field, $verb) = @_;
+	my @on = $self->flagsOn($field);
+	
+	if ($verb > 2) {
+		return "$field: none\n" unless @on;
+		return "$field:\n" . join '', map { "  $_\n" } @on;
+	} elsif (@on) {
+		return "$field: " . join(', ', @on) . "\n";
+	} else {
+		return '';
+	}
+}
+
+# Register some new flags
+sub flagInfo {
+	my $pkg = shift;
+	my $field = shift;
+	my @flags = @_;
+	my $bit = 0;
+	
+	my @texts;
+	while (@flags) {
+		(my ($funcName, $text), @flags) = @flags;
+		push @texts, $text;
+		
+		my $mask = 1 << $bit++;
+		$pkg->makeSub($funcName => sub { $_[0]->$field & $mask });
+	}
+	$pkg->symref('FLAG_FIELDS')->{lc $field} = \@texts;
+}
+
+# Get the names of the flags that are on
+sub flagsOn {
+	my ($self, $field) = @_;
+	my $val = $self->$field;
+	
+	my $pkg = ref($self) || $self;
+	my $flagFields = $pkg->symref('FLAG_FIELDS');
+	die "No such field '$field'\n" unless exists $flagFields->{lc $field};
+	my $flags = $flagFields->{lc $field};
+	
+	my @on;
+	for my $i (0..$#$flags) {
+		my $mask = 1 << $i;
+		next unless $val & $mask;
+		push @on, $flags->[$i];
+	}
+	return @on;
 }
 
 # Load the subpackages

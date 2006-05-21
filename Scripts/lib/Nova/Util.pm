@@ -8,8 +8,9 @@ use base qw(Exporter);
 
 use utf8;
 use List::Util qw(max);
+use Text::Wrap qw();
 
-our @EXPORT_OK = qw(deaccent commaNum termWidth columns);
+our @EXPORT_OK = qw(deaccent commaNum termWidth columns wrap prettyPrint);
 
 =head1 NAME
 
@@ -85,6 +86,24 @@ sub columns {
 		print '-' x $width, "\n" if $i == $#data && $opts{total};
 		printf "$line\n";
 	}
+}
+
+# wrap($text, $first, $rest);
+# 
+# Wrap a line of text.
+sub wrap {
+	my ($text, $first, $rest) = @_;
+	$first = '' unless defined $first;
+	$rest = '' unless defined $rest;
+	local $Text::Wrap::columns = termWidth;	return Text::Wrap::wrap($first, $rest, $text);
+}
+
+# prettyPrint($text);
+#
+# Print some text nicely
+sub prettyPrint {
+	my ($text) = @_;
+	print wrap($text);
 }
 
 1;

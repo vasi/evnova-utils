@@ -7,7 +7,7 @@ use warnings;
 use base 'Nova::Base';
 __PACKAGE__->fields(qw(collection readOnly));
 
-use Nova::Util qw(deaccent commaNum);
+use Nova::Util qw(deaccent);
 
 use Scalar::Util qw(blessed);
 use Storable;
@@ -72,19 +72,13 @@ sub dump {
 	return $dump;
 }
 
-# Check if we have a field
-sub _has_field {
-	my ($self, $field) = @_;
-	return exists ${$self->{fields}}->{lc $field};
-}
-
 # Get/set the raw Resource::Value of a field
 sub _raw_field {
 	my ($self, $field, $val) = @_;
 	my $lc = lc $field;
 	
 	# Gotta be careful, with the damn hash pointer
-	die "No such field '$field'\n" unless $self->_has_field($field);
+	die "No such field '$field'\n" unless $self->hasField($field);
 	if (defined $val) {
 		die "Read-only!\n" if $self->readOnly;
 		
@@ -141,7 +135,7 @@ sub can {
 	
 	# Can't test for field presence without a blessed object!
 	return undef unless blessed $self;
-	return undef unless $self->_has_field($meth);
+	return undef unless $self->hasField($meth);
 	return sub {
 		my ($self, @args) = @_;
 		$self->_raw_field($meth, @args)->value;
@@ -178,12 +172,6 @@ sub fieldHash {
 	return %${$self->{fields}};
 }
 
-# Get a full name, suitable for printing
-sub fullName {
-	my ($self) = @_;
-	return $self->name;
-}
-
 # The source file for this resource and friends
 sub source { $_[0]->collection->source }
 
@@ -216,15 +204,6 @@ sub multiObjs {
 	return @ret;
 }
 
-# Get info that is appropriate to display when ranking this object on the
-# given field.
-sub rankInfo {
-	my ($self, $rankField) = @_;
-	return '' unless $self->hasField('cost');
-	return '' if lc $rankField eq 'cost';
-	return $self->formatCost;
-}
-
 # Wrapper for methods using precalculation optimization
 sub precalc {
 	my ($self, $name, $code) = @_;
@@ -238,79 +217,6 @@ sub precalc {
 		store $cache, $file;
 	}
 	return $self->collection->store($name => $cache);
-}
-
-# The object representing the govt (if applicable)
-sub govtObj {
-	my ($self) = @_;
-	require Nova::Resource::Type::Govt;
-	return Nova::Resource::Type::Govt->fromCollection($self->collection,
-		$self->govt);
-}
-
-# Show this object
-sub show {
-	my ($self, $verb) = @_;
-	return sprintf "%d: %s\n", $self->ID, $self->fullName;
-	# Override in subclasses
-}
-
-# Format the contents of field
-sub format {
-	my ($self, $field, $verb) = @_;
-	
-	# Try by special function
-	my $meth = "format$field";
-	return $self->$meth($field, $verb) if $self->can($meth);
-	
-	# Try by name
-	my $ret = $self->formatByName($field, $verb);
-	return $ret if defined $ret;
-	
-	# Default display
-	my $val = $self->fieldDefined($field);
-	return defined $val ? $val : '';
-}
-
-sub formatCost {
-	my ($self) = @_;
-	return commaNum($self->cost);
-}
-
-
-# Format the name and contents of a field
-sub showField {
-	my ($self, $field, $verb) = @_;
-	
-	# Try by special function
-	my $meth = "show$field";
-	return $self->$meth($field, $verb) if $self->can($meth);
-	
-	# Try by name
-	my $ret = $self->showByName($field, $verb);
-	return $ret if defined $ret;
-	
-	# Use format instead
-	my $val = $self->format($field, $verb);
-	if ($val eq '' && $verb < 2) {
-		return '';
-	} else {
-		return "$field: $val\n";
-	}
-}
-
-sub showByName { return undef }
-
-# Try to format a field by name. Return undef if cant.
-sub formatByName {
-	my ($self, $field, $verb) = @_;
-	
-	if ($field =~ /^Flags/) {
-		return $self->formatFlagsField($field, $verb);
-	} else {
-		return undef;
-	}
-	# Override in subclasses
 }
 
 # Get the default values for a field. Returned as a hash-ref, where keys
@@ -338,58 +244,6 @@ sub fieldDefaults {
 	# Override in subclasses
 }
 
-# Show a flags field
-sub formatFlagsField {
-	my ($self, $field, $verb) = @_;
-	my @on = $self->flagsOn($field);
-	
-	if ($verb > 2) {
-		return 'none' unless @on;
-		return join '', map { "\n  $_" } @on;
-	} elsif (@on) {
-		return join(', ', @on);
-	} else {
-		return '';
-	}
-}
-
-# Register some new flags
-sub flagInfo {
-	my $pkg = shift;
-	my $field = shift;
-	my @flags = @_;
-	my $bit = 0;
-	
-	my @texts;
-	while (@flags) {
-		(my ($funcName, $text), @flags) = @flags;
-		push @texts, $text;
-		
-		my $mask = 1 << $bit++;
-		$pkg->makeSub($funcName => sub { $_[0]->$field & $mask });
-	}
-	$pkg->symref('FLAG_FIELDS')->{lc $field} = \@texts;
-}
-
-# Get the names of the flags that are on
-sub flagsOn {
-	my ($self, $field) = @_;
-	my $val = $self->$field;
-	
-	my $pkg = ref($self) || $self;
-	my $flagFields = $pkg->symref('FLAG_FIELDS');
-	die "No such field '$field'\n" unless exists $flagFields->{lc $field};
-	my $flags = $flagFields->{lc $field};
-	
-	my @on;
-	for my $i (0..$#$flags) {
-		my $mask = 1 << $i;
-		next unless $val & $mask;
-		push @on, $flags->[$i];
-	}
-	return @on;
-}
-
 # Return the value of a field, or undef if it's the default value
 sub fieldDefined {
 	my ($self, $field) = @_;
@@ -399,9 +253,15 @@ sub fieldDefined {
 	return $val;
 }
 
-# Load the subpackages
+# Load the categories
+package Nova::Resource::Category;
+use base qw(Nova::Base);
+__PACKAGE__->subPackages;
+
+# Load the types
 package Nova::Resource::Type;
 use base qw(Nova::Base);
 __PACKAGE__->subPackages;
+
 
 1;

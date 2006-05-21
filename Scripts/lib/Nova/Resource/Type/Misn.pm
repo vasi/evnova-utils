@@ -46,14 +46,23 @@ sub show {
 	return $ret;
 }
 
-sub showFieldByName {
+sub formatByName {
+	my ($self, $field, $verb) = @_;
+	if ($field =~ /(Text|Brief)$/) {
+		return $self->formatText($field, $verb);
+	} elsif ($field =~ /Stel$/) {
+		return $self->formatStelSpec($field, $verb);
+	} else {
+		return $self->SUPER::formatByName($field, $verb);
+	}
+}
+
+sub showByName {
 	my ($self, $field, $verb) = @_;
 	if ($field =~ /(Text|Brief)$/) {
 		return $self->showText($field, $verb);
-	} elsif ($field =~ /Stel$/) {
-		return $self->showStelSpec($field, $verb);
 	} else {
-		return $self->SUPER::showFieldByName($field, $verb);
+		return $self->SUPER::showByName($field, $verb);
 	}
 }
 
@@ -68,8 +77,8 @@ sub fieldDefaults {
 	);
 }
 
-sub showStelSpec {
-	return Nova::Resource::Spec::Spob->new(@_[0,1])->dump($_[2] > 2);
+sub formatStelSpec {
+	return Nova::Resource::Spec::Spob->new(@_[0,1])->desc;
 }
 
 sub showText {
@@ -86,15 +95,15 @@ sub showText {
 # Fake field
 sub initialText { $_[0]->ID + 4000 - 128 }
 
-sub showShipSyst {
+sub formatShipSyst {
 	my ($self, $field, $verb) = @_;
 	unless (defined ($self->fieldDefined('shipCount'))) {
-		return $verb < 2 ? '' : "$field: none\n";
+		return $verb < 2 ? '' : 'none';
 	}
-	return Nova::Resource::Spec::Syst->new($self, $field)->dump($verb > 2);
+	return Nova::Resource::Spec::Syst->new($self, $field)->desc;;
 }
 
-sub showAvailLoc {
+sub formatAvailLoc {
 	my ($self, $field, $verb) = @_;
 	my $val = $self->field($field);
 	return '' if $verb < 2 && !defined($self->fieldDefined($field));
@@ -102,7 +111,7 @@ sub showAvailLoc {
 	my %locations = (		0 => 'mission computer',	1 => 'bar',
 		2 => 'pers',		3 => 'main spaceport',		4 => 'commodities',
 		5 => 'shipyard',	6 => 'outfitters');
-	return "$field: $locations{$val}\n";
+	return $locations{$val};
 }
 
 1;

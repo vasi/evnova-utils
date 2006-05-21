@@ -28,6 +28,8 @@ sub desc {
 		return "random system";
 	} elsif ($spec == -1) {
 		return "system of AvailStel";
+	} elsif ($spec == 0) {
+		return '';
 	} elsif ($spec >= 128 && $spec < 5000) {
 		my $syst = $self->collection->get(syst => $spec);
 		return sprintf "%s (%d)", $syst->name, $syst->ID;
@@ -35,8 +37,7 @@ sub desc {
 		return Nova::Resource::Spec::Govt->new($self->resource, $self->field)
 			->desc;
 	} else {
-		# Damn weirdos
-		return "invalid value";
+		return 'invalid value';
 	}
 }
 

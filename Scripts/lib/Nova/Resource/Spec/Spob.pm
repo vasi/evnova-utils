@@ -26,7 +26,7 @@ sub desc {
 		if ($self->field eq 'AvailStel') {
 			return "random stellar";
 		} else {
-			return "none";
+			return '';
 		}
 	} elsif ($spec >= 128 && $spec < 5000) {
 		my $spob = $self->collection->get(spob => $spec);
@@ -42,7 +42,7 @@ sub desc {
 			->desc;
 	} else {
 		# Damn weirdos
-		return "invalid value";
+		return 'invalid value';
 	}
 }
 

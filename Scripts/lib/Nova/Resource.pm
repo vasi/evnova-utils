@@ -216,24 +216,6 @@ sub multiObjs {
 	return @ret;
 }
 
-# Pretty print a field for output
-sub format {
-	my ($self, $field) = @_;
-	my $meth = "format$field";
-	my $code = $self->_caseInsensitiveMethod($meth);
-	
-	if (defined $code) {
-		return $code->($self);
-	} else {
-		return $self->field($field);
-	}
-}
-
-sub formatCost {
-	my ($self) = @_;
-	return commaNum($self->cost);
-}
-
 # Get info that is appropriate to display when ranking this object on the
 # given field.
 sub rankInfo {
@@ -273,7 +255,30 @@ sub show {
 	# Override in subclasses
 }
 
-# Show a single field
+# Format the contents of field
+sub format {
+	my ($self, $field, $verb) = @_;
+	
+	# Try by special function
+	my $meth = "format$field";
+	return $self->$meth($field, $verb) if $self->can($meth);
+	
+	# Try by name
+	my $ret = $self->formatByName($field, $verb);
+	return $ret if defined $ret;
+	
+	# Default display
+	my $val = $self->fieldDefined($field);
+	return defined $val ? $val : '';
+}
+
+sub formatCost {
+	my ($self) = @_;
+	return commaNum($self->cost);
+}
+
+
+# Format the name and contents of a field
 sub showField {
 	my ($self, $field, $verb) = @_;
 	
@@ -282,21 +287,26 @@ sub showField {
 	return $self->$meth($field, $verb) if $self->can($meth);
 	
 	# Try by name
-	my $ret = $self->showFieldByName($field, $verb);
+	my $ret = $self->showByName($field, $verb);
 	return $ret if defined $ret;
 	
-	# Default display
-	my $val = $self->field($field);
-	return '' if $verb < 2 && exists $self->fieldDefault($field)->{$val};
-	return "$field: $val\n";
+	# Use format instead
+	my $val = $self->format($field, $verb);
+	if ($val eq '' && $verb < 2) {
+		return '';
+	} else {
+		return "$field: $val\n";
+	}
 }
 
-# Try to show a field by name. Return undef if cant.
-sub showFieldByName {
+sub showByName { return undef }
+
+# Try to format a field by name. Return undef if cant.
+sub formatByName {
 	my ($self, $field, $verb) = @_;
 	
 	if ($field =~ /^Flags/) {
-		return $self->showFlagsField($field, $verb);
+		return $self->formatFlagsField($field, $verb);
 	} else {
 		return undef;
 	}
@@ -329,15 +339,15 @@ sub fieldDefaults {
 }
 
 # Show a flags field
-sub showFlagsField {
+sub formatFlagsField {
 	my ($self, $field, $verb) = @_;
 	my @on = $self->flagsOn($field);
 	
 	if ($verb > 2) {
-		return "$field: none\n" unless @on;
-		return "$field:\n" . join '', map { "  $_\n" } @on;
+		return 'none' unless @on;
+		return join '', map { "\n  $_" } @on;
 	} elsif (@on) {
-		return "$field: " . join(', ', @on) . "\n";
+		return join(', ', @on);
 	} else {
 		return '';
 	}

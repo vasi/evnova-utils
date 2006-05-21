@@ -22,9 +22,9 @@ sub list {
 # Show the list of strings
 sub showList {
 	my ($self, $name) = @_;
-	my $text;
+	my $text = '';
 	for my $s ($self->list) {
-		$text .= wrap($s, '  * ', '    ');
+		$text .= wrap($s, '  * ', '    ') . "\n";
 	}
 	return $text;
 }

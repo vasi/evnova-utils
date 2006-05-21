@@ -12,6 +12,7 @@ use Nova::Resource;
 use Nova::Util qw(deaccent);
 
 use Cwd qw(realpath);
+use List::Util qw(max);
 
 =head1 NAME
 
@@ -54,29 +55,6 @@ sub isFilled {
 	return defined $self->cache->{filled};
 }
 
-# $rs->batch(sub {  });
-#
-# Perform a series of operations, without updating our cache each time.
-# During a batch operation, any accesses to resources are not guaranteed to
-# yield consistent data! So don't try :-)
-sub batch {
-	my ($self, $code) = @_;
-	$self->{batch} = 1;
-	$code->();
-	delete $self->{batch};
-	$self->_update;
-}
-
-# $rs->_update;
-#
-# Update the cache to reflect batch changes made since the last update.
-sub _update {
-	my ($self) = @_;
-	return if exists $self->{batch}; # postpone
-	
-	# for now, nothing is batched
-}
-
 # $rs->addType($type, @fields);
 #
 # Add a type of resource, with the given fields
@@ -93,20 +71,50 @@ sub addType {
 	$self->{typeSort} = 0;
 }
 
-# $rs->addResource($fieldHash);
+# Get the next unfilled resource of a type
+sub nextUnused {
+	my ($self, $type) = @_;
+	my @ids = $self->ids($type);
+	my $max = max @ids;
+	return defined $max ? $max + 1 : 128;
+}
+
+# my $resource = $rs->addResource($type => $id);
+# my $resource = $rs->addResource($type);
+# my $resource = $rs->addResource($fieldHash);
 #
 # Add a resource.
 sub addResource {	
-	my ($self, $fieldHash) = @_;
+	my ($self, @args) = @_;
 	die "Read-only!\n" if $self->{readOnly};
-	my $type = deaccent($fieldHash->{type}->value);
-	my $id = $fieldHash->{id}->value;
+	
+	my ($type, $id, $fieldHash);
+	if (scalar(@args) == 1) {
+		($fieldHash) = @args;
+		$type = deaccent($fieldHash->{type}->value);
+		$id = $fieldHash->{id}->value;		
+	} elsif (scalar(@args) == 2) {
+		($type, $id) = @args;
+		$type = deaccent($type);
+		$id = $self->nextUnused($type) unless defined $id;
+		
+		my @keys = @{$self->cache->{'fields',$type}};
+		my %hash = map { $_ => '' } @keys;
+		@hash{'id','type'} = ($id, $type);
+		$fieldHash = {
+			map { $_ => Nova::Resource::Value->new($hash{$_}) } @keys
+		};
+	} else {
+		die "Bad arguments to addResource";
+	}
 	
 	my $c = $self->cache;
 	$c->{'resource',$type,$id} = $fieldHash;
 	$c->{'ids',$type} = [ $id, @{$c->{'ids',$type}} ];
 	$c->{filled} = 1;
 	$self->{idSort}{$type} = 0;
+	
+	return $self->get($type => $id);
 }
 
 # $rs->deleteResource($type, $id);
@@ -162,6 +170,24 @@ sub exists {
 	return exists $self->cache->{'resource',$type,$id};
 }
 
+# Get all ids of a type
+sub ids {
+	my ($self, $type) = @_;
+	$type = deaccent($type);
+	die "No such type $type\n" unless exists $self->cache->{'ids',$type};
+	
+	# Sort and uniquify only on-demand
+	my @ids = @{$self->cache->{'ids',$type}};
+	unless ($self->{idSort}{$type}) {
+		my %ids = map { $_ => 1 } @ids;
+		@ids = sort { $a <=> $b } keys %ids;
+		$self->cache->{'ids',$type} = \@ids;
+		$self->{idSort}{$type} = 1;
+	}
+	
+	return @ids;
+}
+
 # Get all resources of some types
 sub type {
 	my ($self, @types) = @_;
@@ -169,19 +195,7 @@ sub type {
 	
 	my @resources;
 	for my $type (@types) {
-		$type = deaccent($type);
-		die "No such type $type\n" unless exists $self->cache->{'ids',$type};
-		
-		# Sort and uniquify only on-demand
-		my @ids = @{$self->cache->{'ids',$type}};
-		unless ($self->{idSort}{$type}) {
-			my %ids = map { $_ => 1 } @ids;
-			@ids = sort { $a <=> $b } keys %ids;
-			$self->cache->{'ids',$type} = \@ids;
-			$self->{idSort}{$type} = 1;
-		}
-		
-		push @resources, map { $self->get($type, $_) } @ids;
+		push @resources, map { $self->get($type, $_) } $self->ids($type);
 	}
 	return @resources;
 }

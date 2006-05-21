@@ -17,36 +17,6 @@ Nova::Resource::Value - A typed value in a resource
 
 =cut
 
-# Wrap shorter pkgnames
-sub fromConText {
-	my ($class, @args) = @_;
-	NRV->fromConText(@args);
-}
-sub new {
-	my ($class, @args) = @_;
-	NRV->new(@args);
-}
-
-package Nova::Resource::Value::List;
-sub new {
-	my ($class, @args) = @_;
-	NRVL->new(@args);
-}
-
-package Nova::Resource::Value::Hex;
-sub new {
-	my ($class, @args) = @_;
-	NRVH->new(@args);
-}
-
-package Nova::Resource::Value::String;
-sub new {
-	my ($class, @args) = @_;
-	NRVS->new(@args);
-}
-
-
-package NRV;
 use base qw(Nova::Base);
 __PACKAGE__->fields(qw(value));
 
@@ -58,14 +28,14 @@ sub fromConText {
 	
 	my ($subclass, @data) = (undef, $str);
 	if ($str =~ /^"(.*)"$/) {
-		($subclass, @data) = (S => $1);
+		($subclass, @data) = (String => $1);
 	} elsif ($str =~ /^#(.*)$/) {
-		($subclass, @data) = (C => hex($1));
+		($subclass, @data) = (Color => hex($1));
 	} elsif ($str =~ /^0x(.*)$/) {
-		($subclass, @data) = (H => hex($1), length($1));
+		($subclass, @data) = (Hex => hex($1), length($1));
 	}
 	
-	$subclass = defined $subclass ? "$class$subclass" : $class;
+	$subclass = defined $subclass ? "${class}::$subclass" : $class;
 	my $obj = $subclass->new;
 	$obj->initWithContext(@data);
 	return $obj;
@@ -86,8 +56,8 @@ sub dump { $_[0]->value }
 # Format for dumping to ConText
 sub toConText { $_[0]->dump }
 
-package NRVS; # string
-use base 'NRV';
+package Nova::Resource::Value::String;
+use base 'Nova::Resource::Value';
 
 sub initWithContext {
 	my ($self, $val) = @_;
@@ -110,8 +80,8 @@ sub toConText {
 }
 
 
-package NRVH; # hex
-use base 'NRV';
+package Nova::Resource::Value::Hex;
+use base 'Nova::Resource::Value';
 __PACKAGE__->fields(qw(length));
 
 sub init {
@@ -126,8 +96,8 @@ sub dump {
 }
 
 
-package NRVC; # color
-use base 'NRV';
+package Nova::Resource::Value::Color;
+use base 'Nova::Resource::Value';
 
 sub dump {
 	my ($self) = @_;
@@ -135,8 +105,8 @@ sub dump {
 }
 
 
-package NRVL; # list
-use base 'NRV';
+package Nova::Resource::Value::List;
+use base 'Nova::Resource::Value';
 
 sub dump {
 	my ($self) = @_;

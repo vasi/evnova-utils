@@ -83,7 +83,11 @@ sub _raw_field {
 		die "Read-only!\n" if $self->readOnly;
 		
 		my $valobj = ${$self->{fields}}->{$lc};
-		$valobj = $valobj->new($val);	# keep the same type
+		if (eval { $val->isa('Nova::Resource::Value') }) {
+			$valobj = $val;
+		} else {
+			$valobj = $valobj->new($val);	# keep the same type
+		}
 		
 		# update so that MLDBM notices
 		my %fields = %${$self->{fields}};
@@ -251,6 +255,16 @@ sub fieldDefined {
 	my $val = $self->$field;
 	return undef if exists $defaults->{$val};
 	return $val;
+}
+
+# Create a clone of this resource, at a different ID
+sub duplicate {
+	my ($self, $id) = @_;
+	$id = $self->collection->nextUnused($self->type) unless defined $id;
+	
+	my $fields = $self->fieldHash;
+	$fields->{id} = $id;
+	$self->collection->addResource($fields);
 }
 
 # Load the categories

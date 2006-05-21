@@ -380,6 +380,15 @@ sub flagsOn {
 	return @on;
 }
 
+# Return the value of a field, or undef if it's the default value
+sub fieldDefined {
+	my ($self, $field) = @_;
+	my $defaults = $self->fieldDefault($field);
+	my $val = $self->$field;
+	return undef if exists $defaults->{$val};
+	return $val;
+}
+
 # Load the subpackages
 package Nova::Resource::Type;
 use base qw(Nova::Base);

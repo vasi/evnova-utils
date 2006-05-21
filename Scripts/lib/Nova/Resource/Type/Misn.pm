@@ -63,6 +63,8 @@ sub fieldDefaults {
 		AvailRating		=> [ 0, -1 ],
 		AvailRandom		=> 100,
 		AvailShipType	=> [ 0, -1 ],
+		ShipCount		=> [ 0, -1 ],
+		AvailLoc		=> 1,
 	);
 }
 
@@ -86,7 +88,7 @@ sub initialText { $_[0]->ID + 4000 - 128 }
 
 sub showShipSyst {
 	my ($self, $field, $verb) = @_;
-	if ($self->shipCount == -1) {
+	unless (defined ($self->fieldDefined('shipCount'))) {
 		return $verb < 2 ? '' : "$field: none\n";
 	}
 	return Nova::Resource::Spec::Syst->new($self, $field)->dump($verb > 2);
@@ -95,7 +97,7 @@ sub showShipSyst {
 sub showAvailLoc {
 	my ($self, $field, $verb) = @_;
 	my $val = $self->field($field);
-	return '' if $verb < 2 && $val == 1;
+	return '' if $verb < 2 && !defined($self->fieldDefined($field));
 	
 	my %locations = (		0 => 'mission computer',	1 => 'bar',
 		2 => 'pers',		3 => 'main spaceport',		4 => 'commodities',

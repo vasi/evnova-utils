@@ -18,7 +18,7 @@ our @TIME_FIELDS = qw(FirstDay FirstMonth FirstYear LastDay LastMonth LastYear);
 
 sub fieldDefaults {
 	return (
-		(map { $_ => [ 0, -1 ] } @TIME_FIELDS),
+		(map { $_ => [ 0, -1 ] } @TIME_FIELDS, 'IndNewsStr'),
 		(map { $_ => 0 } qw(Duration PreHoldoff PostHoldoff)),
 		Random => 100,
 	);
@@ -52,8 +52,8 @@ sub showNews {
 sub news {
 	my ($self) = @_;
 	my @objs = $self->multiObjs('NewsGovt', 'GovtNewsStr');
-	if ($self->IndNewsStr != -1 && $self->IndNewsStr != 0) {
-		push @objs, { NewsGovt => -1, GovtNewsStr => $self->IndNewsStr };
+	if (defined(my $indie = $self->fieldDefined('IndNewsStr'))) {
+		push @objs, { NewsGovt => -1, GovtNewsStr => $indie };
 	}
 	
 	my @news;
@@ -61,7 +61,6 @@ sub news {
 		my $govt = Nova::Resource::Type::Govt->fromCollection(
 			$self->collection, $n->{NewsGovt});
 		my $strn = $self->collection->get('STR#' => $n->{GovtNewsStr});
-$DB::single = 1 if !defined $strn;
 		push @news, { govt => $govt, strn => $strn };
 	}
 	return @news;

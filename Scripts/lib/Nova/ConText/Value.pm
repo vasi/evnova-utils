@@ -1,15 +1,15 @@
 # Copyright (c) 2006 Dave Vasilevsky
-package Nova::Resource::Value;
+package Nova::ConText::Value;
 use strict;
 use warnings;
 
 =head1 NAME
 
-Nova::Resource::Value - A typed value in a resource
+Nova::ConText::Value - A typed value in a resource
 
 =head1 SYNOPSIS
 
-  my $value = Nova::Resource::Value->fromConText($str);
+  my $value = Nova::ConText::Value->fromConText($str);
 
   my $conText = $value->toConText;
   my $dump = $value->dump;
@@ -20,7 +20,9 @@ Nova::Resource::Value - A typed value in a resource
 use base qw(Nova::Base);
 __PACKAGE__->fields(qw(value));
 
-# my $value = Nova::Resource::Value->fromConText($str);
+use Scalar::Util qw(blessed);
+
+# my $value = Nova::ConText::Value->fromConText($str);
 #
 # Parse a ConText string to create a Value.
 sub fromConText {
@@ -41,6 +43,22 @@ sub fromConText {
 	return $obj;
 }
 
+# Heuristically create a Value from a scalar
+sub fromScalar {
+	my ($class, $val) = @_;
+	return $val if blessed $val && $val->isa(__PACKAGE__);
+	
+	my ($subclass, @data) = (undef, $val);
+	if (ref($val) && ref($val) eq 'ARRAY') {
+		($subclass, @data) = (List => $val);
+	} elsif ($val !~ /-?\d+/) {
+		($subclass, @data) = (String => $1);
+	}
+	
+	$subclass = defined $subclass ? "${class}::$subclass" : $class;
+	return $subclass->new(@data);
+}
+
 # Initialize
 sub init { $_[0]->value($_[1]) }
 
@@ -56,8 +74,8 @@ sub dump { $_[0]->value }
 # Format for dumping to ConText
 sub toConText { $_[0]->dump }
 
-package Nova::Resource::Value::String;
-use base 'Nova::Resource::Value';
+package Nova::ConText::Value::String;
+use base 'Nova::ConText::Value';
 
 sub initWithContext {
 	my ($self, $val) = @_;
@@ -80,8 +98,8 @@ sub toConText {
 }
 
 
-package Nova::Resource::Value::Hex;
-use base 'Nova::Resource::Value';
+package Nova::ConText::Value::Hex;
+use base 'Nova::ConText::Value';
 __PACKAGE__->fields(qw(length));
 
 sub init {
@@ -96,8 +114,8 @@ sub dump {
 }
 
 
-package Nova::Resource::Value::Color;
-use base 'Nova::Resource::Value';
+package Nova::ConText::Value::Color;
+use base 'Nova::ConText::Value';
 
 sub dump {
 	my ($self) = @_;
@@ -105,8 +123,8 @@ sub dump {
 }
 
 
-package Nova::Resource::Value::List;
-use base 'Nova::Resource::Value';
+package Nova::ConText::Value::List;
+use base 'Nova::ConText::Value';
 
 sub dump {
 	my ($self) = @_;

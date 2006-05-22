@@ -18,23 +18,6 @@ command {
 	printf "%s\n", $self->config->conText;
 } 'context' => 'get/set the ConText file';
 
-command {
-	my ($self) = @_;
-	my $in = Nova::ConText->new('../ConText/Test3.txt');
-	my $rs = $in->read;
-	$rs->noCache;
-	
-	$rs->get(dude => 128)->name('Test name');
-	$rs->get(colr => 128)->buttonUp(0xAABBCC);
-	my $r = $rs->newResource('cron');
-	$r->name('Cron name');
-	$r = $rs->get(char => 128)->duplicate(140);
-	$r->startCash(10_000_000);
-	
-	my $out = Nova::ConText->new('Out.txt');
-	$out->write($rs);
-} misc => 'test';
-
 
 =head1 NAME
 
@@ -117,6 +100,9 @@ command {
 	);
 } rank => 'rank resources by a property';
 
+command {
+	my ($self) = @_;
+} misc => 'test';
 
 
 1;

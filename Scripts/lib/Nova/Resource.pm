@@ -101,6 +101,14 @@ sub fieldHash {
 	return %hash;
 }
 
+# Dump a given field's value
+sub dumpField {
+	my ($self, $field) = @_;
+	
+	# Imperfect default
+	return $self->$field;
+}
+
 
 # Eliminate warning on DESTROY
 sub DESTROY { }
@@ -142,7 +150,7 @@ sub can {
 	return undef unless $self->hasField($meth);
 	return sub {
 		my ($self, @args) = @_;
-		$self->_rawField($meth, @args)->value;
+		$self->_rawField($meth, @args);
 	};
 }
 

@@ -6,7 +6,7 @@ use warnings;
 
 use base qw(Exporter);
 
-use List::Util qw(max sum);
+use List::Util qw(max min sum);
 use Text::Wrap qw();
 
 our @EXPORT_OK = qw(deaccent commaNum termWidth columns wrap prettyPrint);
@@ -29,7 +29,6 @@ Nova::Util - Miscellaneous utilities
 # Eg: mïsn => misn
 sub deaccent {
 	my ($s) = @_;
-use Carp; Carp::confess unless defined $s;
 	$s =~ tr/\x{e4}\x{eb}\x{ef}\x{f6}\x{fc}\x{ff}/aeiouy/;
 	return lc $s;
 }
@@ -52,26 +51,47 @@ sub termWidth {
 	}
 }
 
-# my $pct = _columnFormat($pct, @col);
+# my $pct = _columnFormats($wholeFmt, \@fmts, \@data, %opts);
 #
-# Get the %-fmt for a column
-sub _columnFormat {
-	my ($pct, @col) = @_;
-	my $maxlen = max map { length($_) } @col;
+# Get the percent-formats
+sub _columnFormats {
+	my ($wholeFmt, $fmts, $data, @opts) = @_;
+	my %opts = (truncMin => 5, @opts);
 	
-	if ($pct =~ /\?/) { # Discover justification
-		# Numbers justify right, strings left
-		my ($tot, $num) = (0, 0);
-		for my $item (@col) {
-			$tot += length($item);
-			$item =~ s/\D//g;
-			$num += length($item);
-			
-			my $just = ($num > $tot / 2) ? '' : '-';
-			$pct =~ s/\?/$just/;
-		}
+	# Find the columns
+	my (@cols, @lens);
+	for my $i (0..$#$fmts) {
+		my @col = map { $_->{cols}[$i] } @$data;
+		push @cols, \@col;
+		push @lens, max map { length($_) } @col;
 	}
-	return "$pct$maxlen";
+	(my $justText = $wholeFmt) =~ s/%\d+\w//g;
+	my $width = termWidth() - sum(@lens) - length($justText);
+	
+	# Process each format
+	for my $i (0..$#$fmts) {
+		my $fmt = $fmts->[$i];
+		if ($fmt =~ /</) {
+			my $len = min($lens[$i], max($width + $lens[$i], $opts{truncMin}));
+			$fmt =~ s/</$len.$len/;
+		} else {
+			$fmt .= $lens[$i];
+		}
+		
+		if ($fmt =~ /\?/) { # Discover justification
+			# Numbers justify right, strings left
+			my ($tot, $num) = (0, 0);
+			for my $item (@{$cols[$i]}) {
+				$tot += length($item);
+				$item =~ s/\D//g;
+				$num += length($item);
+			}
+			my $just = ($num > $tot / 2) ? '' : '-';
+			$fmt =~ s/\?/$just/;
+		}
+		
+		$fmts->[$i] = $fmt;
+	}
 }
 
 # columns($fmt, \@list, $colGen, %opts);
@@ -87,27 +107,25 @@ sub columns {
 		return;
 	}
 	
+	# Get the column contents
 	my @data = map { {
 		cols => [ $colGen->($_) ],
 		($opts{rank} ? (rank => $opts{rank}->($_)) : ()),
 	} } @$list;
 	@data = sort { $b->{rank} <=> $a->{rank} } @data if $opts{rank};
 	
-	my $col = 0;
-	my $newfmt = '';
-	while ($fmt =~ /%[^%]/) {
-		(my ($pre, $pct), $fmt) = ($fmt =~ /^(.*?%)([^%\w]*)(.*)$/)
-			or die "Bad format\n";
-		$pct = _columnFormat($pct, map { $_->{cols}[$col] } @data);
-		++$col;
-		$newfmt .= "$pre$pct";
-	}
-	$newfmt .= $fmt;
+	# Examine the format
 	
+	my @fmts;
+	$fmt =~ s/%([^%\w]*)(\w)/push @fmts, $1; "\%$#fmts$2"/ge;
+	_columnFormats($fmt, \@fmts, \@data, %opts);
+	$fmt =~ s/%(\d+)/"\%$fmts[$1]"/ge;
+	
+	# Print the data
 	my $width = termWidth;
 	for my $i (0..$#data) {
 		my @cols = @{$data[$i]->{cols}};
-		my $line = sprintf $newfmt, @cols;
+		my $line = sprintf $fmt, @cols;
 		$width = length($line);
 		
 		print '-' x $width, "\n" if $i == $#data && $opts{total};
@@ -122,7 +140,8 @@ sub wrap {
 	my ($text, $first, $rest) = @_;
 	$first = '' unless defined $first;
 	$rest = '' unless defined $rest;
-	local $Text::Wrap::columns = termWidth;	return Text::Wrap::wrap($first, $rest, $text);
+	local $Text::Wrap::columns = termWidth;
+	return Text::Wrap::wrap($first, $rest, $text);
 }
 
 # prettyPrint($text);

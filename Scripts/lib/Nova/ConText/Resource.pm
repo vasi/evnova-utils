@@ -31,7 +31,8 @@ sub init {
 sub dumpField {
 	# Prettier alternative to default method
 	my ($self, $field) = @_;
-	return ${$self->{fields}}->{lc $field}->dump;
+	my $ret = eval { ${$self->{fields}}->{lc $field}->dump };
+	return $@ ? $self->SUPER::dumpField($field) : $ret;
 }
 
 # Get/set the raw value of a field

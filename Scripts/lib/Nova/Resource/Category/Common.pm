@@ -30,7 +30,7 @@ sub source { $_[0]->collection->source }
 # Get a list of properties with the same prefix
 sub multi {
 	my ($self, $prefix) = @_;
-	my @k = grep /^$prefix/i, $self->fieldNames;
+	my @k = sort grep /^$prefix/i, $self->fieldNames;
 	return grep { $_ != -1 && $_ != -2 } map { $self->$_ } @k;
 }
 

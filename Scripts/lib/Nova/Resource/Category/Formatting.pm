@@ -67,6 +67,8 @@ sub formatByName {
 	
 	if ($field =~ /^Flags/) {
 		return $self->formatFlagsField($field, $verb);
+	} elsif ($field =~ /^(Contribute|Require)$/) {
+		return $self->formatContribRequireField($field, $verb);
 	} else {
 		return undef;
 	}
@@ -88,5 +90,21 @@ sub formatFlagsField {
 	}
 }
 
+# Show a contrib/require field
+sub formatContribRequireField {
+	my ($self, $field, $verb) = @_;
+	my $val = $self->$field;
+	return '' if $verb < 2 && $val == 0;
+	
+	# Divide into four parts
+	my @parts;
+	for my $i (1..4) {
+		($val, my $rem) = $val->bdiv(1 << 16);
+		push @parts, $rem;
+	}
+	
+	@parts = map { sprintf '%04x', $_ } reverse @parts;
+	return '0x' . join(' ', @parts);
+}
 
 1;

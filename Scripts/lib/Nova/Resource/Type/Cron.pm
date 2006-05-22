@@ -32,9 +32,8 @@ sub show {
 	
 	$ret .= $self->showField($_, $verb) for (
 		@TIME_FIELDS, qw(Random Duration PreHoldoff PostHoldoff EnableOn
-		OnStart OnEnd Flags News)
+		OnStart OnEnd Contribute Require Flags News)
 	);
-	# FIXME: Contribute, Require
 	
 	return $ret;
 }

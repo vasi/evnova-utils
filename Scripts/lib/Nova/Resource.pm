@@ -131,7 +131,7 @@ sub _caseInsensitiveMethod {
 	# Try going up in the inheritance tree
 	for my $base (@{$pkg->symref('ISA')}) {
 		my $code;
-		eval { $code = $base->_caseInsensitiveMethod($sub) };
+		eval { $code = _caseInsensitiveMethod($base, $sub) };
 		return $code if defined $code;
 	}
 	

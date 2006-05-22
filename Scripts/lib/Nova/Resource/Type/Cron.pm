@@ -34,6 +34,7 @@ sub show {
 		@TIME_FIELDS, qw(Random Duration PreHoldoff PostHoldoff EnableOn
 		OnStart OnEnd Flags News)
 	);
+	# FIXME: Contribute, Require
 	
 	return $ret;
 }

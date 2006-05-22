@@ -47,21 +47,37 @@ sub flagInfo {
 	$pkg->symref('FLAG_FIELDS')->{lc $field} = \@texts;
 }
 
+sub _flagFields {
+	my ($self, $field) = @_;
+	my $pkg = ref($self) || $self;
+	$field = lc $field;
+	
+	my $flagFields = $pkg->symref('FLAG_FIELDS');
+	if (exists $flagFields->{$field}) {	
+		return @{$flagFields->{$field}};
+	}
+	
+	for my $parent (@{$pkg->symref('ISA')}) {
+		my @ret;
+		eval { @ret = _flagFields($parent, $field) };
+		return @ret if @ret;
+	}
+	return ();
+}
+
 # Get the names of the flags that are on
 sub flagsOn {
 	my ($self, $field) = @_;
 	my $val = $self->$field;
 	
-	my $pkg = ref($self) || $self;
-	my $flagFields = $pkg->symref('FLAG_FIELDS');
-	die "No such field '$field'\n" unless exists $flagFields->{lc $field};
-	my $flags = $flagFields->{lc $field};
+	my @flags = $self->_flagFields($field);
+	die "No flags for field '$field'\n" unless @flags;
 	
 	my @on;
-	for my $i (0..$#$flags) {
+	for my $i (0..$#flags) {
 		my $mask = 1 << $i;
 		next unless $val & $mask;
-		push @on, $flags->[$i];
+		push @on, $flags[$i];
 	}
 	return @on;
 }

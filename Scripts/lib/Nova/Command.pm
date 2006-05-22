@@ -8,6 +8,7 @@ our @EXPORT_OK = qw(command);
 __PACKAGE__->fields(qw(help name config code args));
 
 use Nova::Config;
+use Nova::ResFork;
 
 =head1 NAME
 
@@ -98,5 +99,15 @@ command {
 	$self->_printCategory('', 'General');
 	$self->_printCategory($_, $_) for grep { "$_" } keys %CATEGORIES;
 } help => 'get help on available commands';
+
+command {
+	my ($self, @files) = @_;
+	
+	for my $i (0..$#files) {
+		my $rs = Nova::ResFork->new($files[$i]);
+		print $rs->dump;
+		print "\n" unless $i == $#files;
+	}
+} rsrc => 'count the resources in files';
 
 1;

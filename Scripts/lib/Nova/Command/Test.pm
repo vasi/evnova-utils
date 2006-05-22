@@ -21,7 +21,7 @@ command {
 	
 	my $out = Nova::ConText->new('Out.txt');
 	$out->write($rs);
-} 'test-write' => 'test';
+} 'test-write' => 'test writing a ConText file';
 
 
 1;

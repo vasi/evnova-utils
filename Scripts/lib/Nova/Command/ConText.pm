@@ -100,9 +100,5 @@ command {
 	);
 } rank => 'rank resources by a property';
 
-command {
-	my ($self) = @_;
-} misc => 'test';
-
 
 1;

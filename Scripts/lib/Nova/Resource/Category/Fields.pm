@@ -99,5 +99,32 @@ sub contribRequire {
 sub contribute	{ $_[0]->contribRequire('Contrib')	}
 sub require		{ $_[0]->contribRequire('Require')	}
 
+sub isBitSet {
+	my ($self, $field) = @_;
+	return $field =~ /^On[A-Z]/;
+}
+
+sub isBitTest {
+	my ($self, $field) = @_;
+	return $field =~ /On$/ || $field =~ /^Avail(Bits|ability)/
+		|| $field eq 'Visibility';
+}
+
+sub bitFields {
+	my ($self) = @_;
+	return grep { $self->isBitSet($_) || $self->isBitTest($_) }
+		$self->fieldNames;
+}
+
+sub usesBit {
+	my ($self, $field, $bitnum) = @_;
+	die "Bit must be a number!\n" if $bitnum =~ /\D/;
+	my $bit = "b$bitnum";
+	return $self->$field =~ /$bit/;
+}
+
+sub importantBitFields { () }
+
+
 
 1;

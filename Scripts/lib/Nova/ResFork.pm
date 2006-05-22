@@ -128,5 +128,6 @@ sub dump {
 #	- creation, deletion of entire fork?
 #	- individual resources
 #	- test cross-compatibility with ConText
+#	- writing
 
 1;

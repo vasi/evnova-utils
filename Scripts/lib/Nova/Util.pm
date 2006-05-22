@@ -6,7 +6,7 @@ use warnings;
 
 use base qw(Exporter);
 
-use List::Util qw(max);
+use List::Util qw(max sum);
 use Text::Wrap qw();
 
 our @EXPORT_OK = qw(deaccent commaNum termWidth columns wrap prettyPrint);
@@ -52,6 +52,28 @@ sub termWidth {
 	}
 }
 
+# my $pct = _columnFormat($pct, @col);
+#
+# Get the %-fmt for a column
+sub _columnFormat {
+	my ($pct, @col) = @_;
+	my $maxlen = max map { length($_) } @col;
+	
+	if ($pct =~ /\?/) { # Discover justification
+		# Numbers justify right, strings left
+		my ($tot, $num) = (0, 0);
+		for my $item (@col) {
+			$tot += length($item);
+			$item =~ s/\D//g;
+			$num += length($item);
+			
+			my $just = ($num > $tot / 2) ? '' : '-';
+			$pct =~ s/\?/$just/;
+		}
+	}
+	return "$pct$maxlen";
+}
+
 # columns($fmt, \@list, $colGen, %opts);
 #
 # Print something in columns.
@@ -60,6 +82,10 @@ sub termWidth {
 #	total:	last field is a total
 sub columns {
 	my ($fmt, $list, $colGen, %opts) = @_;
+	unless (@$list) {
+		print "No items found\n";
+		return;
+	}
 	
 	my @data = map { {
 		cols => [ $colGen->($_) ],
@@ -70,10 +96,11 @@ sub columns {
 	my $col = 0;
 	my $newfmt = '';
 	while ($fmt =~ /%[^%]/) {
-		my $max = max map { length($_->{cols}[$col]) } @data;
-		$fmt =~ s/^(.*?%[^%\w]?)([\w\.])//;
-		$newfmt .= "$1$max$2";
+		(my ($pre, $pct), $fmt) = ($fmt =~ /^(.*?%)([^%\w]*)(.*)$/)
+			or die "Bad format\n";
+		$pct = _columnFormat($pct, map { $_->{cols}[$col] } @data);
 		++$col;
+		$newfmt .= "$pre$pct";
 	}
 	$newfmt .= $fmt;
 	

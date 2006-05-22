@@ -94,11 +94,39 @@ command {
 	my ($self, $type, $prop) = @_;
 	($type, $prop) = ('ship', $type) unless defined $prop;
 	
-	columns('%s - %d: %-s  %s', [ $self->resources->type($type) ],
+	columns('%s - %d: %-s  %?s', [ $self->resources->type($type) ],
 		sub { $_->format($prop), $_->ID, $_->fullName, $_->rankInfo($prop) },
 		rank => sub { $_->$prop }
 	);
 } rank => 'rank resources by a property';
+
+command {
+	my ($self, $bit) = @_;
+	
+	my $rs = $self->resources;
+	for my $t ($rs->types) {
+		my ($r) = $rs->type($t);
+		my @flds = $r->bitFields;
+		next unless @flds;
+		
+		print "$t: ", join(', ', @flds), "\n";
+	}
+	
+} bit => 'find items which use a given bit';
+
+command {
+	my ($self, $type, $prop, $filt) = @_;
+	my @rs = $self->resources->type($type);
+	
+	# Filter
+	if (defined $filt) {
+		my $filtCode = Nova::Resource->makeFilter($filt);
+		@rs = grep { $_->filter($prop, $filtCode) } @rs;
+	}
+	
+	columns('%d: %-s   %?s', \@rs,
+		sub { $_->ID, $_->fullName, $_->format($prop) });
+} 'map' => 'show a single property of each resource'; 
 
 
 1;

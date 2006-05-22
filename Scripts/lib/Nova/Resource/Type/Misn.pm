@@ -21,8 +21,9 @@ sub fullName {
 }
 
 sub show {
-	my ($self, $verb) = @_;
-	my $ret = $self->NEXT::show($verb);
+	my ($self, $verb, @fields) = @_;
+	my $ret = $self->NEXT::show($verb, @fields);
+	return $ret if @fields;
 	
 	$ret .= $self->showField($_, $verb) for qw(
 		AvailStel AvailLoc AvailRecord AvailRating AvailRandom

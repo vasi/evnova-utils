@@ -141,4 +141,33 @@ sub newFieldHash {
 	return \%hash;
 }
 
+# Make a filter from a specification
+sub makeFilter {
+	my ($class, $spec) = @_;
+	my $code;
+	
+	if ($spec =~ /\$_/ || $spec =~ m,^\s*/.*/[imsx]*\s*$,
+			|| $spec =~ /^\s*m(\W).*\1[imsx]*\s*$/
+			|| $spec =~ /^\s*m[[<({].*[]>)}][imsx]*\s*$/) {
+		$code = $spec;			# Code
+	} elsif ($spec =~ /^\s*([><=]+|eq|ne|ge|le|gt|lt)/) {
+		$code = "\$_ $spec";	# Relation
+	} elsif ($spec =~ /^\s*-?\d[_\d]*([eE]-?\d+)?(\.\d*)?\s*$/) {
+		$code = "\$_ == $spec";	# Numeric equality
+	} else {
+		$code = "\$_ eq \"\Q$spec\E\"";		# String equality
+	}
+	
+	my $filt = eval "sub { $code }";
+	die "Bad filter '$spec': $@\n" if $@;
+	return $filt;
+}
+
+# Does the object match a filter?
+sub filter {
+	my ($self, $field, $filt) = @_;
+	local $_ = $self->$field;
+	return $filt->();
+}
+
 1;

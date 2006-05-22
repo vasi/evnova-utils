@@ -27,8 +27,9 @@ sub fieldDefaults {
 }
 
 sub show {
-	my ($self, $verb) = @_;
-	my $ret = $self->NEXT::show($verb);
+	my ($self, $verb, @fields) = @_;
+	my $ret = $self->NEXT::show($verb, @fields);
+	return $ret if @fields;
 	
 	$ret .= $self->showField($_, $verb) for (
 		@TIME_FIELDS, qw(Random Duration PreHoldoff PostHoldoff EnableOn
@@ -68,5 +69,6 @@ sub news {
 	return @news;
 }
 
+sub importantBitFields { $_[0]->bitFields }
+
 1;
-	

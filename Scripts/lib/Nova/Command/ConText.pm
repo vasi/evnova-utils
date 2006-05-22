@@ -102,8 +102,7 @@ command {
 command {
 	my ($self) = @_;
 	my $m = $self->resources->get(misn => 128);
-$DB::single = 1;
-	printf "%d: %\n", $m->ID, $m->name;	
+	printf "%d: %s\n", $m->ID, $m->name;	
 } misc => 'test';
 
 #command {

@@ -3,15 +3,16 @@ package Nova::Resource::Type::Misn;
 use strict;
 use warnings;
 
-use base 'Nova::Resource';
-__PACKAGE__->register('misn');
+use base qw(Nova::Base);
+use Nova::Resource;
+Nova::Resource->registerType('misn');
 
 use Nova::Resource::Spec::Spob;
 use Nova::Resource::Spec::Syst;
 
 sub fullName {
 	my ($self) = @_;
-	my $name = $self->SUPER::fullName;
+	my $name = $self->NEXT::fullName;
 	if ($name =~ /^(.*);\s*(.*)$/) {
 		return "$2: $1";
 	} else {
@@ -21,7 +22,7 @@ sub fullName {
 
 sub show {
 	my ($self, $verb) = @_;
-	my $ret = $self->SUPER::show($verb);
+	my $ret = $self->NEXT::show($verb);
 	
 	$ret .= $self->showField($_, $verb) for qw(
 		AvailStel AvailLoc AvailRecord AvailRating AvailRandom
@@ -53,7 +54,7 @@ sub formatByName {
 	} elsif ($field =~ /Stel$/) {
 		return $self->formatStelSpec($field, $verb);
 	} else {
-		return $self->SUPER::formatByName($field, $verb);
+		return $self->NEXT::formatByName($field, $verb);
 	}
 }
 
@@ -62,7 +63,7 @@ sub showByName {
 	if ($field =~ /(Text|Brief)$/) {
 		return $self->showText($field, $verb);
 	} else {
-		return $self->SUPER::showByName($field, $verb);
+		return $self->NEXT::showByName($field, $verb);
 	}
 }
 

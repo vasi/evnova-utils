@@ -3,15 +3,11 @@ package Nova::Resource::Type::StrNum;
 use strict;
 use warnings;
 
-use base 'Nova::Resource';
-__PACKAGE__->register('STR#');
+use base qw(Nova::Base);
+use Nova::Resource;
+Nova::Resource->registerType('STR#');
 
 use Nova::Util qw(wrap);
-
-__PACKAGE__->flagInfo('Flags',
-	iterativeEntry	=> 'iterative entry',
-	iterativeExit	=> 'iterative exit',
-);
 
 # Get the list of strings
 sub list {

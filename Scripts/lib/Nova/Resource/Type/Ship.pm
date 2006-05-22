@@ -3,8 +3,9 @@ package Nova::Resource::Type::Ship;
 use strict;
 use warnings;
 
-use base 'Nova::Resource';
-__PACKAGE__->register('ship');
+use base qw(Nova::Base);
+use Nova::Resource;
+Nova::Resource->registerType('ship');
 
 use Nova::Util qw(columns);
 use List::Util qw(sum);
@@ -12,7 +13,7 @@ use List::Util qw(sum);
 # Add the subtitle to the full name, if it seems like a good idea
 sub fullName {
 	my ($self) = @_;
-	my $name = $self->SUPER::fullName;
+	my $name = $self->NEXT::fullName;
 	my $sub = $self->subTitle;
 	return $name unless $sub;
 	return "$name, $sub";

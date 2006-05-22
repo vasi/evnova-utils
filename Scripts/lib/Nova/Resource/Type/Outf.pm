@@ -3,8 +3,9 @@ package Nova::Resource::Type::Outf;
 use strict;
 use warnings;
 
-use base qw(Nova::Resource Exporter);
-__PACKAGE__->register('outf');
+use base qw(Nova::Base Exporter);
+use Nova::Resource;
+Nova::Resource->registerType('outf');
 
 our (@EXPORT, %MOD_TYPE_NAMES);
 

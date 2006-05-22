@@ -3,8 +3,9 @@ package Nova::Resource::Type::Weap;
 use strict;
 use warnings;
 
-use base 'Nova::Resource';
-__PACKAGE__->register('weap');
+use base qw(Nova::Base);
+use Nova::Resource;
+Nova::Resource->registerType('weap');
 
 use Nova::Resource::Type::Outf;
 use Nova::Cache;

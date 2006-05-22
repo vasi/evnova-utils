@@ -31,7 +31,7 @@ sub govtObj {
 
 # Register some new flags
 sub flagInfo {
-	my $pkg = shift;
+	my $pkg = caller;
 	my $field = shift;
 	my @flags = @_;
 	my $bit = 0;

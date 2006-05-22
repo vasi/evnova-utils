@@ -4,12 +4,14 @@ package Nova::Resource;
 use strict;
 use warnings;
 
-use base 'Nova::Base';
+use base qw(Nova::Base Exporter);
 __PACKAGE__->fields(qw(collection readOnly));
 
-use Nova::Util qw(deaccent);
+our @EXPORT = qw(flagInfo);
 
+use Nova::Util qw(deaccent);
 use Scalar::Util qw(blessed);
+use NEXT;
 
 =head1 NAME
 
@@ -45,12 +47,11 @@ Nova::Resource - a resource from a Nova data file
   - Constructor
   - _rawField
   - fieldNames
-  
 
 =cut
 
 {
-	my %registered;
+	my %types;
 	
 	# Should call at *end* of subclass init.
 	sub init {
@@ -58,17 +59,18 @@ Nova::Resource - a resource from a Nova data file
 		
 		# Rebless, if necessary
 		my $t = deaccent($self->type);
-		if (exists $registered{$t}) {
-			bless $self, $registered{$t};
+		if (exists $types{$t}) {
+			$self->mixin($types{$t});
 		}
 		return $self;
 	}
 	
 	
 	# Register a package to handle some type
-	sub register {
-		my ($pkg, $type) = @_;
-		$registered{deaccent($type)} = $pkg;
+	sub registerType {
+		my ($class, $type) = @_;
+		my $pkg = caller;
+		$types{deaccent($type)} = $pkg;
 	}
 }
 
@@ -148,7 +150,6 @@ sub AUTOLOAD {
 	my $fullsub = our $AUTOLOAD;
 	my ($pkg, $sub) = ($fullsub =~ /(.*)::(.*)/);
 	my $code = $self->can($sub);
-$DB::single = 1 unless defined $code;
 	die "No such method '$sub'\n" unless defined $code;
 	goto &$code;
 	

@@ -3,8 +3,9 @@ package Nova::Resource::Type::Spob;
 use strict;
 use warnings;
 
-use base 'Nova::Resource';
-__PACKAGE__->register('spob');
+use base qw(Nova::Base);
+use Nova::Resource;
+Nova::Resource->registerType('spob');
 
 sub _spobSystCache {
 	$_[0]->precalc(spobSyst => sub {

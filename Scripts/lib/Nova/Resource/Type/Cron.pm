@@ -3,10 +3,12 @@ package Nova::Resource::Type::Cron;
 use strict;
 use warnings;
 
-use base 'Nova::Resource';
-__PACKAGE__->register('cron');
+use base qw(Nova::Base);
 
-__PACKAGE__->flagInfo('Flags',
+use Nova::Resource;
+Nova::Resource->registerType('cron');
+
+flagInfo('Flags',
 	iterativeEntry	=> 'iterative entry',
 	iterativeExit	=> 'iterative exit',
 );
@@ -26,7 +28,7 @@ sub fieldDefaults {
 
 sub show {
 	my ($self, $verb) = @_;
-	my $ret = $self->SUPER::show($verb);
+	my $ret = $self->NEXT::show($verb);
 	
 	$ret .= $self->showField($_, $verb) for (
 		@TIME_FIELDS, qw(Random Duration PreHoldoff PostHoldoff EnableOn

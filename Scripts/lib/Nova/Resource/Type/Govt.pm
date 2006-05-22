@@ -3,8 +3,9 @@ package Nova::Resource::Type::Govt;
 use strict;
 use warnings;
 
-use base 'Nova::Resource';
-__PACKAGE__->register('govt');
+use base qw(Nova::Base);
+use Nova::Resource;
+Nova::Resource->registerType('govt');
 
 sub fromCollection {
 	my ($class, $collection, $id) = @_;
@@ -65,7 +66,7 @@ sub self	{ $_[0]						}
 
 
 package Nova::Resource::Type::Govt::None;
-use base 'Nova::Resource::Type::Govt';
+use base qw(Nova::Resource::Type::Govt Nova::Resource);
 
 sub init {
 	my ($self, $collection) = @_;

@@ -101,15 +101,9 @@ command {
 
 command {
 	my ($self) = @_;
-	my @fields;
-	
-	for my $type ($self->resources->types) {
-		my @rs = $self->resources->type($type);
-		next unless @rs;
-		push @fields, $rs[0]->fieldNames;
-	}
-	@fields = sort @fields;
-	print "$_\n" for @fields;
+	my $m = $self->resources->get(misn => 128);
+$DB::single = 1;
+	printf "%d: %\n", $m->ID, $m->name;	
 } misc => 'test';
 
 #command {

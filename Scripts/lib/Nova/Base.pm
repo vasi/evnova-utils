@@ -145,4 +145,28 @@ sub makeSub {
 	*_ref = $code unless exists &_ref;
 }
 
+# $obj->mixin($pkg);
+#
+# Insert $pkg into the inheritance hierarchy of $obj. Object $obj will be
+# reblessed into the new class.
+{
+	my %classes;
+	my $nextid = 0;
+	
+	sub mixin {
+		my ($self, $other) = @_;
+		my $pkg = ref($self);
+		
+		my $uid = "$pkg,$other";
+		unless (exists $classes{$uid}) {
+			my $id = $nextid++;
+			my $newpkg = __PACKAGE__ . "::AUTO::$id";
+			eval "package $newpkg; our \@ISA = qw($other $pkg)";
+			$classes{$uid} = $newpkg;
+		}
+		
+		bless $self, $classes{$uid};
+	}
+}
+
 1;

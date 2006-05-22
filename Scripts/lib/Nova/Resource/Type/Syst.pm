@@ -3,8 +3,9 @@ package Nova::Resource::Type::Syst;
 use strict;
 use warnings;
 
-use base 'Nova::Resource';
-__PACKAGE__->register('syst');
+use base qw(Nova::Base);
+use Nova::Resource;
+Nova::Resource->registerType('syst');
 
 sub spobs {
 	my ($self) = @_;

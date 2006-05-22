@@ -7,9 +7,9 @@ use base 'Nova::Base';
 __PACKAGE__->fields(qw(fh file line_sep type collection));
 
 use Nova::ConText::Type;
-use Nova::Resource;
-use Nova::Resource::Value;
-use Nova::Resources;
+use Nova::ConText::Resource;
+use Nova::ConText::Value;
+use Nova::ConText::Resources;
 
 use English qw($INPUT_RECORD_SEPARATOR);
 use Encode;
@@ -37,7 +37,7 @@ sub init {
 sub _parseLine {
 	my ($class, $line) = @_;
 	my @items = split /\t/, $line;
-	my @fields = map { Nova::Resource::Value->fromConText($_) } @items;
+	my @fields = map { Nova::ConText::Value->fromConText($_) } @items;
 	return @fields;
 }
 
@@ -82,7 +82,7 @@ sub _readResource {
 sub read {
 	my ($self) = @_;
 	$self->_open_file;
-	$self->collection(Nova::Resources->new($self->file));
+	$self->collection(Nova::ConText::Resources->new($self->file));
 	$self->type(undef);
 	
 	return $self->collection if $self->collection->isFilled;
@@ -151,14 +151,23 @@ sub _writeType {
 	my @fields = $ris[0]->fieldNames;
 	@fields = $typeObj->outFieldNames(@fields);
 	push @fields, 'EOR';
-	@fields = map { Nova::Resource::Value::String->new($_) } @fields;
+	@fields = map { Nova::ConText::Value::String->new($_) } @fields;
 	$self->_writeLine(@fields);
 	
 	# Resources
 	for my $r (@ris) {
-		my %fields = $r->fieldHash;
+		my %fields;
+		if ($r->can('typedFieldHash')) {
+			%fields = $r->typedFieldHash;
+		} else {				# Try to figure out the values heuristically
+			%fields = $r->fieldHash;
+			for my $k (keys %fields) {
+				$fields{$k} = Nova::ConText::Value->fromScalar($fields{$k});
+			}
+		}
+		
 		my @vals = $typeObj->outFields(%fields);
-		push @vals, Nova::Resource::Value::String->new("\x{2022}");
+		push @vals, Nova::ConText::Value::String->new("\x{2022}");
 		$self->_writeLine(@vals);
 	}
 }

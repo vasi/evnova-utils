@@ -8,8 +8,8 @@ use base 'Nova::Base';
 __PACKAGE__->fields(qw(type resFields));
 
 use Nova::Util qw(deaccent);
-use Nova::Resource;
-use Nova::Resource::Value;
+use Nova::ConText::Resource;
+use Nova::ConText::Value;
 
 =head1 NAME
 
@@ -83,7 +83,7 @@ sub inFields {
 	my ($self, @vals) = @_;
 	my @strings = splice @vals, $#{$self->resFields};
 	@strings = map { $_->value } @strings;
-	push @vals, Nova::Resource::Value::List->new(\@strings);
+	push @vals, Nova::ConText::Value::List->new(\@strings);
 	
 	return $self->SUPER::inFields(@vals);
 }
@@ -91,11 +91,11 @@ sub inFields {
 sub outFields {
 	my ($self, %fields) = @_;
 	my @strings = @{$fields{strings}->value};
-	$fields{n} = Nova::Resource::Value->new(scalar(@strings));
+	$fields{n} = Nova::ConText::Value->new(scalar(@strings));
 	my @vals = $self->SUPER::outFields(%fields);
 	pop @vals;
 	
-	@strings = map { Nova::Resource::Value::String->new($_) } @strings;
+	@strings = map { Nova::ConText::Value::String->new($_) } @strings;
 	return (@vals, @strings);
 }
 
@@ -127,7 +127,7 @@ sub inFields {
 		next unless $forceHex{$fields{$modtype}->value};
 		(my $modval = $modtype) =~ s/modtype/modval/;
 		my $val = $fields{$modval}->value;
-		$fields{$modval} = Nova::Resource::Value::Hex->new($val, 4);
+		$fields{$modval} = Nova::ConText::Value::Hex->new($val, 4);
 	}
 	
 	return %fields;
@@ -141,7 +141,7 @@ __PACKAGE__->register('rank');
 # Missing some values in ConText!
 sub inFields {
 	my ($self, @vals) = @_;
-	push @vals, (Nova::Resource::Value::String->new('')) x 2;
+	push @vals, (Nova::ConText::Value::String->new('')) x 2;
 	$self->SUPER::inFields(@vals);
 }
 

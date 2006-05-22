@@ -65,12 +65,19 @@ sub methods {
 }
 
 # my @subpkgs = $pkg->subPackages;
+# my @subpkgs = $pkg->subPackages($parent);
 #
 # Find 'sub-packages' of this package. Eg: Foo->subPackages could include
 # Foo::Bar and Foo::Iggy::Blah. Each sub-package is require'd, and returned
 # as a string.
 sub subPackages {
-	my $pkg = shift;
+	my ($pkg, $parent) = @_;
+	
+	if (defined $parent) {
+		$pkg = $parent;
+		eval("package $pkg; our \@ISA = ('" . __PACKAGE__ . "')");
+	}
+	
 	(my $pkgdir = $pkg) =~ s,::,/,g;
 	
 	my %found;
@@ -98,7 +105,6 @@ sub subPackages {
 	
 	return @found;
 }
-
 
 # $pkg->fields(qw(title @authors %editions));
 # 

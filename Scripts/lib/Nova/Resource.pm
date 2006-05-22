@@ -50,28 +50,26 @@ Nova::Resource - a resource from a Nova data file
 
 =cut
 
-{
-	my %types;
+our %TYPES;
 	
-	# Should call at *end* of subclass init.
-	sub init {
-		my ($self) = @_;
-		
-		# Rebless, if necessary
-		my $t = deaccent($self->type);
-		if (exists $types{$t}) {
-			$self->mixin($types{$t});
-		}
-		return $self;
+# Should call at *end* of subclass init.
+sub init {
+	my ($self) = @_;
+	
+	# Rebless, if necessary
+	my $t = deaccent($self->type);
+	if (exists $TYPES{$t}) {
+		$self->mixin($TYPES{$t});
 	}
-	
-	
-	# Register a package to handle some type
-	sub registerType {
-		my ($class, $type) = @_;
-		my $pkg = caller;
-		$types{deaccent($type)} = $pkg;
-	}
+	return $self;
+}
+
+
+# Register a package to handle some type
+sub registerType {
+	my ($class, $type) = @_;
+	my $pkg = caller;
+	$TYPES{deaccent($type)} = $pkg;
 }
 
 

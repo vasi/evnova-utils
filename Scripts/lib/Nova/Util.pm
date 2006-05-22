@@ -6,7 +6,6 @@ use warnings;
 
 use base qw(Exporter);
 
-use utf8;
 use List::Util qw(max);
 use Text::Wrap qw();
 
@@ -30,6 +29,7 @@ Nova::Util - Miscellaneous utilities
 # Eg: mïsn => misn
 sub deaccent {
 	my ($s) = @_;
+use Carp; Carp::confess unless defined $s;
 	$s =~ tr/\x{e4}\x{eb}\x{ef}\x{f6}\x{fc}\x{ff}/aeiouy/;
 	return lc $s;
 }

@@ -142,4 +142,12 @@ sub store {
 	return $self->{store}{$key};
 }
 
+# Restore the accents of a type
+sub reaccent {
+	my ($self, $type) = @_;
+	$type = deaccent($type);
+	my ($ret) = grep { deaccent($_) eq $type } $self->types;
+	return $ret;
+}
+
 1;

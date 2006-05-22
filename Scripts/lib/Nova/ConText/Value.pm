@@ -46,13 +46,13 @@ sub fromConText {
 # Heuristically create a Value from a scalar
 sub fromScalar {
 	my ($class, $val) = @_;
-	return $val if blessed $val && $val->isa(__PACKAGE__);
+	return $val if eval { $val->isa($class) };
 	
 	my ($subclass, @data) = (undef, $val);
 	if (ref($val) && ref($val) eq 'ARRAY') {
 		($subclass, @data) = (List => $val);
 	} elsif ($val !~ /-?\d+/) {
-		($subclass, @data) = (String => $1);
+		($subclass, @data) = (String => $val);
 	}
 	
 	$subclass = defined $subclass ? "${class}::$subclass" : $class;

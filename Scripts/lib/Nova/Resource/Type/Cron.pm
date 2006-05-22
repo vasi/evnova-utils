@@ -20,7 +20,7 @@ our @TIME_FIELDS = qw(FirstDay FirstMonth FirstYear LastDay LastMonth LastYear);
 
 sub fieldDefaults {
 	return (
-		(map { $_ => [ 0, -1 ] } @TIME_FIELDS, 'IndNewsStr'),
+		(map { $_ => [ -1, 0 ] } @TIME_FIELDS, 'IndNewsStr'),
 		(map { $_ => 0 } qw(Duration PreHoldoff PostHoldoff)),
 		Random => 100,
 	);

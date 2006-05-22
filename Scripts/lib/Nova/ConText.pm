@@ -148,7 +148,7 @@ sub _writeType {
 	
 	# Field names
 	my $typeObj = Nova::ConText::Type->new($type);
-	my @fields = $ris[0]->fieldNames;
+	my @fields = $ris[0]->fieldNames;	# $ris[0] must exist since we checked
 	@fields = $typeObj->outFieldNames(@fields);
 	push @fields, 'EOR';
 	@fields = map { Nova::ConText::Value::String->new($_) } @fields;
@@ -157,9 +157,8 @@ sub _writeType {
 	# Resources
 	for my $r (@ris) {
 		my %fields;
-		if ($r->can('typedFieldHash')) {
-			%fields = $r->typedFieldHash;
-		} else {				# Try to figure out the values heuristically
+		eval { %fields = $r->typedFieldHash };
+		if ($@) {				# Try to figure out the values heuristically
 			%fields = $r->fieldHash;
 			for my $k (keys %fields) {
 				$fields{$k} = Nova::ConText::Value->fromScalar($fields{$k});
@@ -168,6 +167,9 @@ sub _writeType {
 		
 		my @vals = $typeObj->outFields(%fields);
 		push @vals, Nova::ConText::Value::String->new("\x{2022}");
+		
+		# ResStore requires that the initial res-type not have quotes
+		$vals[0] = Nova::ConText::Value->new($vals[0]->value);
 		$self->_writeLine(@vals);
 	}
 }

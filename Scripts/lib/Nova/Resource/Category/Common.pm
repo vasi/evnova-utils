@@ -123,10 +123,17 @@ sub newFieldHash {
 	
 	my %hash;
 	for my $field (@fields) {
-		my $defaults = $class->_calcDefaults;
-		my $val = exists $defaults->{lc $field}
-			? $defaults->{lc $field}{list}[0] : '';
-		$hash{$field} = $val;
+		my $val;
+		if (lc $field eq 'type') {
+			$val = $type;
+		} elsif (lc $field eq 'id') {
+			$val = $id;
+		} else {
+			my $defaults = _calcDefaults($class);
+			$val = exists $defaults->{lc $field}
+				? $defaults->{lc $field}{list}[0] : '';
+		}
+		$hash{lc $field} = $val;
 	}
 	$hash{type} = $type;
 	$hash{id} = $id;

@@ -70,10 +70,10 @@ sub showByName {
 sub fieldDefaults {
 	return (
 		AvailRecord		=> 0,
-		AvailRating		=> [ 0, -1 ],
+		AvailRating		=> [ -1, 0 ],
 		AvailRandom		=> 100,
-		AvailShipType	=> [ 0, -1 ],
-		ShipCount		=> [ 0, -1 ],
+		AvailShipType	=> [ -1, 0 ],
+		ShipCount		=> [ -1, 0 ],
 		AvailLoc		=> 1,
 	);
 }

@@ -87,14 +87,14 @@ sub hasField {
 	return grep { lc $_ eq lc $field } $self->fieldNames;
 }
 
-# Get a hash of field names to values. Used for dumping.
+# Get a hash of field names to values. Keys should be in lower-case.
 sub fieldHash {
 	my ($self) = @_;
 	
 	# Inefficient default
 	my %hash;
 	for my $field ($self->fieldNames) {
-		$hash{$field} = $self->$field;
+		$hash{lc $field} = $self->$field;
 	}
 	return %hash;
 }
@@ -175,9 +175,9 @@ sub duplicate {
 	my ($self, $id) = @_;
 	$id = $self->collection->nextUnused($self->type) unless defined $id;
 	
-	my $fields = $self->fieldHash;
-	$fields->{id} = $id;
-	$self->collection->addResource($fields);
+	my %fields = $self->fieldHash;
+	$fields{id} = $id;
+	return $self->collection->addResource(\%fields);
 }
 
 

@@ -62,10 +62,10 @@ sub addType {
 # my $resource = $rs->newResource($type);
 sub newResource {
 	my ($self, $type, $id) = @_;
-	$type = deaccent($type);
+	$type = $self->reaccent($type);
 	$id = $self->nextUnused($type) unless defined $id;
 	
-	my @fields = @{$self->cache->{'fields',$type}};
+	my @fields = @{$self->cache->{'fields',deaccent($type)}};
 	my $fieldHash = Nova::Resource->newFieldHash($type, $id, @fields);
 	return $self->addResource($fieldHash);
 }
@@ -74,14 +74,14 @@ sub newResource {
 # my $resource = $rs->addResource($fieldHash);
 # my $resource = $rs->addResource($resource);
 #
-# Add a resource.
+# Add a resource. Key names should be lower case!
 sub addResource {	
 	my ($self, $fieldHash) = @_;
-	if (blessed $fieldHash && $fieldHash->isa('Nova::Resource')) {
-		$fieldHash = $fieldHash->fieldHash;
-	}
-	
 	die "Read-only!\n" if $self->{readOnly};
+
+	eval { $fieldHash = $fieldHash->typedFieldHash };
+	eval { $fieldHash = $fieldHash->fieldHash } if $@;
+	
 	for my $k (keys %$fieldHash) {
 		$fieldHash->{$k} = Nova::ConText::Value->fromScalar($fieldHash->{$k});
 	}

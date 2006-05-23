@@ -131,8 +131,7 @@ command {
 		@rs = grep { $_->filter($prop, $filtCode) } @rs;
 	}
 	
-#	columns('%d: %-<s   %?s', \@rs,
-	columns('%d: %-<s   %s', \@rs,
+	columns('%d: %-<s   %?s', \@rs,
 		sub { $_->ID, $_->fullName, $_->format($prop) });
 } 'map' => 'show a single property of each resource'; 
 

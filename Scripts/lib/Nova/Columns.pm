@@ -166,49 +166,82 @@ sub init {
 
 sub len { $_[0]->maxlen }
 
+sub align {
+	my ($self, $align) = @_;
+	$align = $self->num ? '' : '-' unless defined $align;
+	if ($self->alignChar eq '?') {
+		(my $fmt = $self->fmt) =~ s/\?/$align/;
+		$self->fmt($fmt);
+	}
+	$self->alignChar($align);
+}		
+
 sub output {
 	my ($self, $idx) = @_;
 	
 	unless (defined $self->finalFmt) {
-		# Align
-		my $fmt = $self->fmt;
-		if ($self->alignChar eq '?') {
-			my $new = $self->num ? '' : '-';
-			$fmt =~ s/\?/$new/;
-		}
-		
-		$fmt = "%$fmt" . sprintf "%d.%d%s", $self->maxlen, $self->maxlen,
-			$self->type;
+		$self->align;
+		my $fmt = sprintf "%%%s%d.%d%s", $self->fmt, $self->maxlen,
+			$self->maxlen, $self->type;
 		$self->finalFmt($fmt);
 	}
 	return sprintf $self->finalFmt, $self->col->[$idx];
 }
 
-sub nextDataIdx {
+sub neighbors {
 	my ($self, $formats, $idx) = @_;
-	my $dir = $self->alignChar eq '-' ? 1 : -1;
-	$idx += $dir;
-	while ($idx >= 0 && $idx <= $#$formats) {
-		return $idx if $formats->[$idx]->isa(__PACKAGE__);
-		return undef if $formats->[$idx]->str =~ /\S/;
-		$idx += $dir;
+	
+	my @dirs;
+	push @dirs, 1 if $self->alignChar ne '';
+	push @dirs, -1 if $self->alignChar ne '-';
+	
+	my @others;
+	for my $dir (@dirs) {
+		my $i = $idx + $dir;
+		while ($i >= 0 && $i <= $#$formats) {
+			if ($formats->[$i]->isa(__PACKAGE__)) {
+				push @others, $i;
+				last;
+			}
+			last if $formats->[$i]->str =~ /\S/;
+			$i += $dir;
+		}
 	}
-	return undef;
+	return @others;
 }
 
 sub combine {
-	my ($self, $formats, $len) = @_;
+	my ($self, $formats, $cutlen) = @_;
 	return if $self->alignChar eq '?';
 	
 	my ($idx) = grep { $formats->[$_] == $self } (0..$#$formats);
-	my $other = $self->nextDataIdx($formats, $idx) or return 0;
+	my @others = $self->neighbors($formats, $idx) or return 0;
 	
-	my ($start, $end) = sort { $a <=> $b } ($idx, $other);
-	return 0 unless $formats->[$start]->alignChar eq '-'
-		&& $formats->[$end]->alignChar eq '';
+	my @sols;
+	for my $other (@others) {
+		my ($start, $end) = sort { $a <=> $b } ($idx, $other);
+		my ($fstart, $fend) = map { $formats->[$_] } ($start, $end);
+		next unless $fstart->alignChar ne '' && $fend->alignChar ne '-';
+		
+		# How many characters will be truncated if we choose this neighbor?
+		my $oklen = $fstart->len + $fend->len - $cutlen;
+		my $lost = 0;
+		my $rows = scalar(@{$fstart->col});
+		for my $r (0..$rows - 1) {
+			my $extra = length($fstart->col->[$r]) + length($fend->col->[$r])
+				- $oklen;
+			$lost += $extra if $extra > 0;
+		}
+		
+		push @sols, { lost => $lost, start => $start, end => $end };
+	}
+	return 0 unless @sols;
 	
+	# Choose the best neighbor
+	@sols = sort { $a->{lost} <=> $b->{lost} } @sols;
+	my ($start, $end) = @{$sols[0]}{'start','end'};
 	splice @$formats, $start, $end - $start + 1,
-		Nova::Columns::Formatter::Combined->new($len,
+		Nova::Columns::Formatter::Combined->new($cutlen,
 			[ @$formats[$start..$end] ], %{$self->opts});
 	return 1;
 }
@@ -234,8 +267,11 @@ use List::Util qw(sum min);
 sub init {
 	my ($self, $cutlen, $others, %opts) = @_;
 	my ($start, $end) = (shift @$others, pop @$others);
+	$start->align('-');
+	$end->align('');
 	$self->start($start);
 	$self->end($end);
+	
 	$self->spaces(sum map { $_->len } @$others);
 	
 	my $trunclen = ($start->trunc ? $start : $end)->len;

@@ -155,7 +155,7 @@ sub exists {
 sub ids {
 	my ($self, $type) = @_;
 	$type = deaccent($type);
-	die "No such type $type\n" unless exists $self->cache->{'ids',$type};
+	die "No such type '$type'\n" unless exists $self->cache->{'ids',$type};
 	
 	# Sort and uniquify only on-demand
 	my @ids = @{$self->cache->{'ids',$type}};

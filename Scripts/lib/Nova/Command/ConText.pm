@@ -33,7 +33,8 @@ __PACKAGE__->fields(qw(resources));
 use Nova::ConText;
 use Nova::Command qw(command);
 
-use Nova::Util qw(columns prettyPrint);
+use Nova::Util qw(prettyPrint);
+use Nova::Columns;
 
 # Load the current context file
 sub _loadContext {
@@ -94,6 +95,7 @@ command {
 	my ($self, $type, $prop) = @_;
 	($type, $prop) = ('ship', $type) unless defined $prop;
 	
+$DB::single = 1;
 	columns('%s - %d: %-<s  %?s', [ $self->resources->type($type) ],
 		sub { $_->format($prop), $_->ID, $_->fullName, $_->rankInfo($prop) },
 		rank => sub { $_->$prop }
@@ -102,16 +104,22 @@ command {
 
 command {
 	my ($self, $bit) = @_;
+	my @data;
 	
 	my $rs = $self->resources;
 	for my $t ($rs->types) {
-		my ($r) = $rs->type($t);
-		my @flds = $r->bitFields;
+		my @rs = $rs->type($t);
+		next unless @rs;
+		my @flds = $rs[0]->bitFields;
 		next unless @flds;
 		
-		print "$t: ", join(', ', @flds), "\n";
+		for my $fld (@flds) {
+			my @match = grep { $_->filter($fld, sub { $_ }) } @rs;
+			my $dispType = $fld eq $flds[0] ? $t : '';
+			push @data, [ $dispType, $fld, scalar(@match) ];
+		}
 	}
-	
+	columns('%s  %-s  %s', \@data, sub { @$_ });
 } bit => 'find items which use a given bit';
 
 command {

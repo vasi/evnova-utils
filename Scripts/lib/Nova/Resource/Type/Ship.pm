@@ -7,7 +7,7 @@ use base qw(Nova::Base);
 use Nova::Resource;
 Nova::Resource->registerType('ship');
 
-use Nova::Util qw(columns);
+use Nova::Columns;
 use List::Util qw(sum);
 
 # Add the subtitle to the full name, if it seems like a good idea

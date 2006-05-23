@@ -150,4 +150,36 @@ sub reaccent {
 	return $ret;
 }
 
+# Like &type, but returns an iterator to improve responsiveness
+sub iter {
+	my ($self, @types) = @_;
+	@types = $self->types unless @types;
+	return Nova::Resources::Iterator->new($self, @types);
+}
+
+
+package Nova::Resources::Iterator;
+use base qw(Nova::Base);
+__PACKAGE__->fields(qw(collection types type ids));
+
+sub init {
+	my ($self, $collection, @types) = @_;
+	$self->collection($collection);
+	$self->types(\@types);
+	$self->ids([]);
+}
+
+sub next {
+	my ($self) = @_;
+	
+	my $id = shift @{$self->ids};
+	until (defined $id) {
+		defined( $self->type(shift @{$self->types}) ) or return undef;
+		$self->ids([ $self->collection->ids($self->type) ]);
+		$id = shift @{$self->ids};
+	}
+	
+	return $self->collection->get($self->type => $id);
+}
+
 1;

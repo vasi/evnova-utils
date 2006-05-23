@@ -116,4 +116,6 @@ sub formatAvailLoc {
 	return $locations{$val};
 }
 
+sub importantBitFields { $_[0]->bitFields }
+
 1;

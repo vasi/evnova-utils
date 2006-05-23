@@ -12,10 +12,10 @@ use Nova::Util qw(commaNum);
 # Show this object
 sub show {
 	my ($self, $verb, @fields) = @_;
-	my $ret = sprintf "%d: %s\n", $self->ID, $self->fullName;
+	my $ret = sprintf "%s %d: %s\n", $self->type, $self->ID, $self->fullName;
 	
 	# Override in subclasses
-	$ret .= $self->showField($self, $_, $verb) for @fields;
+	$ret .= $self->showField($_, $verb) for @fields;
 	return $ret;
 }
 

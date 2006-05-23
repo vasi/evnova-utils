@@ -120,11 +120,26 @@ sub usesBit {
 	my ($self, $field, $bitnum) = @_;
 	die "Bit must be a number!\n" if $bitnum =~ /\D/;
 	my $bit = "b$bitnum";
-	return $self->$field =~ /$bit/;
+	return $self->$field =~ /$bit\b/;
 }
 
 sub importantBitFields { () }
 
-
+sub showBitFields {
+	my ($self, $bitnum, $verb) = @_;
+	my @fields = $self->bitFields;
+	my @uses = grep { $self->usesBit($_, $bitnum) } @fields;
+	return '' unless @uses;
+	
+	if ($verb == 0) {
+		@fields = @uses;
+	} elsif ($verb == 1) {
+		my %show = map { $_ => 1 } (@uses, $self->importantBitFields);
+		@fields = grep { $show{$_} } @fields;
+	}
+	
+	--$verb if $verb;
+	return $self->show($verb, @fields);
+}
 
 1;

@@ -19,6 +19,7 @@ sub modTypeName {
 	return $MOD_TYPE_NAMES{$type};
 }
 
+sub importantBitFields { qw(Availability) }
 
 BEGIN {
 	sub modTypes {

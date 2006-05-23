@@ -102,23 +102,17 @@ command {
 } rank => 'rank resources by a property';
 
 command {
-	my ($self, $bit) = @_;
+	my ($self, $bit, @types) = @_;
 	my @data;
 	
-	my $rs = $self->resources;
-	for my $t ($rs->types) {
-		my @rs = $rs->type($t);
-		next unless @rs;
-		my @flds = $rs[0]->bitFields;
-		next unless @flds;
-		
-		for my $fld (@flds) {
-			my @match = grep { $_->filter($fld, sub { $_ }) } @rs;
-			my $dispType = $fld eq $flds[0] ? $t : '';
-			push @data, [ $dispType, $fld, scalar(@match) ];
-		}
+	my $found = 0;
+	my $iter = $self->resources->iter(@types);
+	while (my $r = $iter->next) {
+		my $str = $r->showBitFields($bit, $self->config->verbose);
+		next unless $str;
+		print "\n" if $found++;
+		print $str;
 	}
-	columns('%s  %-s  %s', \@data, sub { @$_ });
 } bit => 'find items which use a given bit';
 
 command {

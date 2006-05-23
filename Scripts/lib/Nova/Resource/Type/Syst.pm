@@ -12,4 +12,6 @@ sub spobs {
 	return map { $self->collection->get(spob => $_) } $self->multi('nav');
 }
 
+sub importantBitFields { qw(Visibility) }
+
 1;

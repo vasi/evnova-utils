@@ -23,4 +23,6 @@ sub syst {
 	return $self->collection->get(syst => $self->_spobSystCache->{$self->ID});
 }
 
+sub importantBitFields { qw(OnDominate OnDestroy) }
+
 1;

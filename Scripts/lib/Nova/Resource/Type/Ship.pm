@@ -106,4 +106,7 @@ sub mass {
 	return $self->_massFinish($mass, $verb);
 }
 
+sub importantBitFields { qw(Availability AppearOn OnPurchase OnCapture) }
+
+
 1;

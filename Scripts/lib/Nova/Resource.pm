@@ -137,7 +137,7 @@ sub _caseInsensitiveMethod {
 	for my $base (@{$pkg->symref('ISA')}) {
 		my $code;
 		eval { $code = _caseInsensitiveMethod($base, $sub) };
-		($$subs->{lc $sub} = $code) if defined $code; # cache
+		return ($$subs->{lc $sub} = $code) if defined $code; # cache
 	}
 	
 	return ($$subs->{lc $sub} = undef);

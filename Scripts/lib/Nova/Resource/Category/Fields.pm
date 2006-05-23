@@ -52,7 +52,7 @@ sub _flagFields {
 	my $pkg = ref($self) || $self;
 	$field = lc $field;
 	
-	my $flagFields = $pkg->symref('FLAG_FIELDS');
+	my $flagFields = $pkg->symref('_FLAG_FIELDS');
 	if (exists $flagFields->{$field}) {	
 		return @{$flagFields->{$field}};
 	}
@@ -110,10 +110,20 @@ sub isBitTest {
 		|| $field eq 'Visibility';
 }
 
-sub bitFields {
-	my ($self) = @_;
-	return grep { $self->isBitSet($_) || $self->isBitTest($_) }
-		$self->fieldNames;
+{
+	my $cache;
+
+	sub bitFields {
+		my ($self) = @_;
+		my $type = $self->type;
+		unless (exists $cache->{$type}) {
+			$cache->{$type} = [
+				grep { $self->isBitSet($_) || $self->isBitTest($_) }
+					$self->fieldNames
+			];
+		}
+		return @{$cache->{$type}};
+	}
 }
 
 sub usesBit {

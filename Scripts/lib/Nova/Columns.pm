@@ -131,15 +131,22 @@ sub init {
 	
 	($fmt, my $type) = $fmt =~ /^%(.*)(\w)$/;
 	$self->type($type);
+
+	my ($chr) = ($fmt =~ /([-?])/);
+	$chr ||= '';
+	$self->alignChar($chr);
 	
-	$self->alignChar(($fmt =~ /([-?])/) || '');
 	$self->maxlen(max map { length($_) } @$col);
 	$self->trunc($fmt =~ s/<//);
 	$self->fmt($fmt);
 	
 	if ($self->alignChar eq '?') {
 		my $cnt = scalar(@$col);
-		my $nums = scalar(grep { /^\D*[\d,.eEx ]*\D*$/ } @$col);
+		my $nums = 0;
+		for my $c (@$col) {
+			$nums++ if $c =~ /^(\D*)([\d,.eEx ]+)(\D*)$/
+				&& length($2) > length($1) + length($3);
+		}
 		$self->num($nums / $cnt >= 3/4);
 	}
 }
@@ -149,11 +156,16 @@ sub len { $_[0]->maxlen }
 sub print {
 	my ($self, $idx) = @_;
 	
-	# TODO: Unknown align, truncation
+	# TODO: truncation
 	
-	my $fmt = '%' . $self->fmt . $self->maxlen . $self->type;	
-	$fmt =~ s/\?//;
+	# Align
+	my $fmt = $self->fmt;
+	if ($self->alignChar eq '?') {
+		my $new = $self->num ? '' : '-';
+		$fmt =~ s/\?/$new/;
+	}
 	
+	$fmt = "%$fmt" . $self->maxlen . $self->type;	
 	printf $fmt, $self->col->[$idx];
 }
 

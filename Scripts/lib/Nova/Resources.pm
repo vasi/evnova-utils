@@ -97,42 +97,81 @@ sub nextUnused {
 # Get all resources of some types
 sub type {
 	my ($self, @types) = @_;
-	@types = $self->types unless @types; # default to all
-	
-	my @resources;
-	for my $type (@types) {
-		push @resources, map { $self->get($type, $_) } $self->ids($type);
-	}
-	return @resources;
+	return $self->typeIter(@types)->collect;
 }
 
-
-# Return IDs for one spec
-sub _findOne {
-	my ($self, $type, $spec) = @_;
+# Like &type, but returns an iterator to improve responsiveness
+sub typeIter {
+	my ($self, @types) = @_;
+	@types = $self->types unless @types;
 	
-	if ($spec =~ /^[\d,-]+$/) {
-		my @specs = split /,/, $spec;
-		return map { /^(\d+)-(\d+)$/ ? ($1..$2) : $_ } @specs;
-	} else {
-		return map { $_->ID }
-			grep { $_->fullName =~ /$spec/i } $self->type($type);
+	my @items;
+	for my $t (@types) {
+		push @items, map { [ $t => $_ ] } $self->ids($t);
 	}
+	return Nova::Resources::Iterator::List->new($self, @items);
 }
+
 
 # Find a resource from a specification
 sub find {
-	my ($self, $type, @specs) = @_;
-	$type = deaccent($type);
+	my ($self, @args) = @_;
+	my $iter = $self->findIter(@args);
+	return wantarray ? $iter->collect : $iter->next;
+}
+
+sub _findIDs {
+	my ($self, $type, $specs) = @_;
 	
-	my @found;
-	if (@specs) {
-		my %ids = map { $_ => 1 } map { $self->_findOne($type, $_) } @specs;
-		@found = map { $self->get($type => $_) } sort { $a <=> $b } keys %ids;
-	} else {
-		@found = $self->type($type);
+	my (@num, @name);
+	for my $spec (@$specs) {
+		if ($spec =~ /^[\d,-]+$/) {
+			push @num, $spec;
+		} else {
+			push @name, $spec;
+		}
 	}
-	return wantarray ? @found : $found[0];
+	@$specs = @name;
+	
+	@num = grep /^[\d,-]+$/, @num;
+	@num = split /,/, join ',', @num;
+	return map { /^(\d+)-(\d+)$/ ? ($1..$2) : $_ } @num;
+}
+
+sub _findNextName {
+	my ($self, $type, $ids, @specs) = @_;
+	
+	while (defined (my $id = shift @$ids)) {
+		my $r = $self->get($type => $id);
+		my $name = $r->fullName;
+		for my $spec (@specs) {
+			return ($id, $r) if $name =~ /$spec/i;
+		}
+	}
+	return undef;
+}
+
+sub findIter {
+	my ($self, $type, @specs) = @_;
+	return $self->typeIter($type) unless @specs;
+	
+	my @byNum = $self->_findIDs($type, \@specs);
+	@specs = map { qr/$_/i } @specs;
+	
+	my @ids = $self->ids($type);
+	
+	my $next = sub {
+		my ($id, $r) = $self->_findNextName($type, \@ids, @specs);
+		if (@byNum && (!defined $id || $id >= $byNum[0])) {
+			$id = shift @byNum;
+			return undef unless defined $id;
+			return $self->get($type => $id);
+		} else {
+			return $r;
+		}
+	};
+	
+	return Nova::Resources::Iterator->new($next);
 }
 
 # Store an arbitrary value to a key
@@ -150,36 +189,42 @@ sub reaccent {
 	return $ret;
 }
 
-# Like &type, but returns an iterator to improve responsiveness
-sub iter {
-	my ($self, @types) = @_;
-	@types = $self->types unless @types;
-	return Nova::Resources::Iterator->new($self, @types);
-}
 
 
 package Nova::Resources::Iterator;
 use base qw(Nova::Base);
-__PACKAGE__->fields(qw(collection types type ids));
+__PACKAGE__->fields(qw(nextCode));
 
 sub init {
-	my ($self, $collection, @types) = @_;
-	$self->collection($collection);
-	$self->types(\@types);
-	$self->ids([]);
+	my ($self, $next) = @_;
+	$self->nextCode($next);
 }
 
 sub next {
 	my ($self) = @_;
+	return $self->nextCode->();
+}
+
+sub collect {
+	my ($self) = @_;
 	
-	my $id = shift @{$self->ids};
-	until (defined $id) {
-		defined( $self->type(shift @{$self->types}) ) or return undef;
-		$self->ids([ $self->collection->ids($self->type) ]);
-		$id = shift @{$self->ids};
+	my @rs;
+	while (defined(my $r = $self->next)) {
+		push @rs, $r;
 	}
-	
-	return $self->collection->get($self->type => $id);
+	return @rs;
+}
+
+package Nova::Resources::Iterator::List;
+use base qw(Nova::Resources::Iterator);
+
+sub init {
+	my ($self, $collection, @items) = @_;
+	$self->SUPER::init($self, sub {
+		my $i = shift @items;
+		return undef unless defined $i;
+		return $collection->get(@$i);
+	});
 }
 
 1;

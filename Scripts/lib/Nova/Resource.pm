@@ -117,10 +117,15 @@ sub DESTROY { }
 # case is ignored.
 sub _caseInsensitiveMethod {
 	my ($pkg, $sub) = @_;
+	$pkg = ref($pkg) || $pkg;
 	
 	# Save the methods for each package we look at
-	my $subs = $pkg->symref('_CASE_INSENSITIVE_SUBS');
+	my $subs;
+	{	no strict 'refs'; # ->symref is too expensive
+		$subs = \${"${pkg}::_CASE_INSENSITIVE_SUBS}"}; 
+	}
 	unless (defined $$subs) {
+		$$subs = { };
 		my %methods = $pkg->methods;
 		$$subs->{lc $_} = $methods{$_} for keys %methods;
 	}
@@ -132,10 +137,10 @@ sub _caseInsensitiveMethod {
 	for my $base (@{$pkg->symref('ISA')}) {
 		my $code;
 		eval { $code = _caseInsensitiveMethod($base, $sub) };
-		return $code if defined $code;
+		($$subs->{lc $sub} = $code) if defined $code; # cache
 	}
 	
-	return undef;
+	return ($$subs->{lc $sub} = undef);
 }
 
 sub can {

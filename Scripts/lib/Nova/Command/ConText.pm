@@ -95,7 +95,6 @@ command {
 	my ($self, $type, $prop) = @_;
 	($type, $prop) = ('ship', $type) unless defined $prop;
 	
-$DB::single = 1;
 	columns('%s - %d: %-<s  %?s', [ $self->resources->type($type) ],
 		sub { $_->format($prop), $_->ID, $_->fullName, $_->rankInfo($prop) },
 		rank => sub { $_->$prop }
@@ -132,7 +131,8 @@ command {
 		@rs = grep { $_->filter($prop, $filtCode) } @rs;
 	}
 	
-	columns('%d: %-<s   %?s', \@rs,
+#	columns('%d: %-<s   %?s', \@rs,
+	columns('%d: %-<s   %s', \@rs,
 		sub { $_->ID, $_->fullName, $_->format($prop) });
 } 'map' => 'show a single property of each resource'; 
 

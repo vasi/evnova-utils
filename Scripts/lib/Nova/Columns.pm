@@ -76,12 +76,21 @@ sub print {
 	my $maxIdx = $self->nrows() - 1;
 	for my $i (0..$maxIdx) {
 		print '-' x $self->len, "\n" if $i == $maxIdx && $self->opts->{total};
-		map { $_->print($i) } @{$self->formatters};
+		map { print $_->output($i) } @{$self->formatters};
 		print "\n";
 	}
 }
 
-sub reduceLen { }
+sub reduceLen {
+	my ($self) = @_;
+	
+	my $fmts = $self->formatters;
+	my ($trunc) = grep { $_->trunc } @$fmts;
+	return unless defined $trunc;
+	
+	$trunc->truncate($fmts, $self->len - $self->width);
+	$self->formatters($fmts);
+}
 
 
 # Format and print a column
@@ -103,6 +112,9 @@ sub init {
 	$self->init(@args);
 }
 
+sub trunc { 0 }
+
+
 
 package Nova::Columns::Formatter::Literal;
 use base qw(Nova::Columns::Formatter);
@@ -115,17 +127,18 @@ sub init {
 
 sub len { length($_[0]->str) }
 
-sub print { print $_[0]->str }
+sub output { $_[0]->str }
 
 
 package Nova::Columns::Formatter::Data;
 use base qw(Nova::Columns::Formatter);
-__PACKAGE__->fields(qw(type fmt num alignChar maxlen trunc col opts));
+__PACKAGE__->fields(qw(type fmt num alignChar maxlen trunc col opts finalFmt));
 
 use List::Util qw(max);
 
 sub init {
-	my ($self, $fmt, $col, %opts) = @_;
+	my ($self, $fmt, $col, @opts) = @_;
+	my %opts = (truncMin => 5, @opts);
 	$self->opts(\%opts);
 	$self->col($col);
 	
@@ -147,26 +160,109 @@ sub init {
 			$nums++ if $c =~ /^(\D*)([\d,.eEx ]+)(\D*)$/
 				&& length($2) > length($1) + length($3);
 		}
-		$self->num($nums / $cnt >= 3/4);
+		$self->num($nums / $cnt >= 0.8);
 	}
 }
 
 sub len { $_[0]->maxlen }
 
-sub print {
+sub output {
 	my ($self, $idx) = @_;
 	
-	# TODO: truncation
-	
-	# Align
-	my $fmt = $self->fmt;
-	if ($self->alignChar eq '?') {
-		my $new = $self->num ? '' : '-';
-		$fmt =~ s/\?/$new/;
+	unless (defined $self->finalFmt) {
+		# Align
+		my $fmt = $self->fmt;
+		if ($self->alignChar eq '?') {
+			my $new = $self->num ? '' : '-';
+			$fmt =~ s/\?/$new/;
+		}
+		
+		$fmt = "%$fmt" . sprintf "%d.%d%s", $self->maxlen, $self->maxlen,
+			$self->type;
+		$self->finalFmt($fmt);
 	}
-	
-	$fmt = "%$fmt" . $self->maxlen . $self->type;	
-	printf $fmt, $self->col->[$idx];
+	return sprintf $self->finalFmt, $self->col->[$idx];
 }
+
+sub nextDataIdx {
+	my ($self, $formats, $idx) = @_;
+	my $dir = $self->alignChar eq '-' ? 1 : -1;
+	$idx += $dir;
+	while ($idx >= 0 && $idx <= $#$formats) {
+		return $idx if $formats->[$idx]->isa(__PACKAGE__);
+		return undef if $formats->[$idx]->str =~ /\S/;
+		$idx += $dir;
+	}
+	return undef;
+}
+
+sub combine {
+	my ($self, $formats, $len) = @_;
+	return if $self->alignChar eq '?';
+	
+	my ($idx) = grep { $formats->[$_] == $self } (0..$#$formats);
+	my $other = $self->nextDataIdx($formats, $idx) or return 0;
+	
+	my ($start, $end) = sort { $a <=> $b } ($idx, $other);
+	return 0 unless $formats->[$start]->alignChar eq '-'
+		&& $formats->[$end]->alignChar eq '';
+	
+	splice @$formats, $start, $end - $start + 1,
+		Nova::Columns::Formatter::Combined->new($len,
+			[ @$formats[$start..$end] ], %{$self->opts});
+	return 1;
+}
+
+sub truncate {
+	my ($self, $formats, $len) = @_;
+	
+	# Find something to combine with
+	return if $self->combine($formats, $len);
+	
+	# Truncate
+	my $truncMin = $self->opts->{truncMin};
+	$self->maxlen(max($self->maxlen - $len, $truncMin));
+}
+
+
+package Nova::Columns::Formatter::Combined;
+use base qw(Nova::Columns::Formatter);
+__PACKAGE__->fields(qw(start end restlen spaces));
+
+use List::Util qw(sum min);
+
+sub init {
+	my ($self, $cutlen, $others, %opts) = @_;
+	my ($start, $end) = (shift @$others, pop @$others);
+	$self->start($start);
+	$self->end($end);
+	$self->spaces(sum map { $_->len } @$others);
+	
+	my $trunclen = ($start->trunc ? $start : $end)->len;
+	my $maxcut = $trunclen - $opts{truncMin};
+	$cutlen = min($cutlen, $maxcut);
+	$self->restlen($start->len + $end->len - $cutlen);
+}
+
+sub output {
+	my ($self, $idx) = @_;
+	
+	my ($start, $end) = map { $_->output($idx) } ($self->start, $self->end);
+	$start =~ s/\s*$//;
+	$end =~ s/^\s*//;
+	
+	my $restlen = $self->restlen;
+	my $spaces = $self->spaces;
+	my $len = length($start) + length($end);
+	
+	if ($len > $restlen) {
+		my $trim = $len - $restlen;
+		my $trimref = $self->start->trunc ? \$start : \$end;
+		$$trimref = substr $$trimref, 0, -$trim;
+		$len = $restlen;
+	}
+	return $start . ' ' x ($spaces + $restlen - $len) . $end;
+}
+
 
 1;

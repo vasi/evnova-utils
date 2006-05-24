@@ -143,9 +143,9 @@ sub _findIDs {
 	}
 	@$specs = @name;
 	
-	@num = grep /^[\d,-]+$/, @num;
 	@num = split /,/, join ',', @num;
-	return map { /^(\d+)-(\d+)$/ ? ($1..$2) : $_ } @num;
+	return grep { $self->exists($type => $_) }
+		map { /^(\d+)-(\d+)$/ ? ($1..$2) : $_ } @num;
 }
 
 sub _findNextName {

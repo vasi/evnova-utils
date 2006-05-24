@@ -28,7 +28,7 @@ sub source { $_[0]->collection->source }
 sub _multiFields {
 	my ($self, $prefix, %opts) = @_;
 	my %defaults = map { $_ => 1 } (
-		exists $opts{default} ? @{$opts{defaults}} : (0, 1)
+		exists $opts{defaults} ? @{$opts{defaults}} : (0, -1)
 	);
 	$prefix = qr/^$prefix/i;
 	
@@ -55,13 +55,13 @@ sub multi {
 #
 # Get a list of object-like hashes
 sub multiObjs {
-	my ($self, $primary, @secondaries, $opts) = @_;
-	unless (ref($opts)) {
-		push @secondaries, $opts;
-		$opts = { };
+	my ($self, $primary, @secondaries) = @_;
+	my $opts = { };
+	if (ref($secondaries[-1])) {
+		$opts = pop @secondaries;
 	}
 	
-	my @k = @{self->_multiFields($primary, %$opts)->{fields}};
+	my @k = @{$self->_multiFields($primary, %$opts)->{fields}};
 	
 	my @ret;
 	for my $k (@k) {

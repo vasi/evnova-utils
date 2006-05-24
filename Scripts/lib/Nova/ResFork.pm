@@ -60,19 +60,21 @@ sub nextUnused {	# Prefer the system call
 	return Unique1ID($self->_check($type));
 }
 
+# FIXME: implement
+
 # my $resource = $rs->newResource($type => $id);
 # my $resource = $rs->newResource($type);
-sub newResource { }
+#sub newResource { }
 
 # my $resource = $rs->addResource($fieldHash);
 # my $resource = $rs->addResource($resource);
-sub addResource { }
+#sub addResource { }
 
 # $rs->deleteResource($type, $id);
-sub deleteResource { }
+#sub deleteResource { }
 
 # Get a single resource by type and ID
-sub get { }
+#sub get { }
 
 # Does a resource exist?
 sub exists {

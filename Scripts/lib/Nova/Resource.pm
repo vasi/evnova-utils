@@ -72,12 +72,13 @@ sub registerType {
 	$TYPES{deaccent($type)} = $pkg;
 }
 
-
+#### Interface
+#
 # Get/set the value of a field (without doing the AUTOLOAD messiness)
-sub _rawField { }
-
+# sub _rawField { }
+#
 # Get the field names
-sub fieldNames { }
+# sub fieldNames { }
 
 # Do we have the given field?
 sub hasField {
@@ -107,9 +108,6 @@ sub dumpField {
 	return $self->$field;
 }
 
-
-# Eliminate warning on DESTROY
-sub DESTROY { }
 
 # $self->_caseInsensitiveMethod($subname);
 #
@@ -161,6 +159,8 @@ sub AUTOLOAD {
 	my ($self, @args) = @_;
 	my $fullsub = our $AUTOLOAD;
 	my ($pkg, $sub) = ($fullsub =~ /(.*)::(.*)/);
+	return if $sub eq 'DESTROY';
+	
 	my $code = $self->can($sub);
 	die "No such method '$sub'\n" unless defined $code;
 	goto &$code;

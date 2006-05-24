@@ -33,7 +33,7 @@ __PACKAGE__->fields(qw(resources));
 use Nova::ConText;
 use Nova::Command qw(command);
 
-use Nova::Util qw(prettyPrint printIter);
+use Nova::Util qw(prettyPrint printIter regexFilter makeFilter);
 use Nova::Columns;
 
 # Load the current context file
@@ -108,14 +108,34 @@ command {
 	my @rs = $self->resources->type($type);
 	
 	# Filter
-	if (defined $filt) {
-		my $filtCode = Nova::Resource->makeFilter($filt);
-		@rs = grep { $_->filter($prop, $filtCode) } @rs;
-	}
+	my $filtCode = defined $filt ? makeFilter($filt) : sub { 1 };
 	
-	columns('%d: %-<s   %?s', \@rs,
-		sub { $_->ID, $_->fullName, $_->format($prop) });
+	# How to get the fields
+	my $fieldsRegexCode = regexFilter($prop);
+	my $fieldsCode = defined $fieldsRegexCode
+		? sub { grep { $fieldsRegexCode->() } $_[0]->fieldNames }
+		: sub { $prop };
+	
+	# Check the fields
+	my @match;
+	for my $r (@rs) {
+		my @fields = $fieldsCode->($r);
+		for my $field (@fields) {
+			local $_ = $r->$field;
+			next unless $filtCode->();
+			push @match, { res => $r, fld => $field };
+		}
+	}
+		
+	columns('%d: %-<s  %-s: %?s', \@match, sub {
+		$_->{res}->ID, $_->{res}->fullName, $_->{fld},
+			$_->{res}->field($_->{fld})
+	});
 } 'map' => 'show a single property of each resource'; 
 
+command {
+	my ($self, $search) = @_;
+	$self->resources->find(spob => $search)->displayCommodities;
+} comm => 'display the commodities at a stellar';
 
 1;

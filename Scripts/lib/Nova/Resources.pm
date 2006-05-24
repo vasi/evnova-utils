@@ -62,6 +62,7 @@ sub init {
 	$self->source($source);
 }
 
+=private interface
 
 # my $resource = $rs->newResource($type => $id);
 # my $resource = $rs->newResource($type);
@@ -86,6 +87,9 @@ sub ids { }
 # Get a list of all known types
 sub types { }
 
+=end interface
+
+=cut
 
 # Get the next unfilled resource of a type
 sub nextUnused {

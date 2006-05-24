@@ -25,22 +25,43 @@ sub dump {
 # The source file for this resource and friends
 sub source { $_[0]->collection->source }
 
-# my @props = $r->multi($prefix);
+sub _multiFields {
+	my ($self, $prefix, %opts) = @_;
+	my %defaults = map { $_ => 1 } (
+		exists $opts{default} ? @{$opts{defaults}} : (0, 1)
+	);
+	$prefix = qr/^$prefix/i;
+	
+	my (@fields, @vals);
+	for my $field (grep { /$prefix/ } $self->fieldNames) {
+		my $val = $self->$field;
+		next if exists $defaults{$val};
+		push @fields, $field;
+		push @vals, $val;
+	}
+	
+	return { fields => \@fields, vals => \@vals };
+}
+
+# my @props = $r->multi($prefix, $opts);
 #
 # Get a list of properties with the same prefix
 sub multi {
-	my ($self, $prefix) = @_;
-	my @k = sort grep /^$prefix/i, $self->fieldNames;
-	return grep { $_ != -1 && $_ != -2 } map { $self->$_ } @k;
+	my ($self, $prefix, %opts) = @_;
+	return @{$self->_multiFields($prefix, %opts)->{vals}};
 }
 
-# my @objs = $r->multiObjs($primary, @secondaries);
+# my @objs = $r->multiObjs($primary, @secondaries, $opts);
 #
 # Get a list of object-like hashes
 sub multiObjs {
-	my ($self, $primary, @secondaries) = @_;
-	my @k = grep /^$primary/i, $self->fieldNames;
-	@k = grep { my $v = $self->$_; $v != -1 && $v != 0 } @k;
+	my ($self, $primary, @secondaries, $opts) = @_;
+	unless (ref($opts)) {
+		push @secondaries, $opts;
+		$opts = { };
+	}
+	
+	my @k = @{self->_multiFields($primary, %$opts)->{fields}};
 	
 	my @ret;
 	for my $k (@k) {
@@ -141,33 +162,5 @@ sub newFieldHash {
 	return \%hash;
 }
 
-# Make a filter from a specification
-sub makeFilter {
-	my ($class, $spec) = @_;
-	my $code;
-	
-	if ($spec =~ /\$_/ || $spec =~ m,^\s*/.*/[imsx]*\s*$,
-			|| $spec =~ /^\s*m(\W).*\1[imsx]*\s*$/
-			|| $spec =~ /^\s*m[[<({].*[]>)}][imsx]*\s*$/) {
-		$code = $spec;			# Code
-	} elsif ($spec =~ /^\s*([><=]+|eq|ne|ge|le|gt|lt)/) {
-		$code = "\$_ $spec";	# Relation
-	} elsif ($spec =~ /^\s*-?\d[_\d]*([eE]-?\d+)?(\.\d*)?\s*$/) {
-		$code = "\$_ == $spec";	# Numeric equality
-	} else {
-		$code = "\$_ eq \"\Q$spec\E\"";		# String equality
-	}
-	
-	my $filt = eval "sub { $code }";
-	die "Bad filter '$spec': $@\n" if $@;
-	return $filt;
-}
-
-# Does the object match a filter?
-sub filter {
-	my ($self, $field, $filt) = @_;
-	local $_ = $self->$field;
-	return $filt->();
-}
 
 1;

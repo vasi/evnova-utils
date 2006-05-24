@@ -15,7 +15,7 @@ Nova::Columns - print data in columns
 
 =cut
 
-our $PCT_RE = qr/(%[^%\w]*\w)/;
+our $PCT_RE = qr/(%[^%a-zA-Z]*[a-zA-Z])/;
 
 
 # columns($fmt, \@list, $colGen, %opts);
@@ -142,14 +142,18 @@ sub init {
 	$self->opts(\%opts);
 	$self->col($col);
 	
-	($fmt, my $type) = $fmt =~ /^%(.*)(\w)$/;
+	($fmt, my $type) = $fmt =~ /^%(.*)([a-zA-Z])$/;
 	$self->type($type);
 
 	my ($chr) = ($fmt =~ /([-?])/);
 	$chr ||= '';
 	$self->alignChar($chr);
-	
-	$self->maxlen(max map { length($_) } @$col);
+
+	if ($fmt =~ s/([1-9]\d*)//) {
+		$self->maxlen($1);
+	} else {
+		$self->maxlen(max map { length($_) } @$col);
+	}
 	$self->trunc($fmt =~ s/<//);
 	$self->fmt($fmt);
 	

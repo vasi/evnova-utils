@@ -12,11 +12,16 @@ use Nova::Util qw(commaNum);
 # Show this object
 sub show {
 	my ($self, $verb, @fields) = @_;
-	my $ret = sprintf "%s %d: %s\n", $self->type, $self->ID, $self->fullName;
+	my $ret = $self->header;
 	
 	# Override in subclasses
 	$ret .= $self->showField($_, $verb) for @fields;
 	return $ret;
+}
+
+sub header {
+	my ($self) = @_;
+	sprintf "%s %d: %s\n", $self->type, $self->ID, $self->fullName
 }
 
 # Format the name and contents of a field

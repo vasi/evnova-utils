@@ -20,7 +20,7 @@ sub allGovts {
 
 sub classIDs {
 	my ($self) = @_;
-	return $self->multi('Classes');
+	return $self->multi('Classes', defaults => [-1]);
 }
 
 sub classes {
@@ -43,7 +43,7 @@ sub _inverse {
 sub _relation {
 	my ($self, $key, $inverse) = @_;
 	
-	my @classIDs = $self->multi($key);
+	my @classIDs = $self->multi($key, defaults => [-1]);
 	my @classes = map { $self->_class($_) } @classIDs;
 	my @govts = map { $_->govts } @classes;
 	

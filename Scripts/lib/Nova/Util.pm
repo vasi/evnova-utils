@@ -9,7 +9,8 @@ use base qw(Exporter);
 use List::Util qw(max min sum);
 use Text::Wrap qw();
 
-our @EXPORT_OK = qw(deaccent commaNum termWidth wrap prettyPrint printIter);
+our @EXPORT_OK = qw(deaccent commaNum termWidth wrap prettyPrint printIter
+	makeFilter regexFilter);
 
 =head1 NAME
 
@@ -85,5 +86,43 @@ sub printIter (&$$) {
 	}
 }
 
+sub _filterFromCode {
+	my ($code, $spec) = @_;
+	my $filt = eval "sub { $code }";
+	die "Bad filter '$spec': $@\n" if $@;
+	return $filt;
+}
+
+# Make a filter from a specification
+sub makeFilter {
+	my ($spec) = @_;
+	my $code;
+	
+	if (defined (my $filt = regexFilter($spec))) {
+		return $filt;			# Regex
+	} elsif ($spec =~ /\$_/) {
+		$code = $spec;			# Code
+	} elsif ($spec =~ /^\s*([><=]+|eq|ne|ge|le|gt|lt)/) {
+		$code = "\$_ $spec";	# Relation
+	} elsif ($spec =~ /^\s*-?\d[_\d]*([eE]-?\d+)?(\.\d*)?\s*$/) {
+		$code = "\$_ == $spec";	# Numeric equality
+	} else {
+		$code = "\$_ eq \"\Q$spec\E\"";		# String equality
+	}
+	return _filterFromCode($code, $spec);
+}
+
+# Make a filter from a regex spec. If it doesn't look like a regex, return
+# undef.
+sub regexFilter {
+	my ($spec) = @_;
+	if ($spec =~ m,^\s*/.*/[imsx]*\s*$,
+			|| $spec =~ /^\s*m(\W).*\1[imsx]*\s*$/
+			|| $spec =~ /^\s*m[[<({].*[]>)}][imsx]*\s*$/) {
+		return _filterFromCode($spec, $spec);
+	} else {
+		return undef;
+	}
+}
 
 1;

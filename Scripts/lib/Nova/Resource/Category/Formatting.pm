@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Nova::Util qw(commaNum);
+use Nova::Columns;
 
 # Formatting methods for resources
 
@@ -113,6 +114,11 @@ sub formatContribRequireField {
 	
 	@parts = map { sprintf '%04x', $_ } reverse @parts;
 	return '0x' . join(' ', @parts);
+}
+
+sub list {
+	my ($class, @rs) = @_;
+	columns('%d: %-s', \@rs, sub { $_->ID, $_->fullName });
 }
 
 1;

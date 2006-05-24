@@ -39,6 +39,7 @@ sub flagInfo {
 	my @texts;
 	while (@flags) {
 		(my ($funcName, $text), @flags) = @flags;
+		next unless defined $text;
 		push @texts, $text;
 		
 		my $mask = 1 << $bit++;

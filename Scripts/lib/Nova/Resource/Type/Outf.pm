@@ -9,6 +9,23 @@ Nova::Resource->registerType('outf');
 
 our (@EXPORT, %MOD_TYPE_NAMES);
 
+flagInfo('Flags',
+	fixedGun		=> 'fixed gun',
+	turret			=> 'turret',
+	persistent		=> 'persistent',
+	cantSell		=> "can't sell",
+	autoRemove		=> 'remove after purchase',
+	persistNCB		=> 'persist over NCB ship change',
+	(undef, undef) x 2,
+	buyRequire		=> 'must meet Require to buy',
+	propPrice		=> 'price proportional to ship mass',
+	propMass		=> 'mass proportional to ship mass',
+	sellAnywhere	=> 'can be sold anywhere',
+	onlyDW			=> 'prevents display of other items with same weight',
+	appearInRank	=> 'appear in ranks section of player info',
+	buyAvail		=> 'must meet Availability to buy',
+);
+
 sub mods {
 	my ($self) = @_;
 	return $self->multiObjs('ModType', 'ModVal');

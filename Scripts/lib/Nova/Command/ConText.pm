@@ -76,8 +76,7 @@ command {
 
 command {
 	my ($self, $type, @specs) = @_;
-	columns('%d: %-s', [ $self->resources->find($type => @specs) ],
-		sub { $_->ID, $_->fullName });
+	Nova::Resource->list($self->resources->find($type => @specs));
 } list => 'list resources matching a specification';
 
 command {
@@ -134,8 +133,15 @@ command {
 } 'map' => 'show a single property of each resource'; 
 
 command {
-	my ($self, $search) = @_;
-	$self->resources->find(spob => $search)->displayCommodities;
+	my ($self, @search) = @_;
+	printIter { $_->displayCommodities }
+		$self->resources->findIter(spob => @search), $self->config->verbose;
 } comm => 'display the commodities at a stellar';
+
+command {
+	my ($self) = @_;
+	Nova::Resource->list(
+		grep { $_->persistent } $self->resources->type('outf'));
+} persistent => 'display persistent outfits';
 
 1;

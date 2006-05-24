@@ -45,6 +45,11 @@ sub strength {
 	return $strength;
 }
 
+sub formatStrength {
+	my ($self, $field, $verb) = @_;
+	return sprintf '%.2f', $self->strength;
+}
+
 sub show {
 	my ($self) = @_;
 	my $ret = $self->NEXT::show;

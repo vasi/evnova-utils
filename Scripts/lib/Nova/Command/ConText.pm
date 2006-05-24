@@ -33,7 +33,7 @@ __PACKAGE__->fields(qw(resources));
 use Nova::ConText;
 use Nova::Command qw(command);
 
-use Nova::Util qw(prettyPrint);
+use Nova::Util qw(prettyPrint printIter);
 use Nova::Columns;
 
 # Load the current context file
@@ -63,14 +63,9 @@ command {
 
 command {
 	my ($self, $type, @specs) = @_;
-	my @res = $self->resources->find($type => @specs);
 	my $verb = $self->config->verbose;
-	
-	# Could take a while, so display incrementally
-	for my $i (0..$#res) {
-		prettyPrint $res[$i]->show($verb);
-		print "\n" x ($verb + 1) if $i != $#res;
-	}
+	printIter { $_->show($verb) } $self->resources->findIter($type => @specs),
+		$verb;
 } show => 'display a resource nicely';
 
 command {
@@ -103,16 +98,9 @@ command {
 
 command {
 	my ($self, $bit, @types) = @_;
-	my @data;
-	
-	my $found = 0;
-	my $iter = $self->resources->iter(@types);
-	while (my $r = $iter->next) {
-		my $str = $r->showBitFields($bit, $self->config->verbose);
-		next unless $str;
-		print "\n" if $found++;
-		print $str;
-	}
+	my $verb = $self->config->verbose;
+	printIter { $_->showBitFields($bit, $verb) }
+		$self->resources->typeIter(@types), $verb;
 } bit => 'find items which use a given bit';
 
 command {

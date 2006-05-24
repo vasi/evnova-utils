@@ -8,6 +8,7 @@ use base 'Nova::Base';
 __PACKAGE__->fields(qw(source cache));
 
 use Nova::Cache;
+use Nova::Iterator;
 use Nova::Resource;
 use Nova::Util qw(deaccent);
 
@@ -109,7 +110,12 @@ sub typeIter {
 	for my $t (@types) {
 		push @items, map { [ $t => $_ ] } $self->ids($t);
 	}
-	return Nova::Resources::Iterator::List->new($self, @items);
+	
+	return Nova::Iterator->new(sub {
+		my $i = shift @items;
+		return $i unless defined $i;
+		return $self->get(@$i);
+	});
 }
 
 
@@ -159,19 +165,21 @@ sub findIter {
 	@specs = map { qr/$_/i } @specs;
 	
 	my @ids = $self->ids($type);
+	my ($nameID, $nameRes);
 	
-	my $next = sub {
-		my ($id, $r) = $self->_findNextName($type, \@ids, @specs);
-		if (@byNum && (!defined $id || $id >= $byNum[0])) {
-			$id = shift @byNum;
+	return Nova::Iterator->new(sub {
+		($nameID, $nameRes) = $self->_findNextName($type, \@ids, @specs)
+			unless defined $nameID;
+		if (@byNum && (!defined $nameID || $nameID >= $byNum[0])) {
+			my $id = shift @byNum;
+			undef $nameID if defined $id && defined $nameID && $id == $nameID;
 			return undef unless defined $id;
 			return $self->get($type => $id);
 		} else {
-			return $r;
+			undef $nameID;
+			return $nameRes;
 		}
-	};
-	
-	return Nova::Resources::Iterator->new($next);
+	});
 }
 
 # Store an arbitrary value to a key
@@ -189,42 +197,5 @@ sub reaccent {
 	return $ret;
 }
 
-
-
-package Nova::Resources::Iterator;
-use base qw(Nova::Base);
-__PACKAGE__->fields(qw(nextCode));
-
-sub init {
-	my ($self, $next) = @_;
-	$self->nextCode($next);
-}
-
-sub next {
-	my ($self) = @_;
-	return $self->nextCode->();
-}
-
-sub collect {
-	my ($self) = @_;
-	
-	my @rs;
-	while (defined(my $r = $self->next)) {
-		push @rs, $r;
-	}
-	return @rs;
-}
-
-package Nova::Resources::Iterator::List;
-use base qw(Nova::Resources::Iterator);
-
-sub init {
-	my ($self, $collection, @items) = @_;
-	$self->SUPER::init($self, sub {
-		my $i = shift @items;
-		return undef unless defined $i;
-		return $collection->get(@$i);
-	});
-}
 
 1;

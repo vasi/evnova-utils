@@ -9,7 +9,7 @@ use base qw(Exporter);
 use List::Util qw(max min sum);
 use Text::Wrap qw();
 
-our @EXPORT_OK = qw(deaccent commaNum termWidth wrap prettyPrint);
+our @EXPORT_OK = qw(deaccent commaNum termWidth wrap prettyPrint printIter);
 
 =head1 NAME
 
@@ -69,5 +69,21 @@ sub prettyPrint {
 	my ($text) = @_;
 	print wrap($text);
 }
+
+# printIter { $code }, $iter, $verb;
+#
+# Print the results of applying a code-block to an iterator's contents
+sub printIter (&$$) {
+	my ($code, $iter, $verb) = @_;
+	my $found = 0;
+	my $delim = $verb ? "\n\n" : "\n";
+	while (defined(local $_ = $iter->next)) {
+		my $s = $code->();
+		next unless $s;
+		print $delim if $found++;
+		prettyPrint $s;
+	}
+}
+
 
 1;

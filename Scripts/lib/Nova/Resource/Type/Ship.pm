@@ -108,5 +108,16 @@ sub mass {
 
 sub importantBitFields { qw(Availability AppearOn OnPurchase OnCapture) }
 
+sub defense {
+	my ($self) = @_;
+	return $self->armor + $self->shield;
+}
+
+# Not column-ized, but good enough
+sub formatDefense {
+	my ($self) = @_;
+	return sprintf "%5d = %5d + %5d", $self->defense, $self->shield,
+		$self->armor;
+}
 
 1;

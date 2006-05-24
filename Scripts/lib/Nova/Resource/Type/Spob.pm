@@ -65,4 +65,9 @@ sub displayCommodities {
 		sub { $_->fullName, $_->price, substr $_->priceLevel, 0, 1 });
 }
 
+
+package Nova::Resource::DefenseFleet;
+use base qw(Nova::Base);
+# FIXME
+
 1;

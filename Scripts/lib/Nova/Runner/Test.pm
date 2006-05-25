@@ -1,13 +1,12 @@
 # Copyright (c) 2006 Dave Vasilevsky
-package Nova::Command::Test;
+package Nova::Runner::Test;
 use strict;
 use warnings;
 
-use base 'Nova::Command';
-use Nova::Command qw(command);
+use base qw(Nova::Runner);
+use Nova::Runner::Command;
 
 command {
-	my ($self) = @_;
 	my $in = Nova::ConText->new('../ConText/Test3.txt');
 	my $rs = $in->read;
 	$rs->noCache;

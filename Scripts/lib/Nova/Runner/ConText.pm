@@ -1,10 +1,10 @@
 # Copyright (c) 2006 Dave Vasilevsky
-package Nova::Command::ConText;
+package Nova::Runner::ConText;
 use strict;
 use warnings;
 
-use base 'Nova::Command';
-use Nova::Command qw(command);
+use base qw(Nova::Runner);
+use Nova::Runner::Command;
 
 =head1 NAME
 
@@ -13,9 +13,9 @@ Nova::Command::ConText - commands related to ConText files
 =cut
 
 command {
-	my ($self, $val) = @_;
-	$self->config->conText($val) if defined $val;
-	printf "%s\n", $self->config->conText;
+	my ($config, $val) = @_;
+	$config->persist('ConText', $val) if defined $val;
+	printf "%s\n", $config->conText;
 } 'context' => 'get/set the ConText file';
 
 
@@ -26,85 +26,93 @@ default ConText file
 
 =cut
 
-package Nova::Command::ConText::Using;
-use base 'Nova::Command::ConText';
+package Nova::Runner::ConText::Using;
+use base 'Nova::Runner::ConText';
 __PACKAGE__->fields(qw(resources));
 
 use Nova::ConText;
-use Nova::Command qw(command);
+use Nova::Runner::Command;
 
 use Nova::Util qw(prettyPrint printIter regexFilter makeFilter);
 use Nova::Columns;
 
-# Load the current context file
-sub _loadContext {
+sub init {
 	my ($self) = @_;
-	my $ct = Nova::ConText->new($self->config->conText);
-	$self->resources($ct->read);
-	$self->resources->readOnly;
+	$self->SUPER::init;
+	$self->resources({ });
 }
 
-sub setup {
-	my ($self) = @_;
-	$self->SUPER::setup;
-	$self->_loadContext;
+sub run {
+	my ($self, $cmd, $config, @args) = @_;
+	
+	# Get the resources
+	my $ctf = $config->conText;
+	unless (exists $self->resources->{$ctf}) {
+		my $ct = Nova::Context->new($ctf);
+		my $res = $ct->read;
+		$res->readOnly;
+		$self->resources->{$ctf} = $res;
+	}
+	my $res = $self->resources->{$ctf};
+	
+	$self->SUPER::run($cmd, $config, $res, @args);
+	
+	# Special case: remove the cache if we're reloading
+	delete $self->resources->{$ctf} if $cmd->name eq 'reload';
 }
 
 command {
-	my ($self) = @_;
-	$self->resources->deleteCache;
-	$self->_loadContext;
+	my ($conf, $res) = @_;
+	$res->deleteCache;
 } reload => 'reload the ConText';
 
 command {
-	my ($self, $type, $spec, @fields) = @_;
-	print $self->resources->find($type => $spec)->dump(@fields);
+	my ($conf, $res, $type, $spec, @fields) = @_;
+	print $res->find($type => $spec)->dump(@fields);
 } 'dump' => 'dump a resource';
 
 command {
-	my ($self, $type, @specs) = @_;
-	my $verb = $self->config->verbose;
-	printIter { $_->show($verb) } $self->resources->findIter($type => @specs),
-		$verb;
+	my ($conf, $res, $type, @specs) = @_;
+	my $verb = $conf->verbose;
+	printIter { $_->show($verb) } $res->findIter($type => @specs), $verb;
 } show => 'display a resource nicely';
 
 command {
-	my ($self, @types) = @_;
-	columns('%s %d: %-s', [ $self->resources->type(@types) ],
+	my ($conf, $res, @types) = @_;
+	columns('%s %d: %-s', [ $res->type(@types) ],
 		sub { $_->type, $_->ID, $_->fullName });
 } listAll => 'list all known resources of the given types';
 
 command {
-	my ($self, $type, @specs) = @_;
-	Nova::Resource->list($self->resources->find($type => @specs));
+	my ($conf, $res, $type, @specs) = @_;
+	Nova::Resource->list($res->find($type => @specs));
 } list => 'list resources matching a specification';
 
 command {
-	my ($self, $spec) = @_;
-	my $ship = $self->resources->find(ship => $spec);
+	my ($conf, $res, $spec) = @_;
+	my $ship = $res->find(ship => $spec);
 	$ship->mass(1);
 } mass => 'show the total mass available on a ship';
 
 command {
-	my ($self, $type, $prop) = @_;
+	my ($conf, $res, $type, $prop) = @_;
 	($type, $prop) = ('ship', $type) unless defined $prop;
 	
-	columns('%s - %d: %-<s  %?s', [ $self->resources->type($type) ],
+	columns('%s - %d: %-<s  %?s', [ $res->type($type) ],
 		sub { $_->format($prop), $_->ID, $_->fullName, $_->rankInfo($prop) },
 		rank => sub { $_->$prop }
 	);
 } rank => 'rank resources by a property';
 
 command {
-	my ($self, $bit, @types) = @_;
-	my $verb = $self->config->verbose;
-	printIter { $_->showBitFields($bit, $verb) }
-		$self->resources->typeIter(@types), $verb;
+	my ($conf, $res, $bit, @types) = @_;
+	my $verb = $conf->verbose;
+	printIter { $_->showBitFields($bit, $verb) } $res->typeIter(@types), $verb;
 } bit => 'find items which use a given bit';
 
 command {
-	my ($self, $type, $prop, $filt) = @_;
-	my @rs = $self->resources->type($type);
+	my ($conf, $res, $type, $prop, $filt) = @_;
+	my @rs = $res->type($type);
 	
 	# Filter
 	my $filtCode = defined $filt ? makeFilter($filt) : sub { 1 };
@@ -133,15 +141,14 @@ command {
 } 'map' => 'show a single property of each resource'; 
 
 command {
-	my ($self, @search) = @_;
-	printIter { $_->displayCommodities }
-		$self->resources->findIter(spob => @search), $self->config->verbose;
+	my ($conf, $res, @search) = @_;
+	printIter { $_->displayCommodities } $res->findIter(spob => @search),
+		$conf->verbose;
 } comm => 'display the commodities at a stellar';
 
 command {
-	my ($self) = @_;
-	Nova::Resource->list(
-		grep { $_->persistent } $self->resources->type('outf'));
+	my ($conf, $res) = @_;
+	Nova::Resource->list(grep { $_->persistent } $res->type('outf'));
 } persistent => 'display persistent outfits';
 
 1;

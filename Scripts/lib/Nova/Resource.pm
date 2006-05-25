@@ -108,42 +108,9 @@ sub dumpField {
 	return $self->$field;
 }
 
-
-# $self->_caseInsensitiveMethod($subname);
-#
-# Find a method in the inheritance tree which equals the given name when
-# case is ignored.
-sub _caseInsensitiveMethod {
-	my ($pkg, $sub) = @_;
-	$pkg = ref($pkg) || $pkg;
-	
-	# Save the methods for each package we look at
-	my $subs;
-	{	no strict 'refs'; # ->symref is too expensive
-		$subs = \${"${pkg}::_CASE_INSENSITIVE_SUBS}"}; 
-	}
-	unless (defined $$subs) {
-		$$subs = { };
-		my %methods = $pkg->methods;
-		$$subs->{lc $_} = $methods{$_} for keys %methods;
-	}
-	if (exists $$subs->{lc $sub}) {
-		return $$subs->{lc $sub};
-	}
-	
-	# Try going up in the inheritance tree
-	for my $base (@{$pkg->symref('ISA')}) {
-		my $code;
-		eval { $code = _caseInsensitiveMethod($base, $sub) };
-		return ($$subs->{lc $sub} = $code) if defined $code; # cache
-	}
-	
-	return ($$subs->{lc $sub} = undef);
-}
-
 sub can {
 	my ($self, $meth) = @_;
-	my $code = $self->_caseInsensitiveMethod($meth);
+	my $code = $self->caseInsensitiveMethod($meth);
 	return $code if defined $code;
 	
 	# Can't test for field presence without a blessed object!
@@ -156,17 +123,8 @@ sub can {
 }
 
 sub AUTOLOAD {
-	my ($self, @args) = @_;
-	my $fullsub = our $AUTOLOAD;
-	my ($pkg, $sub) = ($fullsub =~ /(.*)::(.*)/);
-	return if $sub eq 'DESTROY';
-	
-	my $code = $self->can($sub);
-	die "No such method '$sub'\n" unless defined $code;
-	goto &$code;
-	
-	# We can't use the insert-and-goto trick, since it interferes with
-	# overriding methods.
+	unshift @_, our $AUTOLOAD;
+	goto &Nova::Base::autoloadCan;
 }
 
 # Get/set a field

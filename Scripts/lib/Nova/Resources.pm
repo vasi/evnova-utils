@@ -150,6 +150,7 @@ sub _findIDs {
 
 sub _findNextName {
 	my ($self, $type, $ids, @specs) = @_;
+	return undef unless @specs;
 	
 	while (defined (my $id = shift @$ids)) {
 		my $r = $self->get($type => $id);

@@ -44,6 +44,9 @@ sub flagInfo {
 		
 		my $mask = 1 << $bit++;
 		$pkg->makeSub($funcName => sub { $_[0]->$field & $mask });
+		$pkg->makeSub("show$funcName" => sub {
+			return $_[0]->$funcName ? ucfirst "$text\n" : '';
+		});
 	}
 	$pkg->symref('FLAG_FIELDS')->{lc $field} = \@texts;
 }

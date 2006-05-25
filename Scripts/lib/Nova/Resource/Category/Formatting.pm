@@ -70,6 +70,13 @@ sub formatCost {
 	return commaNum($self->cost);
 }
 
+sub formatGovt {
+	my ($self, $field, $verb) = @_;
+	my $govt = $self->govtObj;
+	return '' if $govt->ID == -1 && $verb < 2;
+	return $govt->fullName;
+}
+
 # Try to format a field by name. Return undef if cant.
 sub formatByName {
 	my ($self, $field, $verb) = @_;

@@ -7,6 +7,27 @@ use base qw(Nova::Base);
 use Nova::Resource;
 Nova::Resource->registerType('govt');
 
+flagInfo('Flags',
+	xenophobic		=> 'xenophobic',
+	nosy			=> "attacks player in non-allied system if he's a criminal",
+	hatesPlayer		=> 'always attacks player',
+	invincible		=> "invincible to player's shots",
+	retreats		=> 'retreats when shields below 25%',
+	nosyIgnore		=> 'nosy ships of other govts ignore when this govt is'
+						. ' under attack',
+	untouchable		=> "can't hurt or be hurt by player",
+	freightersJam	=> 'freighters have jamming',
+	noPersEscapePods	=> 'pers ships have no escape pods, but act like they'
+							. ' do',
+	bribeWarships	=> 'warships take bribes',
+	cantHail		=> "can't be hailed",
+	startDisabled	=> 'ships start disabled',
+	plunder			=> 'warships will plunder ships before destroying them',
+	bribeFreighters	=> 'freighters take bribes',
+	bribePlanets	=> 'planets take bribes',
+	bribeBig		=> 'demand higher bribes',
+);
+
 sub fromCollection {
 	my ($class, $collection, $id) = @_;
 	return Nova::Resource::Type::Govt::None->new($collection) if $id == -1;

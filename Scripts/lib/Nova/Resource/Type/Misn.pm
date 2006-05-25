@@ -102,7 +102,7 @@ sub formatShipSyst {
 	unless (defined ($self->fieldDefined('shipCount'))) {
 		return $verb < 2 ? '' : 'none';
 	}
-	return Nova::Resource::Spec::Syst->new($self, $field)->desc;;
+	return Nova::Resource::Spec::Syst->new($self, $field)->desc;
 }
 
 sub formatAvailLoc {

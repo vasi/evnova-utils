@@ -57,4 +57,13 @@ sub showStartDisabled {
 	return "Disabled\n" if $self->startDisabled;
 }
 
+sub formatHailQuote {
+	my ($self, $field, $verb) = @_;
+	my $hq = $self->$field;
+	return $verb < 2 ? '' : 'none' if $hq == -1;
+	return $self->collection->get('STR#' => 7101)->strings->[$hq - 1];
+}
+
+#sub formatShipType {
+
 1;

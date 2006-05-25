@@ -58,7 +58,6 @@ sub init {
 	}
 	
 	# Create formatters
-$DB::single = 1;
 	my @parts = split /$PCT_RE/, $fmt;
 	my @fmts = map { Nova::Columns::Formatter->new($_, \@cols, %opts) } @parts;
 	$self->formatters(\@fmts);

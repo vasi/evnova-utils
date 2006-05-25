@@ -48,7 +48,7 @@ sub run {
 	# Get the resources
 	my $ctf = $config->conText;
 	unless (exists $self->resources->{$ctf}) {
-		my $ct = Nova::Context->new($ctf);
+		my $ct = Nova::ConText->new($ctf);
 		my $res = $ct->read;
 		$res->readOnly;
 		$self->resources->{$ctf} = $res;
@@ -142,7 +142,7 @@ command {
 
 command {
 	my ($conf, $res, @search) = @_;
-	printIter { $_->displayCommodities } $res->findIter(spob => @search),
+	printIter { $_->showCommodities } $res->findIter(spob => @search),
 		$conf->verbose;
 } comm => 'display the commodities at a stellar';
 

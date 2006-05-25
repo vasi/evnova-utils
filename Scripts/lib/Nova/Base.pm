@@ -203,7 +203,8 @@ sub caseInsensitiveMethod {
 
 # An autoload based on $obj->can
 sub autoloadCan {
-	my ($fullsub, $obj, @args) = @_;
+	my $fullsub = shift;
+	my ($obj, @args) = @_;
 	my ($pkg, $sub) = ($fullsub =~ /(.*)::(.*)/);
 	return if $sub eq 'DESTROY';
 	

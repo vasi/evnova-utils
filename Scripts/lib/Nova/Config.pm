@@ -32,7 +32,7 @@ our @OPTIONS = qw(conText verbose);
 # Setup our accessors
 for my $opt (@OPTIONS) {
 	__PACKAGE__->makeSub($opt, sub {
-		my ($self, $opt, @args) = @_;
+		my ($self, @args) = @_;
 		return $self->runtime($opt, @args) if @args;
 		return $self->option($opt);
 	});
@@ -62,16 +62,16 @@ sub AUTOLOAD {
 # Get the value of a config option
 sub option {
 	my ($self, $opt) = @_;
-	return $self->options->{$opt};
+	return $self->options->{lc $opt};
 }
 
 # Change the value of a config option, and request that the value only last
 # for the duration of this program.
 sub runtime {
-	my ($self, $name, $val) = @_;
-	my $meth = "transformSet$name";
-	$val = eval { $self->$meth($val) }; # Attempt to transform
-	$self->options->{$name} = $val;
+	my ($self, $opt, $val) = @_;
+	my $meth = "transformSet$opt";
+	eval { $val = $self->$meth($val) }; # Attempt to transform
+	$self->options->{lc $opt} = $val;
 }
 
 sub withArgs {
@@ -127,7 +127,7 @@ sub DESTROY {
 sub runtime {
 	my ($self, @args) = @_;
 	$self->modified(1);
-	return $self->SUPER::runtime->(@args);
+	return $self->SUPER::runtime(@args);
 }
 
 # Change the value of a config option, and request that the value be saved
@@ -146,6 +146,7 @@ sub init {
 	$self->SUPER::init;
 	$self->parent($parent);
 	
+$DB::single = 1;
 	# Handle options
 	{
 		local @ARGV = @$args;
@@ -161,13 +162,13 @@ sub init {
 
 sub persist {
 	my ($self, $opt, $val) = @_;
-	delete $self->options->{$opt};
+	delete $self->options->{lc $opt};
 	return $self->parent->persist($opt, $val);
 }
 
 sub option {
 	my ($self, $opt) = @_;
-	return $self->options->{$opt} if exists $self->options->{$opt};
+	return $self->options->{lc $opt} if exists $self->options->{lc $opt};
 	return $self->parent->option($opt);
 }
 

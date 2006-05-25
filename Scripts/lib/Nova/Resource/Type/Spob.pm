@@ -8,7 +8,7 @@ use Nova::Resource;
 Nova::Resource->registerType('spob');
 
 use Nova::Resource::Commodity;
-use Nova::Columns;
+use Nova::Columns qw(columnsStr);
 
 
 sub _spobSystCache {
@@ -58,11 +58,10 @@ sub commodities {
 	return @ret;
 }
 
-sub displayCommodities {
+sub showCommodities {
 	my ($self) = @_;
-	print $self->header;
-	columns('  %s: %d %s', [ $self->commodities ],
-		sub { $_->fullName, $_->price, substr $_->priceLevel, 0, 1 });
+	return $self->header . columnsStr('  %s: %d %s', [ $self->commodities ],
+		sub { $_->fullName, $_->price, substr($_->priceLevel, 0, 1) });
 }
 
 

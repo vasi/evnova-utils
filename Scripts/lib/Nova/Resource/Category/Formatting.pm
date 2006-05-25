@@ -9,7 +9,6 @@ use Nova::Columns;
 # Formatting methods for resources
 
 
-
 # Show this object
 sub show {
 	my ($self, $verb, @fields) = @_;

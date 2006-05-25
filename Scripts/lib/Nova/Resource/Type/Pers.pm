@@ -54,7 +54,7 @@ sub startDisabled {
 
 sub showStartDisabled {
 	my ($self, $field, $verb) = @_;
-	return "Disabled\n" if $self->startDisabled;
+	return $self->startDisabled ? "Disabled\n" : '';
 }
 
 sub formatHailQuote {

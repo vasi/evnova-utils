@@ -18,18 +18,18 @@ sub init {
 sub runCommandLine {
 	my ($self, @args) = @_;
 	
+	# Setup a config
+	my $co = $self->config->withArgs(\@args);
+	
 	# Get the command
 	my $name = shift @args;
 	$name = 'help' unless defined $name;
 	my $cmd = Nova::Runner->getCommand($name);
 	
-	# Setup a config
-	my $co = $self->config->withArgs(\@args);
-	
 	# Get a runner
 	my $runnerPkg = $cmd->runner;
 	unless (exists $self->runners->{$runnerPkg}) {
-		$self->runners->{$runnerPkg} = $runnerPkg->new($self->config);
+		$self->runners->{$runnerPkg} = $runnerPkg->new($co);
 	}
 	my $runner = $self->runners->{$runnerPkg};
 	

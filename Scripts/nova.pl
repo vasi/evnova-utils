@@ -4,6 +4,6 @@ use strict;
 
 use lib 'lib';
 
-use Nova::Command;
-Nova::Command->execute(@ARGV);
+use Nova::Runner;
+Nova::Runner->commandLine(@ARGV);
 

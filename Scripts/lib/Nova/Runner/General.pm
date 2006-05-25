@@ -6,6 +6,8 @@ use warnings;
 use base qw(Nova::Runner);
 use Nova::Runner::Command;
 
+use Nova::ResFork;
+
 # Print help for this command
 sub printHelp {
 	my ($cmd) = @_;
@@ -28,7 +30,7 @@ command {
 		printf "%s - EV Nova command line tool\n", $0;
 		
 		my $cats = Nova::Runner->getCategories;
-		printCategory($cats->{$_}, $_) for keys %$cats;
+		printCategory($cats->{$_}, $_) for sort keys %$cats;
 	}
 } help => 'get help on available commands';
 

@@ -11,6 +11,11 @@ our %CATEGORIES;	# Known categories of commands (for help)
 
 __PACKAGE__->subPackages;
 
+sub init {
+	my ($self, $config) = @_;
+	$self->SUPER::init;
+}
+
 sub commandLine {
 	my ($class, @args) = @_;
 	

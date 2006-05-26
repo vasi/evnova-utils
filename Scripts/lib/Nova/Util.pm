@@ -44,12 +44,13 @@ sub commaNum {
 # Get the width of the terminal
 sub termWidth {
 	if (eval { require Fink::CLI }) {
-		return Fink::CLI::get_term_width();
-	} elsif (exists $ENV{COLUMNS}) {
-		return $ENV{COLUMNS};
-	} else {
-		return 80;
+		my $w = Fink::CLI::get_term_width();
+		return $w if $w;
 	}
+	if (exists $ENV{COLUMNS} && $ENV{COLUMNS}) {
+		return $ENV{COLUMNS};
+	}
+	return 80;
 }
 
 # wrap($text, $first, $rest);

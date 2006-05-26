@@ -153,6 +153,7 @@ sub init {
 		GetOptions(
 			'context|c=s'	=> sub { $self->conText($_[1]) },
 			'verbose|v+'	=> \$verbose,
+			'width|w=i'		=> sub { local $ENV{COLUMNS} = $_[1] },
 		) or die "Bad options!\n";
 		@$args = @ARGV;
 		$self->verbose($verbose);

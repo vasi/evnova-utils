@@ -167,7 +167,7 @@ command {
 	$m->availShipType($val);
 	my $st = $m->shipType;
 	Nova::Resource->list($st->ships);
-	print $st->format($conf->verbose), "\n";
+	print $st->desc, "\n";
 } misc => 'testing';
 
 1;

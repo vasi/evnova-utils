@@ -73,7 +73,7 @@ sub fieldDefaults {
 		AvailRecord		=> 0,
 		AvailRating		=> [ -1, 0 ],
 		AvailRandom		=> 100,
-		AvailShipType	=> [ -1, 0 ],
+		AvailShipType	=> [ -1, 0, 127 ],
 		ShipCount		=> [ -1, 0 ],
 		AvailLoc		=> 1,
 	);
@@ -117,5 +117,105 @@ sub formatAvailLoc {
 }
 
 sub importantBitFields { $_[0]->bitFields }
+
+sub _spobSystCache {
+	$_[0]->precalc(spobSyst => sub {
+		my ($self, $cache) = @_;
+		for my $syst (reverse $self->collection->type('syst')) {
+			for my $spob ($syst->spobs) {
+				$cache->{$spob->ID} = $syst->ID;
+			}
+		}
+	});
+}
+
+sub persons {
+	my ($self) = @_;
+	
+	my $id = $self->ID;
+	my $c = $self->precalc(misnPers => sub {
+		my ($self, $cache) = @_;
+		for my $pers ($self->collection->type('pers')) {
+			if (defined(my $mid = $pers->fieldDefined('LinkMission'))) {
+				push @{$cache->{$mid}}, $pers->ID;
+			}
+		}
+	});
+	return exists $c->{$id}
+		? map { $self->collection->get(pers => $_) } @{$c->{$id}}
+		: ();
+}
+
+sub shipType {
+	my ($self) = @_;
+	return Nova::Resource::Type::Misn::ShipType->new($self);
+}
+
+sub formatAvailShipType {
+	my ($self, $field, $verb) = @_;
+	return $self->shipType->format($verb);
+}
+
+sub showPersons {
+	my ($self, $verb) = @_;
+	my @persons = $self->persons;
+	return '' unless @persons;
+	
+	my $ret = $self->header;
+	$ret .= $self->showField($_, $verb) for (qw(AvailRecord
+		AvailRating AvailRandom AvailShipType AvailBits CargoQty));
+	
+	# FIXME: more!
+	return $ret;
+}
+
+
+package Nova::Resource::Type::Misn::ShipType;
+use base qw(Nova::Base);
+__PACKAGE__->fields(qw(collection type res neg));
+
+sub init {
+	my ($self, $resource) = @_;
+	$self->collection($resource->collection);
+	$self->neg(0);
+	
+	my $val = $resource->fieldDefined('AvailShipType');
+	if (defined $val) {
+		my $cat = int($val / 1000);
+		my $id = $val - $cat * 1000;
+		my $type = $cat <= 1 ? 'ship' : 'govt';
+		my $res = $self->collection->get($type => $id);
+		my $neg = $cat % 2;
+		
+		$self->neg($neg);
+		$self->res($res);
+		$self->type($type);
+	}
+}
+
+sub format {
+	my ($self, $verb) = @_;
+	my $type = $self->type;
+	return $verb < 2 ? '' : 'any' unless defined $type;
+	
+	my $desc = sprintf '%s (%d)', $self->res->fullName, $self->res->ID;
+	my $not = $self->neg ? 'not ' : '';
+	my $fmt = $type eq 'ship' ? '%sship %s' : 'ship %sof govt %s';
+	return sprintf $fmt, $not, $desc;
+}
+
+sub ships {
+	my ($self) = @_;
+	my $type = $self->type;
+	return $self->collection->type('ship') unless defined $type;
+	
+	my $neg = $self->neg;
+	return $self->res if $type eq 'ship' && !$neg; # shortcut
+	
+	my $field = $type eq 'ship' ? 'ID' : 'InherentGovt';
+	my $id = $self->res->ID;
+	return grep { ($_->field($field) == $id) ^ $neg }
+		$self->collection->type('ship');
+}
 
 1;

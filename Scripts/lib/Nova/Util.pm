@@ -103,7 +103,7 @@ sub makeFilter {
 		return $filt;			# Regex
 	} elsif ($spec =~ /\$_/) {
 		$code = $spec;			# Code
-	} elsif ($spec =~ /^\s*([><=]+|eq|ne|ge|le|gt|lt)/) {
+	} elsif ($spec =~ /^\s*([><=!]+|eq|ne|ge|le|gt|lt)/) {
 		$code = "\$_ $spec";	# Relation
 	} elsif ($spec =~ /^\s*-?\d[_\d]*([eE]-?\d+)?(\.\d*)?\s*$/) {
 		$code = "\$_ == $spec";	# Numeric equality

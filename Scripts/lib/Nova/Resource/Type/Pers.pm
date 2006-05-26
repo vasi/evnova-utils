@@ -36,7 +36,7 @@ sub show {
 	my $ret = $self->NEXT::show($verb, @fields);
 	return $ret if @fields;
 	
-	$ret .= $self->showField($_, $verb) for (qw(ShipType LinkSyst Govt
+	$ret .= $self->showField($_, $verb) for (qw(Ship LinkSyst Govt
 		StartDisabled LinkBoard LinkNoWimpy LinkNoBeefy LinkNoWarship
 		HailQuote));
 	return $ret;
@@ -64,6 +64,22 @@ sub formatHailQuote {
 	return $self->collection->get('STR#' => 7101)->strings->[$hq - 1];
 }
 
-#sub formatShipType {
+sub ship {
+	my ($self) = @_;
+	return $self->collection->get(ship => $self->shipType);
+}
+
+sub formatShip {
+	my ($self, $field, $verb) = @_;
+	my $s = $self->$field;
+	return sprintf "%s (%d)", $s->fullName, $s->ID;
+}
+
+sub fieldDefaults {
+	return (
+		LinkMission		=> -1,
+	);
+}
+
 
 1;

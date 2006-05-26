@@ -50,7 +50,11 @@ sub run {
 	unless (exists $self->resources->{$ctf}) {
 		my $ct = Nova::ConText->new($ctf);
 		my $res = $ct->read;
-		$res->readOnly;
+		if (defined $config->option('mem')) {
+			$res->noCache;
+		} elsif (!defined $config->option('rw')) {
+			$res->readOnly;
+		}
 		$self->resources->{$ctf} = $res;
 	}
 	my $res = $self->resources->{$ctf};
@@ -150,5 +154,20 @@ command {
 	my ($conf, $res) = @_;
 	Nova::Resource->list(grep { $_->persistent } $res->type('outf'));
 } persistent => 'display persistent outfits';
+
+command {
+	my ($conf, $res) = @_;
+	printIter { $_->showPersons($conf->verbose) } $res->typeIter('misn'),
+		$conf->verbose;
+} pers => 'display pers missions';
+
+command {
+	my ($conf, $res, $val) = @_;
+	my $m = $res->get(misn => 128);
+	$m->availShipType($val);
+	my $st = $m->shipType;
+	Nova::Resource->list($st->ships);
+	print $st->format($conf->verbose), "\n";
+} misc => 'testing';
 
 1;

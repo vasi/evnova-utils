@@ -10,7 +10,7 @@ use List::Util qw(max min sum);
 use Text::Wrap qw();
 
 our @EXPORT_OK = qw(deaccent commaNum termWidth wrap prettyPrint printIter
-	makeFilter regexFilter printable);
+	makeFilter regexFilter printable indent);
 
 =head1 NAME
 
@@ -61,7 +61,7 @@ sub wrap {
 	$first = '' unless defined $first;
 	$rest = '' unless defined $rest;
 	local $Text::Wrap::columns = termWidth;
-	return Text::Wrap::wrap($first, $rest, $text);
+	return Text::Wrap::wrap($first, $rest, printable($text));
 }
 
 # prettyPrint($text);
@@ -148,6 +148,16 @@ sub printable {
 	s/\x{2013}/-/g;				# en dash
 	
 	return $_;
+}
+
+sub indent {
+	my ($str) = @_;
+	my $ret = '';
+	for my $line (split /\n/, $str) {
+		my ($ind) = ($line =~ /^(\s*)/);
+		$ret .= wrap($line, '', "$ind  ") . "\n";
+	}
+	return $ret;
 }
 
 1;

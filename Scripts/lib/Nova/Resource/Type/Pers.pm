@@ -61,7 +61,8 @@ sub formatHailQuote {
 	my ($self, $field, $verb) = @_;
 	my $hq = $self->$field;
 	return $verb < 2 ? '' : 'none' if $hq == -1;
-	return $self->collection->get('STR#' => 7101)->strings->[$hq - 1];
+	my $text = $self->collection->get('STR#' => 7101)->strings->[$hq - 1];
+	return $text;
 }
 
 sub ship {

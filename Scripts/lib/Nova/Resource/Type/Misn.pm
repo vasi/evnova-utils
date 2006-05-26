@@ -10,6 +10,7 @@ Nova::Resource->registerType('misn');
 use Nova::Resource::Spec::Spob;
 use Nova::Resource::Spec::Syst;
 use Nova::Resource::Spec::Ship;
+use Nova::Util qw(wrap);
 
 flagInfo('Flags',
 	autoAbort		=> 'auto-abort',

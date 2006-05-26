@@ -33,7 +33,7 @@ __PACKAGE__->fields(qw(resources));
 use Nova::ConText;
 use Nova::Runner::Command;
 
-use Nova::Util qw(prettyPrint printIter regexFilter makeFilter);
+use Nova::Util qw(printIter regexFilter makeFilter indent);
 use Nova::Columns;
 
 sub init {
@@ -157,7 +157,8 @@ command {
 
 command {
 	my ($conf, $res) = @_;
-	printIter { $_->showPersons($conf->verbose) } $res->typeIter('misn'), -1;
+	printIter { indent($_->showPersons($conf->verbose)) }
+		$res->typeIter('misn'), 0;
 } pers => 'display pers missions';
 
 command {

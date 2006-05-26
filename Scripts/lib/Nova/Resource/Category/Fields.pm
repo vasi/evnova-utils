@@ -56,7 +56,7 @@ sub _flagFields {
 	my $pkg = ref($self) || $self;
 	$field = lc $field;
 	
-	my $flagFields = $pkg->symref('_FLAG_FIELDS');
+	my $flagFields = $pkg->symref('FLAG_FIELDS');
 	if (exists $flagFields->{$field}) {	
 		return @{$flagFields->{$field}};
 	}

@@ -10,8 +10,9 @@ use Nova::Config;
 use Nova::Runner;
 
 sub init {
-	my ($self) = @_;
-	$self->config(Nova::Config->new);
+	my ($self, $config) = @_;
+	$config = Nova::Config->new unless defined $config;
+	$self->config($config);
 	$self->runners({ });
 }
 
@@ -35,10 +36,6 @@ sub runCommandLine {
 	
 	# Go!
 	$runner->run($cmd, $co, @args);
-}
-	
-sub serve {
-	# FIXME: implement
 }
 
 1;

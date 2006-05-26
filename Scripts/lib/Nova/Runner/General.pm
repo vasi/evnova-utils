@@ -44,5 +44,4 @@ command {
 	}
 } rsrc => 'count the resources in files';
 
-
 1;

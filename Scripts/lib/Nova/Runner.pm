@@ -9,7 +9,6 @@ use base qw(Nova::Base);
 our %COMMANDS;		# Known commands
 our %CATEGORIES;	# Known categories of commands (for help)
 
-__PACKAGE__->subPackages;
 
 sub init {
 	my ($self, $config) = @_;
@@ -29,10 +28,19 @@ sub register {
 	push @{$CATEGORIES{$cmd->category}}, $cmd;
 }
 
-sub getCommand {
-	my ($class, $name) = @_;
-	die "No such command '$name'\n" unless exists $COMMANDS{lc $name};
-	return $COMMANDS{lc $name};
+{
+	my $didSubPackages = 0;
+	
+	sub getCommand {
+		my ($class, $name) = @_;
+		unless ($didSubPackages) {
+			__PACKAGE__->subPackages;
+			$didSubPackages = 1;
+		}
+		
+		die "No such command '$name'\n" unless exists $COMMANDS{lc $name};
+		return $COMMANDS{lc $name};
+	}
 }
 
 sub getCategories {

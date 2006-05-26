@@ -8,12 +8,12 @@ use base qw(Nova::Base);
 use Nova::Resource;
 Nova::Resource->registerType('cron');
 
+use Nova::Resource::Type::Govt;
+
 flagInfo('Flags',
 	iterativeEntry	=> 'iterative entry',
 	iterativeExit	=> 'iterative exit',
 );
-
-use Nova::Resource::Type::Govt;
 
 
 our @TIME_FIELDS = qw(FirstDay FirstMonth FirstYear LastDay LastMonth LastYear);

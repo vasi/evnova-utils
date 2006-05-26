@@ -146,7 +146,6 @@ sub init {
 	$self->SUPER::init;
 	$self->parent($parent);
 	
-$DB::single = 1;
 	# Handle options
 	{
 		local @ARGV = @$args;

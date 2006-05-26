@@ -11,6 +11,30 @@ use Nova::Resource::Spec::Spob;
 use Nova::Resource::Spec::Syst;
 use Nova::Resource::Spec::Ship;
 
+flagInfo('Flags',
+	autoAbort		=> 'auto-abort',
+	arrowNoDest		=> "don't show destination arrow",
+	noRefuse		=> "can't refuse",
+	useFuel			=> 'takes 100 fuel on auto-abort',
+	infiniteShips	=> 'infinite aux ships',
+	failScan		=> 'fail if scanned',
+	penaltyAbort	=> 'apply -5 x CompReward penalty on abort',
+	(undef, undef),
+	arrowBrief		=> 'show green arrow in briefing',
+	arrowShipSyst	=> 'show arrow at ship syst',
+	invisible		=> 'invisible',
+	keepType		=> 'special ship type kept the same',
+	shipNoCargo		=> 'unavailable if in a cargo ship',
+	shipNoCombat	=> 'unavailable if in a combat ship',
+	failBoard		=> 'fail if boarded by pirates',
+);
+
+flagInfo('Flags2',
+	checkSpace		=> "require sufficient cargo space",
+	payAbort		=> 'pay on auto-abort',
+	failDead		=> 'fail if disabled or destroyed',
+);
+
 sub fullName {
 	my ($self) = @_;
 	my $name = $self->NEXT::fullName;
@@ -76,6 +100,7 @@ sub fieldDefaults {
 		AvailRandom		=> 100,
 		ShipCount		=> [ -1, 0 ],
 		AvailLoc		=> 1,
+		CargoQty		=> -1,
 	);
 }
 
@@ -161,11 +186,33 @@ sub showPersons {
 	my @persons = $self->persons;
 	return '' unless @persons;
 	
-	my $ret = $self->header;
-	$ret .= $self->showField($_, $verb) for (qw(AvailRecord
-		AvailRating AvailRandom AvailShipType AvailBits CargoQty));
+	my $ret = sprintf "%d: %s\n", $self->ID, $self->fullName;
+	for my $field (qw(AvailRecord AvailRating AvailRandom AvailShipType
+			AvailBits CargoQty CheckSpace)) {
+		my $s = $self->showField($field, $verb);
+		$ret .= "  $s" if $s;
+	}
 	
-	# FIXME: more!
+	# FIXME: AI types
+	
+	# Print pers for this mission
+	if ($verb) {
+		my %descs;
+		for my $pers (@persons) {
+			my $desc = $pers->show($verb);
+			(my $head, $desc) = ($desc =~ /^(.*?\n)(.*)$/s);
+			push @{$descs{$desc}}, $pers;
+		}
+		for my $desc (sort { $descs{$a}[0]->ID <=> $descs{$b}[0]->ID }
+				keys %descs) {
+			for my $pers (@{$descs{$desc}}) {
+				$ret .= '  ' . sprintf "%d: %s\n", $pers->ID, $pers->fullName;
+			}
+			$desc =~ s/^/    /mg;
+			$ret .= $desc;
+		}
+	}
+	
 	return $ret;
 }
 

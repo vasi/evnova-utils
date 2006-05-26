@@ -1,11 +1,10 @@
 #!/usr/bin/perl
 use warnings;
 use strict;
+binmode STDOUT, ':utf8';
 use Data::Dumper;
 
-package Foo::Bar::Iggy::Blah;
+use lib 'lib';
 
-
-package main;
-
-print "foo\n" if exists $::{'Foo::'};
+use Nova::ConText;
+Nova::ConText->findNonprintables(1, glob('../Context/*.txt'));

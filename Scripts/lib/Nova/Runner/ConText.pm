@@ -157,17 +157,10 @@ command {
 
 command {
 	my ($conf, $res) = @_;
-	printIter { $_->showPersons($conf->verbose) } $res->typeIter('misn'),
-		$conf->verbose;
+	printIter { $_->showPersons($conf->verbose) } $res->typeIter('misn'), -1;
 } pers => 'display pers missions';
 
 command {
-	my ($conf, $res, $val) = @_;
-	my $m = $res->get(misn => 128);
-	$m->availShipType($val);
-	my $st = $m->shipType;
-	Nova::Resource->list($st->ships);
-	print $st->desc, "\n";
 } misc => 'testing';
 
 1;

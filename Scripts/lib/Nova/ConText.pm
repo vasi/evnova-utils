@@ -6,11 +6,13 @@ use warnings;
 use base 'Nova::Base';
 __PACKAGE__->fields(qw(fh file line_sep type collection));
 
+use Nova::Util qw(printable);
 use Nova::ConText::Type;
 use Nova::ConText::Resource;
 use Nova::ConText::Value;
 use Nova::ConText::Resources;
 
+use Data::Dumper;
 use English qw($INPUT_RECORD_SEPARATOR);
 use Encode;
 
@@ -192,8 +194,56 @@ sub write {
 	close $fh;
 }
 
-=back
+# Characters that are non-ASCII, but are ok to print
+our %OK_CHARS = map { $_ => 1 } split //,
+	"\x{e4}\x{eb}\x{ef}\x{f6}\x{fc}\x{ff}" .	# aeiouy with diaresis
+	"\x{dc}" .									# U with diaresis
+	"\x{e9}" .									# e with acute accent
+	"\x{e7}\x{c7}" .							# cC with cedilla
+	"\x{e0}\x{e8}" .							# ae with grave accent
+	"\x{0}\x{1}\x{3}\x{4}";						# control chars? wtf?
 
-=cut
+sub _checkNonprintables {
+	my ($self, $field, $verb) = @_;
+	my $p = printable($field);
+	print "$p\n\n" if $verb && $p ne $field;
+	
+	my @chars = split //, $p;
+	my @bad = grep { !$OK_CHARS{$_} && (ord($_) < 32 || ord($_) > 127) }
+		@chars;
+	if (@bad) {
+		print "Line: $.\n\n$p\n\n", Dumper($p), "\n";
+		if ($verb) {
+			for my $l (\@chars, \@bad) {
+				print join(',', map { sprintf("%x", ord($_)) } @$l), "\n";
+			}
+		}
+		exit 0;
+	}
+}
+
+# Find bad characters
+sub findNonprintables {
+	my $self = shift;
+	
+	if (ref($self)) {	# Called as object method
+		my ($verb) = @_;
+		printf "********** %s *********\n\n", $self->file if $verb;
+		$self->_open_file;
+		while (defined (my $line = $self->_readLine)) {
+			next unless $line =~ /\t/;	# non-robust way to restrict to data
+			my @fields = split /\t/, $line;
+			pop @fields;
+			$self->_checkNonprintables($_, $verb) for @fields;
+		}
+		close $self->fh;
+	} else {			# Called as a class method
+		my ($verb, @files) = @_;
+		for my $f (@files) {
+			my $ct = $self->new($f);
+			$ct->findNonprintables($verb);
+		}
+	}
+}
 
 1;

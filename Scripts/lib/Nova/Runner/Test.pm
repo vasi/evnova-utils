@@ -23,5 +23,27 @@ command {
 	$out->write($rs);
 } 'test-write' => 'test writing a ConText file';
 
+command {
+	require Nova::ConText;
+	
+	my $file = '../ConText/Test3.txt';
+	utime undef, undef, $file; # reload next time
+	
+	my $in = Nova::ConText->new($file);
+	{
+		my $rs = $in->read;
+		my $r = $rs->get(boom => 128);
+		printf "%s\n", $r->name;
+		$r->name('changed');
+		printf "%s\n", $r->name;
+	}
+	{
+		my $rs = $in->read;
+		my $r = $rs->get(boom => 128);
+		printf "%s\n", $r->name;
+	}
+	
+	utime undef, undef, $file; # reload next time
+} 'test-modify' => 'test modifying a ConText cache';
 
 1;

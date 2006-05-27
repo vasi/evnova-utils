@@ -13,7 +13,7 @@ use Nova::Util qw(deaccent);
 
 use Cwd qw(realpath);
 use List::Util qw(max);
-use Scalar::Util qw(blessed);
+use Scalar::Util qw(blessed weaken);
 
 =head1 NAME
 
@@ -139,7 +139,10 @@ sub get {
 	my ($self, $type, $id) = @_;
 	$type = deaccent($type);
 	
-	unless (exists $self->resCache->{$type,$id}) {
+	if (defined $self->resCache->{$type,$id}) {
+		my $strong = $self->resCache->{$type,$id};
+		return $strong;
+	} else {
 		my $c = $self->cache;
 		return undef unless exists $c->{'resource',$type,$id};
 		
@@ -150,8 +153,9 @@ sub get {
 			readOnly	=> $self->{readOnly},
 		);
 		$self->resCache->{$type,$id} = $res;
+		weaken($self->resCache->{$type,$id});
+		return $res;
 	}
-	return $self->resCache->{$type,$id};
 }
 
 # Does a resource exist?

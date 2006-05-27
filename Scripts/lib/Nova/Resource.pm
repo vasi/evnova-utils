@@ -39,10 +39,6 @@ Nova::Resource - a resource from a Nova data file
   my @fields = $res->fieldNames;
 
 
-  # For specific types
-  __PACKAGE__->register($type);
-
-
   # Subclasses should implement at least:
   - Constructor
   - _rawField
@@ -74,10 +70,6 @@ sub init {
 	return $self;
 }
 
-
-# Register a package to handle some type
-sub registerType { # FIXME: remove
-}
 
 #### Interface
 #

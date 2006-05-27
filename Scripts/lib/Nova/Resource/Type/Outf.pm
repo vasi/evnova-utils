@@ -5,7 +5,6 @@ use warnings;
 
 use base qw(Nova::Base Exporter);
 use Nova::Resource;
-Nova::Resource->registerType('outf');
 
 our (@EXPORT, %MOD_TYPE_NAMES);
 

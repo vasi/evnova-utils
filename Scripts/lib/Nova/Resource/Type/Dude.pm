@@ -5,7 +5,6 @@ use warnings;
 
 use base qw(Nova::Base);
 use Nova::Resource;
-Nova::Resource->registerType('dude');
 __PACKAGE__->fields(qw(probs));
 
 use Nova::Columns qw(columnsStr);

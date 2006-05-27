@@ -5,7 +5,6 @@ use warnings;
 
 use base qw(Nova::Base);
 use Nova::Resource;
-Nova::Resource->registerType('STR#');
 
 use Nova::Util qw(wrap);
 

@@ -5,7 +5,6 @@ use warnings;
 
 use base qw(Nova::Base);
 use Nova::Resource;
-Nova::Resource->registerType('misn');
 
 use Nova::Resource::Spec::Spob;
 use Nova::Resource::Spec::Syst;

@@ -5,7 +5,6 @@ use warnings;
 
 use base qw(Nova::Base);
 use Nova::Resource;
-Nova::Resource->registerType('ship');
 
 use Nova::Columns;
 use List::Util qw(sum);

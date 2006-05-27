@@ -5,7 +5,6 @@ use warnings;
 
 use base qw(Nova::Base Nova::Resource::Commodity);
 use Nova::Resource;
-Nova::Resource->registerType('junk');
 
 sub shortName {
 	my ($self, @args) = @_;

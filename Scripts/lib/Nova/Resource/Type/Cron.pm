@@ -6,7 +6,6 @@ use warnings;
 use base qw(Nova::Base);
 
 use Nova::Resource;
-Nova::Resource->registerType('cron');
 
 use Nova::Resource::Type::Govt;
 

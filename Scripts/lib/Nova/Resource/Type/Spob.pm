@@ -5,7 +5,6 @@ use warnings;
 
 use base qw(Nova::Base);
 use Nova::Resource;
-Nova::Resource->registerType('spob');
 
 use Nova::Resource::Commodity;
 use Nova::Columns qw(columnsStr);

@@ -89,7 +89,6 @@ package Nova::Config::File;
 use base qw(Nova::Config);
 __PACKAGE__->fields(qw(modified file));
 
-use YAML;
 use File::Spec::Functions qw(catfile);
 
 my $CONFIG_FILE = '.nova';
@@ -104,8 +103,10 @@ sub init {
 	$self->file($file);
 	
 	$self->options({ });
+	
+	require YAML::Syck;
 	eval {
-		my $config = YAML::LoadFile($self->file);
+		my $config = YAML::Syck::LoadFile($self->file);
 		$self->options($config);
 	};
 	$self->modified(0);
@@ -120,7 +121,7 @@ sub _defaultConfigFile {
 sub DESTROY {
 	my ($self) = @_;
 	return unless $self->modified;
-	YAML::DumpFile($self->file, $self->options);
+	YAML::Syck::DumpFile($self->file, $self->options);
 }
 
 # We can't really have a runtime change, just change permanently

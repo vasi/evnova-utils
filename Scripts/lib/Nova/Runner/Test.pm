@@ -7,6 +7,7 @@ use base qw(Nova::Runner);
 use Nova::Runner::Command;
 
 command {
+	require Nova::ConText;
 	my $in = Nova::ConText->new('../ConText/Test3.txt');
 	my $rs = $in->read;
 	$rs->noCache;

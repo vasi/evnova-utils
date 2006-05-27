@@ -7,7 +7,6 @@ use warnings;
 use base qw(Exporter);
 
 use List::Util qw(max min sum);
-use Text::Wrap qw();
 
 our @EXPORT_OK = qw(deaccent commaNum termWidth wrap prettyPrint printIter
 	makeFilter regexFilter printable indent);
@@ -60,6 +59,8 @@ sub wrap {
 	my ($text, $first, $rest) = @_;
 	$first = '' unless defined $first;
 	$rest = '' unless defined $rest;
+	
+	require Text::Wrap;
 	local $Text::Wrap::columns = termWidth;
 	return Text::Wrap::wrap($first, $rest, printable($text));
 }

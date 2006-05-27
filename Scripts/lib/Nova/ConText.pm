@@ -14,7 +14,6 @@ use Nova::ConText::Resources;
 
 use Data::Dumper;
 use English qw($INPUT_RECORD_SEPARATOR);
-use Encode;
 
 =head1 NAME
 
@@ -83,11 +82,11 @@ sub _readResource {
 # Read a Nova::Resources from a ConText file
 sub read {
 	my ($self) = @_;
-	$self->_open_file;
 	$self->collection(Nova::ConText::Resources->new($self->file));
 	$self->type(undef);
 	
 	return $self->collection if $self->collection->isFilled;
+	$self->_open_file;
 	while (defined(my $line = $self->_readLine)) {
 		if ($line =~ /^\x{2022} Begin (\S{4})$/) { # utf bullet
 			$self->_readType($1);
@@ -120,6 +119,7 @@ sub _open_file {
 	
 	# Look for letter-umlaut to indicate utf8
 	my $enc;
+	require Encode;
 	my $dec = eval { decode_utf8($block, $Encode::FB_CROAK) };
 	if (defined $dec && $dec =~ /[\x{e4}\x{eb}\x{ef}\x{f6}\x{fc}\x{ff}]/) {
 		$enc = ':utf8';

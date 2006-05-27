@@ -6,8 +6,6 @@ use warnings;
 use base qw(Nova::Runner);
 use Nova::Runner::Command;
 
-use Nova::ResFork;
-
 # Print help for this command
 sub printHelp {
 	my ($cmd) = @_;
@@ -36,6 +34,7 @@ command {
 
 command {
 	my ($config, @files) = @_;
+	require Nova::ResFork;
 	
 	for my $i (0..$#files) {
 		my $rs = Nova::ResFork->new($files[$i]);

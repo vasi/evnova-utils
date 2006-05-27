@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 # Methods for specific types of fields
-use Math::BigInt;
 
 # Get a full name, suitable for printing
 sub fullName {
@@ -91,6 +90,7 @@ sub contribRequire {
 	my ($self, $prefix) = @_;
 	my @vals = $self->multi($prefix);
 	
+	require Math::BigInt;
 	my $val = Math::BigInt->new(0);
 	for my $v (@vals) {
 		$val <<= 32;

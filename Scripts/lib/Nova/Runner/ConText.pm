@@ -30,7 +30,6 @@ package Nova::Runner::ConText::Using;
 use base 'Nova::Runner::ConText';
 __PACKAGE__->fields(qw(resources));
 
-use Nova::ConText;
 use Nova::Runner::Command;
 
 use Nova::Util qw(printIter regexFilter makeFilter indent);
@@ -44,6 +43,7 @@ sub init {
 
 sub run {
 	my ($self, $cmd, $config, @args) = @_;
+	require Nova::ConText;
 	
 	# Get the resources
 	my $ctf = $config->conText;

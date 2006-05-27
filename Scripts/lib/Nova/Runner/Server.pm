@@ -8,9 +8,6 @@ use Nova::Runner::Command;
 
 use Nova::Client;
 
-use IO::Socket::INET;
-use URI::Escape;
-
 command {
 	my ($config, $port) = @_;
 	$port = $Nova::Client::PORT unless defined $port;
@@ -19,6 +16,8 @@ command {
 	require Nova::Runner::Multi;
 	my $multi = Nova::Runner::Multi->new($config);
 	
+	require IO::Socket::INET;
+	require URI::Escape;
 	my $sr = IO::Socket::INET->new(
 		Listen		=> 100,
 		LocalAddr	=> 'localhost',
@@ -35,7 +34,7 @@ command {
 		eval {
 			my $request = <$cn>;
 			my @args = split ' ', $request;
-			@args = map { uri_unescape($_) } @args;
+			@args = map { URI::Escape::uri_unescape($_) } @args;
 			
 			print "Request: ", join(' ', @args), "\n" if $verb >= 2;
 			open STDOUT, '>&', $cn or die "Can't reopen STDOUT\n";

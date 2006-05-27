@@ -152,7 +152,7 @@ sub persons {
 		my %pers;
 		for my $pers ($self->collection->type('pers')) {
 			if (defined(my $mid = $pers->fieldDefined('LinkMission'))) {
-				push @{$pers->{$mid}}, $pers->ID;
+				push @{$pers{$mid}}, $pers->ID;
 			}
 		}
 		$cache->{$_} = $pers{$_} for keys %pers;

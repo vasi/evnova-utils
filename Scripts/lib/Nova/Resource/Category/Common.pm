@@ -75,7 +75,24 @@ sub multiObjs {
 	return @ret;
 }
 
+# Load all the results of a precalc (using Storable)
+sub precalcAll {
+	my ($self, $name, $code) = @_;
+	return $self->collection->store($name) if $self->collection->store($name);
+	
+	my $file = Nova::Cache->storableCache($self->source, $name);
+	my $cache;
+	eval { $cache = retrieve $file };
+	unless (defined $cache) {
+		$cache = { };
+		$code->($self, $cache);
+		store $cache, $file;
+	}
+	return $self->collection->store($name => $cache);
+}
+
 # Wrapper for methods using precalculation optimization
+# Load each cached item as it is needed
 sub precalc {
 	my ($self, $name, $code) = @_;
 	return $self->collection->store($name) if $self->collection->store($name);

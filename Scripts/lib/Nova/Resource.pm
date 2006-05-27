@@ -58,18 +58,26 @@ sub init {
 	my ($self) = @_;
 	
 	# Rebless, if necessary
-	my $t = deaccent($self->type);
-	my $subclass = $TYPES{$t};
+	my $class = $self->_typeFor($self->type);
+	$self->mixin($class) if $class ne __PACKAGE__;
+	return $self;
+}
+
+sub _typeFor {
+	my ($class, $type) = @_;
+	$type = deaccent($type);
+	my $subclass = $TYPES{$type};
 	if (defined $subclass) {
 		my $class = __PACKAGE__ . "::Type::$subclass";
 		unless ($LOADED{$class}++) {
 			eval "require $class";
 		}
-		$self->mixin($class);
+		return $class;
+	} else {
+		return __PACKAGE__;
 	}
-	return $self;
 }
-
+	
 
 #### Interface
 #

@@ -22,7 +22,8 @@ sub init {
 	my ($self, %params) = @_;
 	$self->{fieldNames} = $params{fieldNames};
 	$self->collection($params{collection});
-	$self->{fields} = $params{fields};
+	$self->{cache} = $params{fields};
+	$self->{fields} = ${$params{fields}};
 	$self->readOnly($params{readOnly});
 	
 	$self->SUPER::init;
@@ -31,39 +32,40 @@ sub init {
 sub dumpField {
 	# Prettier alternative to default method
 	my ($self, $field) = @_;
-	my $ret = eval { ${$self->{fields}}->{lc $field}->dump };
+	my $ret = eval { $self->{fields}{lc $field}->dump };
 	return $@ ? $self->SUPER::dumpField($field) : $ret;
 }
 
 # Get/set the raw value of a field
 sub _rawField {
-	my ($self, $field, $val) = @_;
+	my ($self, $field, @etc) = @_;
 	my $lc = lc $field;
 	
 	# Gotta be careful, with the damn hash pointer
 	die "No such field '$field'\n" unless $self->hasField($field);
-	if (defined $val) {
+	if (@etc) {
 		die "Read-only!\n" if $self->readOnly;
-		
-		my $valobj = ${$self->{fields}}->{$lc};
-		if (eval { $val->isa('Nova::ConText::Value') }) {
-			$valobj = $val;
-		} else {
-			$valobj = $valobj->new($val);	# keep the same type
+		my ($val) = @etc;
+		unless (eval { $val->isa('Nova::ConText::Value') }) {
+			$val = $self->{fields}{$lc}->new($val);	# keep the same type
 		}
-		
-		# update so that MLDBM notices
-		my %fields = %${$self->{fields}};
-		$fields{$lc} = $valobj;
-		${$self->{fields}} = { %fields };
+		$self->{fields}{$lc} = $val;
+		$self->{modified} = 1;
 	}
-	return ${$self->{fields}}->{$lc}->value;
+	return $self->{fields}{$lc}->value;
+}
+
+sub DESTROY {
+	my ($self) = @_;
+	if ($self->{modified}) {
+		${$self->{cache}} = $self->{fields};
+	}
 }
 
 # Do we have the given field?
 sub hasField {
 	my ($self, $field) = @_;
-	return exists ${$self->{fields}}->{lc $field};
+	return exists $self->{fields}{lc $field};
 }
 
 # Get the field names
@@ -75,7 +77,7 @@ sub fieldNames {
 # Hash with Nova::ConText::Value values.
 sub typedFieldHash {
 	my ($self) = @_;
-	return %${$self->{fields}};
+	return %{$self->{fields}};
 }
 
 

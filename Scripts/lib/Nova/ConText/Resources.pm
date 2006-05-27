@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use base 'Nova::Resources';
-__PACKAGE__->fields(qw(cache));
+__PACKAGE__->fields(qw(cache fieldNameCache resCache));
 
 use Nova::Cache;
 use Nova::ConText::Resource;
@@ -28,9 +28,12 @@ sub init {
 	my ($self, $source) = @_;
 	$source = realpath($source);
 	$self->SUPER::init($source);
-	$self->cache(Nova::Cache->cacheForFile($source));
 	
+	$self->cache(Nova::Cache->cacheForFile($source));
 	$self->cache->{types} = [] unless exists $self->cache->{types};
+	
+	$self->fieldNameCache({ });
+	$self->resCache({ });
 }
 
 # my $bool = $rs->isFilled;
@@ -56,6 +59,8 @@ sub addType {
 	$c->{'ids',$deac} = [ ];
 	$c->{filled} = 1;
 	$self->{typeSort} = 0;
+	
+	$self->fieldNameCache->{$deac} = \@fields;
 }
 
 # my $resource = $rs->newResource($type => $id);
@@ -65,7 +70,7 @@ sub newResource {
 	$type = $self->reaccent($type);
 	$id = $self->nextUnused($type) unless defined $id;
 	
-	my @fields = @{$self->cache->{'fields',deaccent($type)}};
+	my @fields = @{$self->_fieldNames(deaccent($type))};
 	my $fieldHash = Nova::Resource->newFieldHash($type, $id, @fields);
 	return $self->addResource($fieldHash);
 }
@@ -134,15 +139,19 @@ sub get {
 	my ($self, $type, $id) = @_;
 	$type = deaccent($type);
 	
-	my $c = $self->cache;
-	return undef unless exists $c->{'resource',$type,$id};
-	
-	return Nova::ConText::Resource->new(
-		fieldNames	=> $c->{'fields',$type},
-		fields		=> \$c->{'resource',$type,$id},
-		collection	=> $self,
-		readOnly	=> $self->{readOnly},
-	);
+	unless (exists $self->resCache->{$type,$id}) {
+		my $c = $self->cache;
+		return undef unless exists $c->{'resource',$type,$id};
+		
+		my $res = Nova::ConText::Resource->new(
+			fieldNames	=> $self->_fieldNames($type),
+			fields		=> \$c->{'resource',$type,$id},
+			collection	=> $self,
+			readOnly	=> $self->{readOnly},
+		);
+		$self->resCache->{$type,$id} = $res;
+	}
+	return $self->resCache->{$type,$id};
 }
 
 # Does a resource exist?
@@ -184,6 +193,14 @@ sub types {
 		$self->{typeSort} = 1;
 	}
 	return @types;
+}
+
+sub _fieldNames {
+	my ($self, $deac) = @_;
+	unless (exists $self->fieldNameCache->{$deac}) {
+		$self->fieldNameCache->{$deac} = $self->cache->{'fields',$deac};
+	}
+	return $self->fieldNameCache->{$deac};
 }
 
 1;

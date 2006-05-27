@@ -155,7 +155,7 @@ our %TYPES;
 # Return a hash of fields for a brand new object
 sub newFieldHash {
 	my ($class, $type, $id, @fields) = @_;	
-	$class = $TYPES{deaccent($type)};
+	$class = $class->_typeFor($type);
 	
 	my %hash;
 	for my $field (@fields) {

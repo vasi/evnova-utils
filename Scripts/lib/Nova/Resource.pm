@@ -50,26 +50,33 @@ Nova::Resource - a resource from a Nova data file
 
 =cut
 
-our %TYPES;
-	
+our %TYPES = (
+	(map { $_ => ucfirst $_ }
+		qw(cron dude govt junk misn outf pers ship spob syst weap)),
+	'STR#'	=> 'StrNum',
+);
+our %LOADED;
+
 # Should call at *end* of subclass init.
 sub init {
 	my ($self) = @_;
 	
 	# Rebless, if necessary
 	my $t = deaccent($self->type);
-	if (exists $TYPES{$t}) {
-		$self->mixin($TYPES{$t});
+	my $subclass = $TYPES{$t};
+	if (defined $subclass) {
+		my $class = __PACKAGE__ . "::$subclass";
+		unless ($LOADED{$class}++) {
+			eval "require $class";
+		}
+		$self->mixin($class);
 	}
 	return $self;
 }
 
 
 # Register a package to handle some type
-sub registerType {
-	my ($class, $type) = @_;
-	my $pkg = caller;
-	$TYPES{deaccent($type)} = $pkg;
+sub registerType { # FIXME: remove
 }
 
 #### Interface
@@ -144,8 +151,7 @@ sub duplicate {
 }
 
 
-# Load the categories and types
-__PACKAGE__->subPackages('Nova::Resource::Category');
-__PACKAGE__->subPackages('Nova::Resource::Type');
+# Load the categories
+eval "require Nova::Resource::Category::$_" for qw(Common Fields Formatting);
 
 1;

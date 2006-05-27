@@ -73,6 +73,7 @@ sub methods {
 sub subPackages {
 	my ($pkg, $parent) = @_;
 	
+	# Create a parent package, if needed
 	if (defined $parent) {
 		$pkg = $parent;
 		eval("package $pkg; our \@ISA = ('" . __PACKAGE__ . "')");
@@ -87,9 +88,10 @@ sub subPackages {
 		next unless -d $subdir;
 		
 		find({
-			follow => 1, no_chdir => 1,
+			no_chdir => 1, follow => 1,
 			wanted => sub {
 				return unless /\.pm$/;
+#				print "$_\n";
 				
 				my $subpkg = abs2rel($File::Find::name, $dir);
 				$subpkg =~ s,/,::,g;

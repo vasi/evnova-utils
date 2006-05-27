@@ -28,19 +28,10 @@ sub register {
 	push @{$CATEGORIES{$cmd->category}}, $cmd;
 }
 
-{
-	my $didSubPackages = 0;
-	
-	sub getCommand {
-		my ($class, $name) = @_;
-		unless ($didSubPackages) {
-			__PACKAGE__->subPackages;
-			$didSubPackages = 1;
-		}
-		
-		die "No such command '$name'\n" unless exists $COMMANDS{lc $name};
-		return $COMMANDS{lc $name};
-	}
+sub getCommand {
+	my ($class, $name) = @_;
+	die "No such command '$name'\n" unless exists $COMMANDS{lc $name};
+	return $COMMANDS{lc $name};
 }
 
 sub getCategories {
@@ -52,6 +43,9 @@ sub run {
 	my ($self, $cmd, $config, @args) = @_;
 	$cmd->run($config, @args);
 }
+
+# Load commands
+eval "require Nova::Runner::$_" for qw(ConText General Server Test);
 
 
 1;

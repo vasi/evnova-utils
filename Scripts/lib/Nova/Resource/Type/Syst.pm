@@ -4,6 +4,8 @@ use strict;
 use warnings;
 
 use base qw(Nova::Base);
+__PACKAGE__->fields(qw(adjacentCache));
+
 use Nova::Resource;
 use Nova::Cache;
 
@@ -56,7 +58,10 @@ sub dist {
 
 sub adjacent {
 	my ($self) = @_;
-	return map { $self->collection->get(syst => $_) } $self->multi('con');
+	unless (defined $self->adjacentCache) {
+		$self->adjacentCache([ $self->multi('con') ]);
+	}
+	return map { $self->collection->get(syst => $_) } @{$self->adjacentCache};
 }
 
 sub _calcDistances {

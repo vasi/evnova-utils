@@ -4,9 +4,6 @@ package Nova::Base;
 use strict;
 use warnings;
 
-use File::Spec::Functions qw(catdir abs2rel);
-use File::Find;
-
 =head1 NAME
 
 Nova::Base - base class for EV Nova packages
@@ -72,6 +69,8 @@ sub methods {
 # as a string.
 sub subPackages {
 	my ($pkg, $parent) = @_;
+	require File::Spec;
+	require File::Find;
 	
 	# Create a parent package, if needed
 	if (defined $parent) {
@@ -84,16 +83,15 @@ sub subPackages {
 	my %found;
 	my @found; # keep ordered
 	for my $dir (@INC) {
-		my $subdir = catdir($dir, $pkgdir);
+		my $subdir = File::Spec->catdir($dir, $pkgdir);
 		next unless -d $subdir;
 		
-		find({
+		File::Find::find({
 			no_chdir => 1, follow => 1,
 			wanted => sub {
 				return unless /\.pm$/;
-#				print "$_\n";
 				
-				my $subpkg = abs2rel($File::Find::name, $dir);
+				my $subpkg = File::Spec->abs2rel($File::Find::name, $dir);
 				$subpkg =~ s,/,::,g;
 				$subpkg =~ s,\.pm$,,;
 				return if $found{$subpkg}++;

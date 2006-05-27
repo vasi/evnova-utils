@@ -21,6 +21,13 @@ Nova::ConText::Resources - a collection of resources from a ConText file
 
 =cut
 
+# Use the proxy
+sub new {
+	my ($class, @args) = @_;
+	my $self = $class->SUPER::new(@args);
+	return Nova::ConText::Resources::RefProxy->new($self, $self);
+}
+
 # my $rs = Nova::ConText::Resources->new($source);
 #
 # Make an empty collection.
@@ -34,6 +41,7 @@ sub init {
 	
 	$self->fieldNameCache({ });
 	$self->resCache({ });
+	$self->{refcount} = 0;
 }
 
 # my $bool = $rs->isFilled;
@@ -139,10 +147,7 @@ sub get {
 	my ($self, $type, $id) = @_;
 	$type = deaccent($type);
 	
-	if (defined $self->resCache->{$type,$id}) {
-		my $strong = $self->resCache->{$type,$id};
-		return $strong;
-	} else {
+	unless (defined $self->resCache->{$type,$id}) {
 		my $c = $self->cache;
 		return undef unless exists $c->{'resource',$type,$id};
 		
@@ -153,9 +158,9 @@ sub get {
 			readOnly	=> $self->{readOnly},
 		);
 		$self->resCache->{$type,$id} = $res;
-		weaken($self->resCache->{$type,$id});
-		return $res;
 	}
+	my $res = $self->resCache->{$type,$id};
+	return Nova::ConText::Resources::RefProxy->new($res, $self);
 }
 
 # Does a resource exist?
@@ -205,6 +210,43 @@ sub _fieldNames {
 		$self->fieldNameCache->{$deac} = $self->cache->{'fields',$deac};
 	}
 	return $self->fieldNameCache->{$deac};
+}
+
+sub loseRef {
+	my ($self) = @_;
+	--$self->{refcount};
+	
+	if ($self->{refcount} == 0) {
+		$self->resCache(undef);
+	}
+}
+
+sub gainRef {
+	my ($self) = @_;
+	++$self->{refcount};
+}
+
+
+package Nova::ConText::Resources::RefProxy;
+use base qw(Nova::Base);
+
+sub init {
+	my ($self, $proxied, $counter) = @_;
+	$self->{proxied} = $proxied;
+	$self->{counter} = $counter;
+	$counter->gainRef;
+}
+
+sub DESTROY {
+	my ($self) = @_;
+	$self->{counter}->loseRef;
+}
+
+sub AUTOLOAD {
+	my ($self, @args) = @_;
+	my $sub = our $AUTOLOAD;
+	$sub =~ s/^.*:://g;
+	$self->{proxied}->$sub(@args);
 }
 
 1;

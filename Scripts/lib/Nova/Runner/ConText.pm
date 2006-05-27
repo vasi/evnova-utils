@@ -161,11 +161,16 @@ command {
 		$res->typeIter('misn'), 0;
 } pers => 'display pers missions';
 
+sub secondOne {
+	my ($conf, $res, $s2) = @_;
+	print scalar($res->find(syst => 'mira'))->showDist($s2, $conf->verbose);
+}	
+
 command {
 	my ($conf, $res, $f1, $f2) = @_;
 	my ($s1, $s2) = map { scalar($res->find(syst => $_)) } ($f1, $f2);
 	print $s1->showDist($s2, $conf->verbose);
-	print scalar($res->find(syst => 'mira'))->showDist($s2, $conf->verbose);
+	secondOne($conf, $res, $s2);
 } dist => 'find the distance between systems';
 
 command {

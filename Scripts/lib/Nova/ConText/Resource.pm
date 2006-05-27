@@ -60,6 +60,7 @@ sub DESTROY {
 	if ($self->{modified}) {
 		${$self->{cache}} = $self->{fields};
 	}
+#	printf "Destroy %s", $self->header;
 }
 
 # Do we have the given field?

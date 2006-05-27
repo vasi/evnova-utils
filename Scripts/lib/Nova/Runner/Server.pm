@@ -14,6 +14,7 @@ use URI::Escape;
 command {
 	my ($config, $port) = @_;
 	$port = $Nova::Client::PORT unless defined $port;
+	my $verb = $config->verbose;
 	
 	require Nova::Runner::Multi;
 	my $multi = Nova::Runner::Multi->new($config);
@@ -24,7 +25,7 @@ command {
 		LocalPort	=> $port,
 		ReuseAddr	=> 1,
 	) or die "Can't listen: $!\n";
-	print "Serving...\n";
+	print "Serving...\n" if $verb;
 	
 	while (1) {
 		my $cn = $sr->accept() or next; # accept new connection or loop on error
@@ -36,7 +37,7 @@ command {
 			my @args = split ' ', $request;
 			@args = map { uri_unescape($_) } @args;
 			
-			print "Request: ", join(' ', @args), "\n";
+			print "Request: ", join(' ', @args), "\n" if $verb >= 2;
 			open STDOUT, '>&', $cn or die "Can't reopen STDOUT\n";
 			binmode STDOUT, ':utf8';
 			

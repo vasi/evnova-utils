@@ -143,28 +143,19 @@ sub formatAvailLoc {
 
 sub importantBitFields { $_[0]->bitFields }
 
-sub _spobSystCache {
-	$_[0]->precalc(spobSyst => sub {
-		my ($self, $cache) = @_;
-		for my $syst (reverse $self->collection->type('syst')) {
-			for my $spob ($syst->spobs) {
-				$cache->{$spob->ID} = $syst->ID;
-			}
-		}
-	});
-}
-
 sub persons {
 	my ($self) = @_;
 	
 	my $id = $self->ID;
 	my $c = $self->precalc(misnPers => sub {
 		my ($self, $cache) = @_;
+		my %pers;
 		for my $pers ($self->collection->type('pers')) {
 			if (defined(my $mid = $pers->fieldDefined('LinkMission'))) {
-				push @{$cache->{$mid}}, $pers->ID;
+				push @{$pers->{$mid}}, $pers->ID;
 			}
 		}
+		$cache->{$_} = $pers{$_} for keys %pers;
 	});
 	return exists $c->{$id}
 		? map { $self->collection->get(pers => $_) } @{$c->{$id}}

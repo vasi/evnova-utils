@@ -13,4 +13,18 @@ sub spobs {
 
 sub importantBitFields { qw(Visibility) }
 
+sub showDist {
+	my ($self, $other, $verb) = @_;
+	
+	printf "Distance: %d\n", $self->dist($other);
+	
+	# FIXME: show path
+}
+
+sub dist {
+	my ($self, $other) = @_;
+	
+
+}
+
 1;

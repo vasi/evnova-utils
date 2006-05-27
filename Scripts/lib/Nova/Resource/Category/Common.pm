@@ -80,12 +80,10 @@ sub precalc {
 	my ($self, $name, $code) = @_;
 	return $self->collection->store($name) if $self->collection->store($name);
 	
-	my $file = Nova::Cache->storableCache($self->source, $name);
-	my $cache = eval { retrieve $file };
-	unless (defined $cache) {
-		$cache = { };
+	my $cache = Nova::Cache->cacheForFile($self->source, $name);
+	unless (exists $cache->{__FILLED__}) {
 		$code->($self, $cache);
-		store $cache, $file;
+		$cache->{__FILLED__} = 1;
 	}
 	return $self->collection->store($name => $cache);
 }

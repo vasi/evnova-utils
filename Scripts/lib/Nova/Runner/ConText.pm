@@ -164,7 +164,7 @@ command {
 command {
 	my ($conf, $res, $f1, $f2) = @_;
 	my ($s1, $s2) = map { scalar($res->find(syst => $_)) } ($f1, $f2);
-	print $s1->showDist($s2);
+	print $s1->showDist($s2, $conf->verbose);
 } dist => 'find the distance between systems';
 
 command {

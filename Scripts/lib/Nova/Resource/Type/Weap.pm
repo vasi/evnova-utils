@@ -18,9 +18,9 @@ sub _w2o {
 			for my $mod ($outf->mods) {
 				my $mv = $mod->{ModVal};
 				if ($mod->{ModType} == MT_WEAPON) {
-					$cache->{$mv}->{weapon} = $mass;
+					$cache->{'weapon',$mv} = $mass;
 				} elsif ($mod->{ModType} == MT_AMMO) {
-					$cache->{$mv}->{ammo} = $mass;
+					$cache->{'ammo',$mv} = $mass;
 				}
 			}
 		}
@@ -49,11 +49,11 @@ sub mass {
 	$verb = 0 unless defined $verb;
 	
 	my $w2o = $self->_w2o;
-	unless (exists $w2o->{$self->ID}->{weapon}) {
+	unless (exists $w2o->{'weapon',$self->ID}) {
 		warn sprintf "No outfit found for weapon ID %d\n", $self->ID if $verb;
 		return 0;
 	}
-	return $w2o->{$self->ID}->{weapon};
+	return $w2o->{'weapon',$self->ID};
 }
 
 # How much mass per ammo?
@@ -65,11 +65,11 @@ sub ammoMass {
 	return 0 unless defined $source;
 	
 	my $w2o = $self->_w2o;
-	unless (exists $w2o->{$source->ID}->{ammo}) {
+	unless (exists $w2o->{'ammo',$source->ID}) {
 		warn sprintf "No outfit found for ammo ID %d\n", $self->ID if $verb;
 		return 0;
 	}
-	return $w2o->{$source->ID}->{ammo};
+	return $w2o->{'ammo',$source->ID};
 }
 
 

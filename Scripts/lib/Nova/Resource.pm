@@ -65,7 +65,7 @@ sub init {
 	my $t = deaccent($self->type);
 	my $subclass = $TYPES{$t};
 	if (defined $subclass) {
-		my $class = __PACKAGE__ . "::$subclass";
+		my $class = __PACKAGE__ . "::Type::$subclass";
 		unless ($LOADED{$class}++) {
 			eval "require $class";
 		}

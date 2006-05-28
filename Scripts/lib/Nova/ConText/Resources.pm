@@ -246,6 +246,7 @@ sub AUTOLOAD {
 	my ($self, @args) = @_;
 	my $sub = our $AUTOLOAD;
 	$sub =~ s/^.*:://g;
+$DB::single = 1 if $sub eq 'show';
 	$self->{proxied}->$sub(@args);
 }
 

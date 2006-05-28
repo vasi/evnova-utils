@@ -35,6 +35,19 @@ flagInfo('Flags2',
 	failDead		=> 'fail if disabled or destroyed',
 );
 
+for my $fld (qw(AvailStel TravelStel ReturnStel)) {
+	__PACKAGE__->makeSub($fld . "Obj", sub {
+		my ($self) = @_;
+		return Nova::Resource::Spec::Spob->new($self, $fld);
+	});
+}
+
+sub shipSystObj {
+	my ($self) = @_;
+	return undef unless defined($self->fieldDefined('shipCount'));
+	return Nova::Resource::Spec::Syst->new($self, 'ShipSyst');
+}
+
 sub fullName {
 	my ($self) = @_;
 	my $name = $self->NEXT::fullName;
@@ -77,8 +90,8 @@ sub formatByName {
 	my ($self, $field, $verb) = @_;
 	if ($field =~ /(Text|Brief)$/) {
 		return $self->formatText($field, $verb);
-	} elsif ($field =~ /Stel$/) {
-		return $self->formatStelSpec($field, $verb);
+	} elsif ($field =~ /(Stel|Syst)$/) {
+		return $self->formatSpec($field, $verb);
 	} else {
 		return $self->NEXT::formatByName($field, $verb);
 	}
@@ -104,8 +117,17 @@ sub fieldDefaults {
 	);
 }
 
-sub formatStelSpec {
-	return Nova::Resource::Spec::Spob->new(@_[0,1])->desc;
+sub specObj {
+	my ($self, $field) = @_;
+	my $meth = $field . "Obj";
+	return $self->$meth;
+}
+
+sub formatSpec {
+	my ($self, $fld, $verb) = @_;
+	my $spec = $self->specObj($fld);
+	return $verb < 2 ? '' : 'none' unless defined $spec;
+	return $spec->desc;
 }
 
 sub showText {
@@ -121,14 +143,6 @@ sub showText {
 
 # Fake field
 sub initialText { $_[0]->ID + 4000 - 128 }
-
-sub formatShipSyst {
-	my ($self, $field, $verb) = @_;
-	unless (defined ($self->fieldDefined('shipCount'))) {
-		return $verb < 2 ? '' : 'none';
-	}
-	return Nova::Resource::Spec::Syst->new($self, $field)->desc;
-}
 
 sub formatAvailLoc {
 	my ($self, $field, $verb) = @_;
@@ -205,6 +219,13 @@ sub showPersons {
 	}
 	
 	return $ret;
+}
+
+# Temp
+sub paths {
+	my ($self) = @_;
+	my ($avail, $travel, $return, $ship) = map { $self->specObj($_) }
+		qw(AvailStel TravelStel ReturnStel ShipSyst);
 }
 
 1;

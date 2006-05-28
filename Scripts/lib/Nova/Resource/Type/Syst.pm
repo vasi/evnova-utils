@@ -56,6 +56,7 @@ sub dist {
 	return $cache->{$key};
 }
 
+# NB: Does not include hypergates
 sub adjacent {
 	my ($self) = @_;
 	unless (defined $self->adjacentCache) {

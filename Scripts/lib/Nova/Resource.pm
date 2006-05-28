@@ -71,6 +71,7 @@ sub _typeFor {
 		my $class = __PACKAGE__ . "::Type::$subclass";
 		unless ($LOADED{$class}++) {
 			eval "require $class";
+			die $@ if $@;
 		}
 		return $class;
 	} else {

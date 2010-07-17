@@ -12,10 +12,8 @@ use DB_File;
 use List::Util		qw(min first);
 use File::Basename	qw(basename dirname);
 use Date::Manip;
+use Carp;
 
-use Mac::Files;
-use Mac::Memory;
-use Mac::Resources;
 use Mac::Errors	qw($MacError);
 use Encode		qw(decode encode);
 
@@ -29,6 +27,14 @@ our $globalCache;
 	$globalCache = File::Spec->catdir($dir, '.nova-cache');
 }
 our $conTextOpt;
+
+sub loadResourceManager {
+    for my $m qw(Files Memory Resources) {
+        $m = "Mac::$m";
+        require $m;
+        $m->import;
+    }
+}
 
 sub parseData {
 	my ($data) = @_;
@@ -610,6 +616,7 @@ sub crons {
 
 sub rsrc {
 	my (@files) = @_;
+	loadResourceManager;
 	
 	for my $file (@files) {
 		my $rfd = FSpOpenResFile($file, 0);
@@ -617,7 +624,7 @@ sub rsrc {
 			warn "Can't open resource fork for '$file': $MacError\n";
 			next;
 		}
-		my @types = map { Get1IndType($_) } (1..Count1Types);
+		my @types = map { Get1IndType($_) } (1..Count1Types());
 		my %mrCounts = map { $_ => Count1Resources($_) } @types; # MacRoman
 		CloseResFile $rfd;
 		
@@ -2003,6 +2010,7 @@ sub printLegs {
 {
 	my %single = map { $_ => 1 } qw(! g | &);
 	my %num = map { $_ => 1 } qw (b p o e);
+	my %plevel = ( '(' => 1, ')' => -1 );
 	
 	sub bitTestTokenize {
 		my (@chars) = @_;
@@ -2021,10 +2029,14 @@ sub printLegs {
 				$c .= shift @chars while @chars && $chars[0] =~ /\d/;
 				push @toks, { type => '1', num => $c };
 			} elsif ($c eq '(') {
-				my @s;
-				push @s, shift @chars while @chars && $chars[0] ne ')';
-				die "Incomplete parens\n" unless @chars && $chars[0] eq ')';
-				shift @chars;
+			    my $count = 1;
+			    my @s;
+			    while (1) {
+			        defined(my $s = shift @chars) or croak "Incomplete parens\n";
+			        $count += $plevel{$s} || 0;
+			        last unless $count;
+			        push @s, $s;
+			    }
 				push @toks, { type => $c, expr => bitTestParseInner(@s) };
 			} else {
 				die "Unknown character $c\n";
@@ -2207,6 +2219,7 @@ sub find {
 
 sub readResources {
 	my ($file, @specs) = @_;
+	loadResourceManager;
 	
 	my @ret;
 	my $rfd = FSpOpenResFile($file, 0) or die $MacError;
@@ -2228,6 +2241,7 @@ sub readResources {
 
 sub writeResources {
 	my ($file, @specs) = @_;
+    loadResourceManager;
 	my $rfd = FSpOpenResFile($file, 0) or die $MacError;
 	UseResFile($rfd) or die $MacError;
 	for my $spec (@specs) {
@@ -2781,6 +2795,7 @@ sub dominate {
 	my %defense;
 	for my $spob (@spobs) {
 		next if $spob->{Flags} & 0x20 || !($spob->{Flags} & 0x1);
+		next if $spob->{DefDude} == -1;
 		
 		my $wave;
 		my $count = $spob->{DefCount};

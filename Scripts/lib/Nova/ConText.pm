@@ -14,6 +14,7 @@ use Nova::ConText::Resources;
 
 use Data::Dumper;
 use English qw($INPUT_RECORD_SEPARATOR);
+use Encode;
 
 =head1 NAME
 

@@ -1450,7 +1450,7 @@ sub dude {
 	printf "Dude %d: %s\n", $dudeid, $dude->{Name};
 	my $ships = resource('ship');
 	for my $s (sort { $ships{$b} <=> $ships{$a} } keys %ships) {
-		printf "%3d%% - %s\n", $ships{$s}, $ships->{$s}{Name};
+		printf "%3d%% - %s\n", $ships{$s}, resName($ships->{$s});
 	}
 	printf "\nStrength: %.2f\n", scalar(dudeStrength($dude));
 }

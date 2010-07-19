@@ -27,7 +27,7 @@ sub DESTROY {
 
 sub init {
     my ($self, $path) = @_;
-    open $self->{fh}, '<:bytes', $path or die "open: $!";
+    open $self->{fh}, '+<:bytes', $path or die "open: $!";
     
     my ($filehdr, $map);
     read($self->{fh}, $filehdr, 16) == 16 or die "header too short";
@@ -110,13 +110,22 @@ sub desc {
     $d .= ": $self->{name}" if defined($self->{name});
 }
 
-sub read {
-    my ($self) = @_;
-    my ($len, $data);
+sub _readLength {
+    my ($self, $force) = @_;
+    return $self->{length} if !defined($force) && defined($self->{length});
+    
     my $fh = $self->{fork}{fh};
     seek $fh, $self->{offset}, SEEK_SET or die "seek: $!";
+    my $len;
     read($fh, $len, 4) == 4 or die "resource length too short";
-    $len = $self->{length} = unpack('N', $len);
+    return $self->{length} = unpack('N', $len);
+}
+
+sub read {
+    my ($self) = @_;
+    my $fh = $self->{fork}{fh};
+    my $len = $self->_readLength('force');
+    my $data;
     read($fh, $data, $len) == $len or die "resource too short";
     return $data;
 }
@@ -124,10 +133,10 @@ sub read {
 sub write {
     my ($self, $data) = @_;
     my $fh = $self->{fork}{fh};
-    die "new data must be the same size"
-        unless defined($self->{length}) && $self->{length} == length($data);
+    die "new data must be the same size" unless
+        $self->_readLength == length($data);
     seek $fh, $self->{offset} + 4, SEEK_SET or die "seek: $!";
-    print $fh, $data;
+    print $fh $data;
 }
 
 

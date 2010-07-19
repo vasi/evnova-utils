@@ -17,7 +17,6 @@ use Date::Manip;
 use Carp;
 
 use ResourceFork;
-use Mac::Errors qw($MacError);
 use Encode		qw(decode encode decode_utf8);
 
 use utf8;
@@ -2222,21 +2221,14 @@ sub readResources {
 
 sub writeResources {
 	my ($file, @specs) = @_;
-	my $rfd = FSpOpenResFile($file, 0) or die $MacError;
-	UseResFile($rfd) or die $MacError;
+    my $rf = eval { ResourceFork->rsrcFork($file) };
+    $rf ||= ResourceFork->new($file);		
 	for my $spec (@specs) {
-		my $mrtype = encode('MacRoman', $spec->{type});
-		my $name = $spec->{name};
-		$name = '' unless defined $name;
-		
-		my $old = Get1Resource($mrtype, $spec->{id});
-		RemoveResource($old) if defined $old;
-		
-		my $new = Handle->new($spec->{data}) or die $MacError;
-		AddResource($new, $mrtype, $spec->{id}, $name) or die $MacError;
+		my $r = $rf->resource($spec->{type}, $spec->{id});
+		# no name?
+		die "Can't change name" unless $r->{name} eq $spec->{name};
+		$r->write($spec->{data});
 	}
-	UpdateResFile($rfd) or die $MacError;
-	CloseResFile($rfd);
 }
 
 sub hexdump {

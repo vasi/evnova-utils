@@ -3,6 +3,8 @@ use warnings;
 use strict;
 use Data::Dumper;
 
+use lib 'lib';
+
 use Fink::CLI		qw(print_breaking);
 use Fink::Command	qw(mkdir_p);
 use Storable		qw(nstore retrieve freeze thaw dclone);
@@ -14,8 +16,9 @@ use File::Basename	qw(basename dirname);
 use Date::Manip;
 use Carp;
 
-use Mac::Errors	qw($MacError);
-use Encode		qw(decode encode);
+use ResourceFork;
+use Mac::Errors qw($MacError);
+use Encode		qw(decode encode decode_utf8);
 
 use utf8;
 binmode STDOUT, ":utf8";
@@ -27,14 +30,6 @@ our $globalCache;
 	$globalCache = File::Spec->catdir($dir, '.nova-cache');
 }
 our $conTextOpt;
-
-sub loadResourceManager {
-    for my $m qw(Files Memory Resources) {
-        $m = "Mac::$m";
-        require $m;
-        $m->import;
-    }
-}
 
 sub parseData {
 	my ($data) = @_;
@@ -616,23 +611,14 @@ sub crons {
 
 sub rsrc {
 	my (@files) = @_;
-	loadResourceManager;
 	
 	for my $file (@files) {
-		my $rfd = FSpOpenResFile($file, 0);
-		unless (defined $rfd) {
-			warn "Can't open resource fork for '$file': $MacError\n";
-			next;
-		}
-		my @types = map { Get1IndType($_) } (1..Count1Types());
-		my %mrCounts = map { $_ => Count1Resources($_) } @types; # MacRoman
-		CloseResFile $rfd;
-		
+	    my $rf = eval { ResourceFork->rsrcFork($file) };
+	    $rf ||= ResourceFork->new($file);		
 		print "File: $file\n";
-		my %counts = map { decode('MacRoman', $_) => $mrCounts{$_} }
-			keys %mrCounts;
-		for my $type (sort keys %counts) {
-			printf "  %4s: %d\n", $type, $counts{$type};
+		for my $type ($rf->types) {
+		    my @rs = $rf->resources($type);
+			printf "  %4s: %d\n", $type, scalar(@rs);
 		}
 	}
 }
@@ -2219,29 +2205,23 @@ sub find {
 
 sub readResources {
 	my ($file, @specs) = @_;
-	loadResourceManager;
 	
 	my @ret;
-	my $rfd = FSpOpenResFile($file, 0) or die $MacError;
-	UseResFile($rfd) or die $MacError;
+    my $rf = eval { ResourceFork->rsrcFork($file) };
+    $rf ||= ResourceFork->new($file);		
 	for my $spec (@specs) {
-		my $mrtype = encode('MacRoman', $spec->{type});		
-		my $handle = Get1Resource($mrtype, $spec->{id}) or die $MacError;
-		my @info = GetResInfo($handle) or die $MacError;
-		
+		my $r = $rf->resource($spec->{type}, $spec->{id});
 		my %res = %$spec;
-		$res{name} = $info[2];
-		$res{data} = $handle->get;
+		$res{name} = $r->{name};
+		$res{data} = $r->read;
 		push @ret, \%res;
 	}
-	CloseResFile($rfd);
 	
 	return @ret;
 }
 
 sub writeResources {
 	my ($file, @specs) = @_;
-    loadResourceManager;
 	my $rfd = FSpOpenResFile($file, 0) or die $MacError;
 	UseResFile($rfd) or die $MacError;
 	for my $spec (@specs) {
@@ -2301,7 +2281,7 @@ sub simpleCrypt {
 	my ($key, $data) = @_;
 	my $size = length($data);
 	
-	my @longs = unpack 'L*', $data;
+	my @longs = unpack 'L>*', $data;
 	my $li = 0;
 	for (my $i = int($size/4); $i > 0; $i--) {
 		$longs[$li++] ^= $key;
@@ -2312,11 +2292,11 @@ sub simpleCrypt {
 		}		
 		$key ^= 0xDEADBEEF;
 	}
-	my $ret = pack 'L*', @longs;
+	my $ret = pack 'L>*', @longs;
 	if ($size % 4) {
 		my $end = substr $data, $size - $size % 4;
 		my $lend = $end . chr(0) x 4;
-		$key ^= unpack 'L', $lend;
+		$key ^= unpack 'L>', $lend;
 		my @bytes = unpack 'C*', $end;
 		my $bi = 0;
 		for (my $i = $size % 4; $i > 0; $i--) {
@@ -2331,10 +2311,7 @@ sub simpleCrypt {
 
 sub fileType {
 	my ($file) = @_;
-	my $finfo = Mac::Files::FSpGetFInfo($file);
-	my $mrtype = $finfo->fdType;
-	my $type = decode('MacRoman', $mrtype);
-	return $type;
+	return FinderInfo::typeCode($file);
 }
 
 sub pilotVers {
@@ -2394,6 +2371,7 @@ sub pilotDump {
 
 sub resForkDump {
 	my ($file, $type, $id) = @_;
+	$type = decode_utf8($type);
 	
 	# Hack for pilot files
 	if ($type =~ /[MON]piL/) {
@@ -2425,11 +2403,11 @@ sub readItem {
 }
 
 sub readShort {
-	readItem(@_, 2, 's');
+	readItem(@_, 2, 's>');
 }
 
 sub readLong {
-	readItem(@_, 4, 'l');
+	readItem(@_, 4, 'l>');
 }
 
 sub readChar {

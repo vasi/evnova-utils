@@ -632,27 +632,39 @@ sub hasBit {
 
 sub bit {
 	my ($bit) = @_;
-	my $misns = resource('misn');
 	
-	my @flds = sort qw(OnSuccess AvailBits);
-	for my $id (sort keys %$misns) {
-		my $misn = $misns->{$id};
-		
-		my @has;
-		for my $fld (@flds) {
-			my $v = $misn->{$fld};
-			if (my $b = hasBit($v, $bit)) {
-				push @has, $fld;
-			}
-		}
-		
-		if (@has) {
-			printf "%3d: %s\n", $id, $misn->{Name}, join(', ', @has);
-			for my $fld (@has) {
-				printf "     %s: %s\n", $fld, $misn->{$fld};
-			}
-		}
-	}	
+	my $bitInResource = sub {
+	    my ($type, @fields) = @_;
+	    @fields = sort @fields;
+	    my $resources = resource($type);
+	    for my $r (values %$resources) {
+	        my @has;
+	        for my $f (@fields) {
+	            push @has, $f if hasBit($r->{$f}, $bit);
+	        }
+	        
+	        if (@has) {
+	            printf "%4d: %s\n", $r->{ID}, resName($r);
+				printf "     %s: %s\n", $_, $r->{$_} foreach @has;
+	        }
+	    }
+	};
+	
+	$bitInResource->('misn', qw(OnSuccess OnRefuse OnAccept OnFailure OnAbort
+	        OnShipDone AvailBits));
+	$bitInResource->('cron', qw(EnableOn OnStart OnEnd));
+	$bitInResource->('outf', qw(Availability OnPurchase OnSell));
+	$bitInResource->('ship', qw(Availability AppearOn OnPurchase
+	        OnCapture OnRetire));
+    $bitInResource->('syst', qw(Visibility));
+	
+	$bitInResource->('char', qw(onStart));
+	$bitInResource->('pers', qw(ActivateOn));
+	$bitInResource->('flet', qw(ActivateOn));
+	$bitInResource->('spob', qw(OnDominate OnRelease OnDestroy OnRegen));
+	$bitInResource->('junk', qw(BuyOn SellOn));
+	$bitInResource->('oops', qw(ActivateOn));
+	$bitInResource->('desc', qw(Description));
 }
 
 sub commodities {

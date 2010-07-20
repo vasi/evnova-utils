@@ -2431,8 +2431,9 @@ sub readSeq {
 sub pilotLimits {
 	my ($pilot) = @_; # pilot or vers object
 	
+	my %l;
 	if ($pilot->{game} eq 'nova') {
-		return (
+		%l = (
 			cargo		=> 6,
 			syst		=> 2048,
 			outf		=> 512,
@@ -2447,7 +2448,7 @@ sub pilotLimits {
 			pers		=> 1024,
 		);
 	} else {
-		my %l = (
+		%l = (
 			cargo		=> 6,
 			syst		=> 1000,
 			outf		=> 128,
@@ -2460,8 +2461,9 @@ sub pilotLimits {
 			pers		=> 512,
 		);
 		$l{bits} = $pilot->{game} eq 'override' ? 512 : 256;
-		return %l;
 	}
+	$l{posCash} = 2 * (7 + $l{cargo} + 2*$l{syst} + $l{outf} + 2*$l{weap});
+	return %l;
 }
 
 sub pilotParsePlayer {
@@ -2954,8 +2956,20 @@ sub revivePers {
 		for my $p (@pers) {
 			printf "  %4d - %s\n", $p->{ID}, $p->{Name};
 			my $pos = $posPers + 2 * ($p->{ID} - 128);
-			substr($data, $pos, 2) = pack('s', 1);
+			substr($data, $pos, 2) = pack('s>', 1);
 		}
+		return $data;
+	});
+}
+
+sub setCash {
+	my ($file, $cash) = @_;
+	my $vers = pilotVers($file);
+	my %limits = pilotLimits($vers);
+	
+	pilotEdit($file, 128, sub {
+		my ($data) = @_;
+		substr($data, $limits{posCash}, 4) = pack('L>', $cash);
 		return $data;
 	});
 }
@@ -3110,6 +3124,7 @@ my %cmds = (
 	getcontext	=> \&printConText,	
 	setcontext	=> \&setConText,
 	revive		=> \&revivePers,
+	cash		=> \&setCash,
 	avail		=> \&availMisns,
 	setbits		=> \&setBits,
 	closetech	=> \&closestTech,
@@ -3124,7 +3139,7 @@ sub misc {
 	my $defPos = 4;
 	my $pos = $defPos + 2 * ($spobid - 128);
 	my $str = substr $data, $pos, 2;
-	my $count = unpack 's', $str;
+	my $count = unpack 's>', $str;
 	printf "Remaining: %3d\n", $count;
 }
 

@@ -644,7 +644,7 @@ sub bit {
 	        }
 	        
 	        if (@has) {
-	            printf "%4d: %s\n", $r->{ID}, resName($r);
+	            printf "%s %4d: %s\n", $type, $r->{ID}, resName($r);
 				printf "     %s: %s\n", $_, $r->{$_} foreach @has;
 	        }
 	    }

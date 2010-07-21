@@ -247,52 +247,116 @@ sub ammoMass {
 	return $w2o->{$source}->{ammo}->[0]->{Mass};
 }
 
+sub shipDefaultItems {
+    my ($ship) = @_;
+    my @items;
+    
+    for my $kw (sort grep /^WType/, keys %$ship) {
+        my $wi = $ship->{$kw};
+        next if $wi == 0 || $wi == -1;
+        
+        (my $kc = $kw) =~ s/Type/Count/;
+        (my $ka = $kw) =~ s/WType/Ammo/;
+        my $ca = $ship->{$ka};
+        
+        push @items, { type => 'weapon', id => $wi, count => $ship->{$kc} };
+        push @items, { type => 'ammo', id => $wi, count => $ca }
+            unless $ca == 0 || $ca == -1;
+        
+    }
+    for my $ko (sort grep /^DefaultItems/, keys %$ship) {
+        my $oi = $ship->{$ko};
+        next if $oi == 0 || $oi == -1;
+
+        (my $kc = $ko) =~ s/DefaultItems/ItemCount/;
+        push @items, { type => 'outfit', id => $oi, count => $ship->{$kc} };
+    }
+    return @items;
+}
+
+sub pilotItems {
+    my ($pilot) = @_;
+    my $outfs = $pilot->{outf};
+    
+    my @items;
+    for my $i (0..$#$outfs) {
+        my $count = $outfs->[$i];
+        next if $count == 0 || $count == -1;
+        push @items, { type => 'outfit', id => $i + 128, count => $count };
+    }
+    return @items;
+}
+
+sub initMeasureCache {
+    my ($cache) = @_;
+    my $weaps = ($cache->{weap} ||= resource('weap'));
+    my $outfs = ($cache->{outf} ||= resource('outf'));
+    my $w2o = ($cache->{w2o} ||= weaponOutfits($outfs, $weaps));
+    return ($weaps, $outfs, $w2o);   
+}
+
+sub measureItems {
+    my ($items, %opts) = @_;
+    my ($weaps, $outfs, $w2o) = initMeasureCache($opts{cache});
+    
+    my $total = 0;
+    for my $i (@$items) {
+        unless (defined $i->{mass}) {
+            $i->{mass} = $i->{type} eq 'weapon'   ? weaponMass($w2o, $i->{id})
+                       : $i->{type} eq 'ammo'     ? ammoMass($w2o, $i->{id})
+                       : outfitMass($outfs, $i->{id});
+        }
+        $total += $i->{mass} * $i->{count};
+    }
+    return $total;
+}
+
 sub shipTotalMass {
-	my ($outfs, $w2o, $ship, %opts) = @_;
-	my $v = $opts{verbose};
-	printf "Massing ship %4d: %s, %s\n", @$ship{qw(ID Name SubTitle)} if $v;
-	
-	my $mass = $ship->{freeMass};
-	printf "  %3d              - free\n", $mass if $v;
-	
-	for my $ktype (sort grep /^WType/, keys %$ship) {
-		my $type = $ship->{$ktype};
-		next if $type == 0 || $type == -1;
-		
-		(my $kcount = $ktype) =~ s/Type/Count/;
-		my $count = $ship->{$kcount};
-		my $wmass = weaponMass($w2o, $type);
-		my $wadd = $count * $wmass;
-		$mass += $wadd;
-		printf "  %3d = %4d x %3d - weapon %4d: %s\n", $wadd, $count, $wmass,
-			$type, $v->{$type}->{Name} if $v;
-		
-		(my $kammo = $ktype) =~ s/WType/Ammo/;
-		my $ammo = $ship->{$kammo};
-		next if $ammo == 0 || $ammo == -1;
-		my $amass = ammoMass($w2o, $type);
-		my $aadd = $ammo * $amass;
-		$mass += $aadd;
-		printf "  %3d = %4d x %3d - ammo   %4d: %s\n", $aadd, $ammo, $amass,
-			$type, $v->{$type}->{Name} if $v;
-	}
-	
-	for my $kitem (sort grep /^DefaultItems/, keys %$ship) {
-		my $outf = $ship->{$kitem};
-		next if $outf == 0 || $outf == -1;
-		
-		(my $kcount = $kitem) =~ s/DefaultItems/ItemCount/;
-		my $count = $ship->{$kcount};
-		my $omass = outfitMass($outfs, $outf);
-		my $add = $count * $omass;
-		$mass += $add;
-		printf "  %3d = %4d x %3d - outfit %4d: %s\n", $add, $count, $omass,
-			$outf, $outfs->{$outf}->{Name} if $v;
-	}
-	
-	print "  ", "-" x 50, "\n" if $v;
-	printf "  %3d              - TOTAL\n", $mass if $v;
-	return $mass;
+    my ($ship, %opts) = @_;
+    my @items = shipDefaultItems($ship);
+    return $ship->{freeMass} + measureItems(\@items, %opts);
+}
+
+sub showMass {
+    my ($items, %opts) = @_;
+    my ($weaps, $outfs, $w2o) = initMeasureCache($opts{cache} ||= {});
+    my $free = $opts{free};
+    my $total = $opts{total};
+    my $filter = $opts{filter} || sub { 1 };
+    
+    my $accum = measureItems($items, %opts);
+    $free = $total - $accum unless defined $free;
+    $total = $free + $accum unless defined $total;
+    
+	printf "  %3d              - free\n", $free;
+	for my $i (@$items) {
+	    my $rtype = $i->{type} eq 'outfit' ? $outfs : $weaps;
+	    my $rez = $rtype->{$i->{id}};
+	    printf "  %3d = %4d x %3d - %-6s %4d: %s\n", $i->{mass} * $i->{count},
+	        $i->{count}, $i->{mass}, $i->{type}, $i->{id}, resName($rez)
+	            if $filter->($i, $rez);
+    }
+	print "  ", "-" x 50, "\n";
+	printf "  %3d              - TOTAL\n", $total;
+}
+
+sub myMass {
+    my ($file) = @_;
+    my $pilot = pilotParse($file);
+    my $ship = findRes(ship => $pilot->{ship} + 128);
+    my @items = pilotItems($pilot);
+    
+    my $cache = {};
+    my $total = shipTotalMass($ship, cache => $cache);
+    showMass(\@items, total => $total, cache => $cache,
+        filter => sub { $_[0]{mass} != 0 });
+}
+
+sub showShipMass {
+	my ($find) = @_;
+	my $ship = findRes(ship => $find);
+	my @items = shipDefaultItems($ship);
+	showMass(\@items, free => $ship->{freeMass});
 }
 
 sub tsv {
@@ -305,20 +369,12 @@ sub tsv {
 	return join("\t", @data) . "\n";
 }
 
-sub massData {
-	my $outfs = resource('oütf');
-	my $weaps = resource('wëap');
-	my $w2o = weaponOutfits($outfs, $weaps);
-	my $ships = resource('shïp');
-	return ($outfs, $weaps, $w2o, $ships);
-}
-
-sub printShipMasses {
-	my ($outfs, $weaps, $w2o, $ships) = massData();
-	
-	my @ships = values %$ships;
+sub massTable {
+    my $cache = {};
+    my $ships = resource('ship');
+    my @ships = values %$ships;
 	for my $ship (@ships) {
-		$ship->{TotalMass} = shipTotalMass($outfs, $w2o, $ship);
+		$ship->{TotalMass} = shipTotalMass($ship, cache => $cache);
 	}
 	
 	@ships = sort { $b->{TotalMass} <=> $a->{TotalMass} } @ships;
@@ -1641,13 +1697,6 @@ sub where {
 		printf "%6.2f %% - %4d: %-20s (%-20s)\n", $systs{$sid}, $sid, $syst->{Name}, govtName($govt);
 		last if $count++ >= $max;
 	}
-}
-
-sub mass {
-	my ($find) = @_;
-	my $ship = findRes(ship => $find);
-	my ($outfs, $weaps, $w2o, $ships) = massData();
-	shipTotalMass($outfs, $w2o, $ship, verbose => $weaps);
 }
 
 {
@@ -3109,8 +3158,9 @@ sub closestTech {
 
 my %cmds = (
 	misc		=> \&misc,
-	masstable	=> \&printShipMasses,
-	mass		=> \&mass,
+	masstable	=> \&massTable,
+	mass		=> \&showShipMass,
+	mymass		=> \&myMass,
 	'dump'		=> \&resDump,
 	list		=> \&list,
 	rank		=> \&rank,

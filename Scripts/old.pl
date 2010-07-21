@@ -2458,6 +2458,8 @@ sub pilotLimits {
 			spob		=> 2048,
 			posPers		=> 0x1006,
 			pers		=> 1024,
+			posCron     => 0x3590,
+			cron        => 512,
 		);
 	} else {
 		%l = (
@@ -2566,6 +2568,12 @@ sub pilotParseGlobals {
 	skipTo($r, $limits{posPers});
 	$p->{persAlive} = readSeq($r, \&readShort, $limits{pers});
 	$p->{persGrudge} = readSeq($r, \&readShort, $limits{pers});
+	
+	if (exists $limits{posCron}) {
+    	skipTo($r, $limits{posCron});
+    	$p->{cronDurations} = readSeq($r, \&readShort, $limits{cron});
+    	$p->{cronHoldoffs} = readSeq($r, \&readShort, $limits{cron});
+	}
 }
 
 sub pilotParse {
@@ -2688,6 +2696,17 @@ sub pilotPrint {
 		$status = 'killed' unless $p->{persAlive}[$i - 128];
 		next unless defined $status;
 		printf "  %d - %s: %s\n", $i, $perss->{$i}{Name}, $status;
+	}
+	if (exists $p->{cronDurations}) {
+	    my $crons = resource('cron');
+    	printf "Crons:\n";
+	    for my $i (sort keys %$crons) {
+	        my ($dur, $hold) = map { $p->{$_}[$i - 128] }
+	            qw(cronDurations cronHoldoffs);
+	        next if $dur == -1 && $hold == -1;
+    		printf "  %d - %-40s: duration = %4d, holdoff = %4d\n",
+    		    $i, $crons->{$i}{Name}, $dur, $hold;
+	    }
 	}
 }
 

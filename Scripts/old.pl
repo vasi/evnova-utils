@@ -123,6 +123,18 @@ my %handlers; # predeclare
 	},
 );
 
+sub readLineSafe {
+    my ($fh) = @_;
+    
+    # Ignore encoding errors
+    my $w;
+    local $SIG{__WARN__} = sub { $w = $_[0] };
+    my $line = <$fh>;
+    die $w if defined($w) && $w !~ /does not map to Unicode/;
+    
+    return $line;
+}
+
 sub readType {
 	my ($fh, $type) = @_;
 	my (%ret, $titles);
@@ -130,7 +142,7 @@ sub readType {
 	$handler = $handlers{default} unless defined $handler;
 	
 	($titles) = parseLine(scalar(<$fh>));
-	while (my $line = <$fh>) {
+	while (my $line = readLineSafe($fh)) {
 		$line =~ /^(\S*)/;
 		my $begin = deaccent($1);
 		if ($begin eq $type) {
@@ -165,17 +177,8 @@ sub readContext {
 	my %wantType = map { deaccent($_) => 1 } @types;
 	
 	my $txt = openFindEncoding($file) or die "Can't open ConText: '$file': $!\n";
-	my ($line, %ret);
-	while (%wantType) {
-	    {
-    	    # Ignore encoding errors
-	        my $w;
-	        local $SIG{__WARN__} = sub { $w = $_[0] };
-	        $line = <$txt>;
-	        die $w if defined($w) && $w !~ /does not map to Unicode/;
-	    }
-	    last unless defined($line);
-	    
+	my %ret;
+	while (%wantType && (my $line = readLineSafe($txt))) {
 		next unless $line =~ /^..Begin (\S+)/;
 		my $type = deaccent($1);
 		next unless $wantType{$type};
@@ -185,7 +188,7 @@ sub readContext {
 	}
 	close $txt;
 	return \%ret;
-}	
+}
 
 {
 	my %cache;

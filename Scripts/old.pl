@@ -2643,6 +2643,15 @@ sub pilotParse {
 	return \%pilot;
 }
 
+sub systCanLand {
+    my ($syst) = @_;
+    for my $spobid (multiProps($syst, 'nav')) {
+        my $spob = findRes(spob => $spobid);
+        return 1 if $spob->{Flags} & 0x1;
+    }
+    return 0;
+}
+
 sub pilotPrint {
 	my ($p) = @_;
 	my $systs = resource('syst');
@@ -2669,10 +2678,14 @@ sub pilotPrint {
 	
 	printf "Unexplored:\n";
 	for my $id (sort keys %$systs) {
-		next if $p->{explore}[$id - 128];
+	    my $exp = $p->{explore}[$id - 128];
+		next if $exp == 2;
+		my $details = $exp == 1 ? ' (not landed)' : '';
+		
 		my $s = $systs->{$id};
 		next unless bitTestEvalPilot($s->{Visibility}, $p);
-		printf "  %d - %s\n", $id, $s->{Name};
+		next if $exp == 1 && !systCanLand($s);		
+		printf "  %d - %s%s\n", $id, $s->{Name}, $details;
 	}
 	
 	printf "Outfits:\n";

@@ -1562,7 +1562,7 @@ sub findRes {
 	} else {
 		$find = qr/$find/i;
 		my @found;
-		for my $id (sort keys %$res) {
+		for my $id (sort { $a <=> $b } keys %$res) {
 			my $r = $res->{$id};
 			my $name = resName($r);
 			if ($name =~ /$find/) {

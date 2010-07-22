@@ -2647,7 +2647,8 @@ sub systCanLand {
     my ($syst) = @_;
     for my $spobid (multiProps($syst, 'nav')) {
         my $spob = findRes(spob => $spobid);
-        return 1 if $spob->{Flags} & 0x1;
+        return 1 if $spob->{Flags} & 0x1    # can land here
+            && !($spob->{Flags2} & 0x3000); # not a wormhole or hypergate
     }
     return 0;
 }

@@ -15,6 +15,7 @@ use List::Util		qw(min first);
 use File::Basename	qw(basename dirname);
 use Date::Manip;
 use Carp;
+use Fcntl qw(:seek);
 
 use ResourceFork;
 use Encode		qw(decode encode decode_utf8);
@@ -107,6 +108,17 @@ my %handlers; # predeclare
 			my ($idx) = grep { $order->[$_] eq $v } (0..$#$order);
 			$res{_priv}{types}[$idx] = 'hex4';
 		}
+		
+		
+		return %res;
+	},
+	syst => sub {
+		# Silly ConText spelling bug
+		my %res = $handlers{default}->(@_);
+		if (exists $res{Visiblility}) {
+		    $res{Visibility} = $res{Visiblility};
+		    delete $res{Visiblility};
+		}
 		return %res;
 	},
 );
@@ -133,13 +145,37 @@ sub readType {
 	return \%ret;
 }
 
+sub openFindEncoding {
+    my ($file) = @_;
+    open my $fh, '<:raw', $file or return undef;
+    
+    my $block;
+    read $fh, $block, 512;
+    binmode $fh, ':eol(LF)' if index($block, "\r") != -1;
+    
+    eval { decode_utf8($block, Encode::FB_CROAK) };
+    binmode $fh, ($@ ? ':encoding(MacRoman)' : ':utf8');
+    
+    seek $fh, 0, SEEK_SET;
+    return $fh;
+}
+
 sub readContext {
 	my ($file, @types) = @_;
 	my %wantType = map { deaccent($_) => 1 } @types;
 	
-	open my $txt, '<:utf8', $file or die "Can't open ConText '$file': $!\n";
-	my %ret;
-	while (%wantType && (my $line = <$txt>)) {
+	my $txt = openFindEncoding($file) or die "Can't open ConText: '$file': $!\n";
+	my ($line, %ret);
+	while (%wantType) {
+	    {
+    	    # Ignore encoding errors
+	        my $w;
+	        local $SIG{__WARN__} = sub { $w = $_[0] };
+	        $line = <$txt>;
+	        die $w if defined($w) && $w !~ /does not map to Unicode/;
+	    }
+	    last unless defined($line);
+	    
 		next unless $line =~ /^..Begin (\S+)/;
 		my $type = deaccent($1);
 		next unless $wantType{$type};
@@ -669,7 +705,11 @@ sub rsrc {
 	
 	for my $file (@files) {
 	    my $rf = eval { ResourceFork->rsrcFork($file) };
-	    $rf ||= ResourceFork->new($file);		
+	    $rf ||= eval { ResourceFork->new($file) };
+	    if ($@) {
+	        print "$file not a resource fork\n";
+	        next;
+	    }		
 		print "File: $file\n";
 		for my $type ($rf->types) {
 		    my @rs = $rf->resources($type);

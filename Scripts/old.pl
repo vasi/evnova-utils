@@ -2697,143 +2697,140 @@ sub systCanLand {
     return 0;
 }
 
+# To be localized
+our ($id, $idx, $rez, $val, $name, @lines);
+
 sub pilotPrint {
-	my ($p) = @_;
-	my $systs = resource('syst');
-	my $govts = resource('govt');
-	my $outfs = resource('outf');
-	my $weaps = resource('weap');
-	my $spobs = resource('spob');
-	my $perss = resource('pers');
-	
-	printf "Game: %s\n", $p->{game};
-	printf "Name: %s\n", $p->{name};
-	printf "Ship name: %s\n", $p->{shipName};
-	printf "Last landed: %s\n", findRes(spob => $p->{lastSpob} + 128)->{Name};
-	printf "Ship: %s\n", findRes(ship => $p->{ship} + 128)->{Name};
-	printf "Cargo:\n";
-	for my $i (0..$#{$p->{cargo}}) {
-		my $qty = $p->{cargo}[$i];
-		printf "  %s: %d\n", cargoName($i), $qty if $qty;
-	}
-	printf "Fuel: %.2f\n", $p->{fuel} / 100;
-	
-	my $date = ParseDate(sprintf "%d-%d-%d", @$p{qw(year month day)});
-	printf "Game date: %s\n", UnixDate($date, "%b %E, %Y");
-	
-	printf "Unexplored:\n";
-	for my $id (sort keys %$systs) {
-	    my $exp = $p->{explore}[$id - 128];
-		next if $exp == 2;
-		my $details = $exp == 1 ? ' (not landed)' : '';
-		
-		my $s = $systs->{$id};
-		next unless bitTestEvalPilot($s->{Visibility}, $p);
-		next if $exp == 1 && !systCanLand($s);		
-		printf "  %d - %s%s\n", $id, $s->{Name}, $details;
-	}
-	
-	printf "Outfits:\n";
-	for my $i (sort keys %$outfs) {
-		my $qty = $p->{outf}[$i - 128];
-		printf "  %s: %d\n", $outfs->{$i}{Name}, $qty if $qty;
-	}
-	
-	printf "Legal status:\n";
-	my (%legal);
-	for my $s (values %$systs) {
-		my $gov = $s->{Govt};
-		my $l = $p->{legal}[$s->{ID} - 128];
-		
-		if (exists $legal{$gov}) {
-			my $g = $legal{$gov};
-			if ($l > $g->{max}) {
-				@$g{qw(max maxSyst)} = ($l, $s);
-			}
-			if ($l < $g->{min}) {
-				@$g{qw(min minSyst)} = ($l, $s);
-			}
-		} else {
-			$legal{$gov} = {
-				min	=> $l, minSyst => $s,
-				max => $l, maxSyst => $s,
-			};
-		}
-	}
-	for my $gov (sort keys %legal) {
-		my $g = $legal{$gov};
-		printf "  %d - %s\n", $gov, govtName($govts->{$gov});
-		printf "    Min: %5d (%s)\n", $g->{min}, $g->{minSyst}{Name};
-		printf "    Max: %5d (%s)\n", $g->{max}, $g->{maxSyst}{Name};
-	}
-	
-	printf "Weapons:\n";
-	for my $i (sort keys %$weaps) {
-		my $weap = $p->{weap}[$i - 128];
-		my $ammo = $p->{ammo}[$i - 128];
-		printf "  %s: %d (ammo: %d)\n", $weaps->{$i}{Name},
-			$weap, $ammo if $weap;
-	}
-	printf "Cash: %s\n", commaNum($p->{cash});
-	printf "Bits:\n";
-	for my $i (0..$#{$p->{bit}}) {
-		printf "  %d\n", $i if $p->{bit}[$i];
-	}
-	
-	printf "Dominated:\n";
-	for my $i (sort keys %$spobs) {
-		printf "  %d - %s\n", $i, $spobs->{$i}{Name}
-			if $p->{dominated}[$i - 128];
-	}
-	printf "Defense fleets:\n";
-	for my $i (sort keys %$spobs) {
-	    my ($dom, $def) = map { $p->{$_}[$i - 128] } qw(dominated defense);
-	    next if $dom || $def == 0 || $def == -1;
+	my ($p, @cats) = @_;
+	my $cat = sub {
+	    my ($c, @items) = @_;
+	    my $nl = ($c =~ s/\s$//);
+	    return if @cats && !grep { lc($_) eq lc($c) } @cats;
 	    
-	    my $tot = $spobs->{$i}{DefCount};
-	    next if $tot == 0 || $tot == -1;
-	    $tot = int(($tot - 1000) / 10) if $tot > 1000;
-	    next if $tot == $def;
-		printf "  %d - %s: %4d / %4d\n", $i, $spobs->{$i}{Name}, $def, $tot;
-	}
-	
-	printf "Escorts:\n";
-	for my $escType (qw(captured hired fighter)) {
-		my $escs = $p->{$escType};
-		next unless defined $escs;
-		for my $e (@$escs) {
-			printf "  %s - %s\n", findRes(ship => $e + 128)->{Name}, $escType;
-		}
-	}
-	
-	printf "Rating: %s\n", ratingStr($p->{rating});
-	printf "Version: %d\n", $p->{version};
-	printf "Strict: %s\n", $p->{strict} ? "true" : "false";
-	printf "Persons:\n";
-	for my $i (sort keys %$perss) {
-		my $status;
-		$status = 'grudge' if $p->{persGrudge}[$i - 128];
-		$status = 'killed' unless $p->{persAlive}[$i - 128];
-		next unless defined $status;
-		printf "  %d - %s: %s\n", $i, $perss->{$i}{Name}, $status;
-	}
-	if (exists $p->{cronDurations}) {
-	    my $crons = resource('cron');
-    	printf "Crons:\n";
-	    for my $i (sort keys %$crons) {
-	        my ($dur, $hold) = map { $p->{$_}[$i - 128] }
-	            qw(cronDurations cronHoldoffs);
-	        next if $dur == -1 && $hold == -1;
-    		printf "  %d - %-40s: duration = %4d, holdoff = %4d\n",
-    		    $i, $crons->{$i}{Name}, $dur, $hold;
+	    my $sub = $items[0];
+	    local @lines = ();
+	    @items = $sub->() if ref($sub) =~ /^CODE/;
+	    
+	    if ($nl) {
+	        printf "%s:\n", $c;
+	        printf "  %s\n", $_ foreach @items, @lines;
+	    } else {
+	        printf "%s: %s\n", $c, $items[0];
 	    }
-	}
+	};
+	my $catfor = sub {
+	    my ($c, $key, $type, $sub) = @_;
+	    $cat->("$c ", sub {
+    	    my $resources = resource($type);
+    	    for $id (sort keys %$resources) {
+    	        local ($idx, $rez) = ($id - 128, $resources->{$id});
+    	        local ($val, $name) = ($p->{$key}[$idx], resName($rez));
+    	        my $line = $sub->();
+    	        push @lines, $line if $line;
+    	    } ();
+	    });
+	};
+	
+	# GAME
+	$cat->('Game', $p->{game});
+	$cat->('Version', $p->{version});
+	
+	# PLAYER
+	$cat->('Name', $p->{name});
+	$cat->('Ship name', $p->{shipName});
+	$cat->('Strict', $p->{strict} ? 'true' : 'false');
+	$cat->('Game date', sub {
+	    my $date = ParseDate(sprintf "%d-%d-%d", @$p{qw(year month day)});
+	    UnixDate($date, "%b %E, %Y");
+	});
+    $cat->('Rating', ratingStr($p->{rating}));
+    $cat->('Cash', commaNum($p->{cash}));
+	$cat->('Last landed', findRes(spob => $p->{lastSpob} + 128)->{Name});
+	
+	# SHIP
+	$cat->('Ship', findRes(ship => $p->{ship} + 128)->{Name});
+    $cat->('Fuel', sprintf("%.2f", $p->{fuel} / 100));
+	$cat->('Cargo ', map {
+    	my $qty = $p->{cargo}[$_];
+    	$qty ? sprintf("%s: %d", cargoName($_), $qty) : ();
+    } (0..$#{$p->{cargo}}));
+	$catfor->(qw(Outfits outf outf), sub {
+	    !$val ? 0 : sprintf "%s: %d", $name, $val;
+	});
+	$catfor->(qw(Weapons weap weap), sub {
+	    my $ammo = $p->{ammo}[$idx];
+	    !$val ? 0 : sprintf "%s: %d (ammo: %d)", $name, $val, $ammo;
+	});
+	$cat->('Escorts ', sub {
+	    for my $type (qw(captured hired fighter)) {
+	        my $escs = $p->{$type} or next;
+	        push @lines, sprintf "%d - %s: %s", $_ + 128,
+	            findRes(ship => $_ + 128)->{Name}, $type
+	            foreach @$escs;
+	    } ();
+	});
+	
+	# GALAXY
+	$catfor->(qw(Unexplored explore syst), sub {
+	    return 0 if $val == 2;
+		my $details = $val == 1 ? ' (not landed)' : '';
+		
+		return 0 unless bitTestEvalPilot($rez->{Visibility}, $p);
+		return 0 if $val == 1 && !systCanLand($rez);
+		sprintf "%d - %s%s", $id, $name, $details;
+	});
+	$cat->('Records ', sub {
+	    my ($systs, %gov) = resource('syst');
+	    for my $s (values %$systs) {
+	        my $g = $s->{Govt};
+	        push @{$gov{$g}}, { syst => $s,
+	            legal => $p->{legal}[$s->{ID} - 128],
+	        };
+	    }
+	    for my $g (sort keys %gov) {
+	        my @ss = sort { $a->{legal} <=> $b->{legal} } @{$gov{$g}};
+	        push @lines, sprintf("%d - %s", $g, govtName(findRes(govt => $g))),
+                sprintf("  Min: %5d (%s)", $ss[0]{legal}, $ss[0]{syst}{Name}),
+                sprintf("  Max: %5d (%s)", $ss[-1]{legal}, $ss[-1]{syst}{Name});
+	    } ();
+	});
+	$catfor->(qw(Dominated dominated spob), sub {
+	    sprintf "%d - %s", $id, $name if $val;
+	});
+	$catfor->('Defense fleets', 'defense', 'spob', sub {
+	    return 0 if $p->{dominated}[$idx] || $val == 0 || $val == -1;
+	    my $cnt = $rez->{DefCount};
+	    return 0 if $cnt == 0 || $cnt == -1;
+	    $cnt = int(($cnt - 1000) / 10) if $cnt > 1000;
+	    return 0 if $cnt == $val;
+	    sprintf "%d - %s: %4d / %4d", $id, $name, $val, $cnt;
+	});
+	
+	# GAME GLOBALS
+	$cat->('Bits ', sub {
+	    my @bits = map { $p->{bit}[$_] ? sprintf("%4d", $_) : (' ' x 4) }
+	        (0..$#{$p->{bit}});
+	    while (my @line = splice(@bits, 0, 10)) {
+	        push @lines, join '  ', @line if grep /\S/, @line;
+	    } ();
+	});
+	$catfor->(qw(Crons cronDurations cron), sub {
+	    my $hold = $p->{cronHoldoffs}[$idx];
+	    return 0 if $val == -1 && $hold == -1;
+		sprintf "%d - %-40s: duration = %4d, holdoff = %4d",
+		    $id, $name, $val, $hold;
+	}) if exists $p->{cronDurations};
+	$catfor->(qw(Persons persAlive pers), sub {
+	    my $grudge = $p->{persGrudge}[$idx];
+	    return 0 if $val && !$grudge;
+		sprintf "%d - %s: %s", $id, $name, ($val ? 'grudge' : 'killed');
+	});
 }
 
 sub pilotShow {
-	my ($file) = @_;
+	my ($file) = shift;
 	my $pilot = pilotParse($file);
-	pilotPrint($pilot);
+	pilotPrint($pilot, @_);
 }
 
 sub descName {

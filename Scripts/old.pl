@@ -2695,11 +2695,11 @@ sub systCanLand {
 our ($id, $idx, $rez, $val, $name, @lines);
 
 sub pilotPrint {
-	my ($p, @cats) = @_;
+	my ($p, @wantcats) = @_;
 	my $cat = sub {
 	    my ($c, @items) = @_;
 	    my $nl = ($c =~ s/\s$//);
-	    return if @cats && !grep { lc($_) eq lc($c) } @cats;
+	    return if @wantcats && !grep { $c =~ /$_/i } @wantcats;
 	    
 	    my $sub = $items[0];
 	    local @lines = ();

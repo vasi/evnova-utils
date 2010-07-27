@@ -468,15 +468,15 @@ sub printMisns {
 }	
 
 sub moreOpts {
-    my ($opts) = shift;
-    local @ARGV = @_;
-    GetOptions(%$opts) or die "Can't get options: $!\n";
-    return @ARGV;
+    my ($args, %opts) = @_;
+    local @ARGV = @$args;
+    GetOptions(%opts) or die "Can't get options: $!\n";
+    $args = [ @ARGV ];
 }
 
 sub misn {
 	my $verbose = 0;
-	@_= moreOpts({ 'verbose|v+' => \$verbose }, @_);
+	moreOpts(\@_, 'verbose|v+' => \$verbose);
 	printMisns($verbose,
 		map { findRes(misn => $_)				}
 		map { /^(\d+)-(\d+)$/ ? ($1..$2) : $_	}
@@ -2548,7 +2548,7 @@ sub pilotLimits {
 			fighter 	=> 54,
 			posBits		=> 0xb81e,
 			spob		=> 2048,
-			posPers		=> 0x1006,
+			skipBeforeDef => 'true',
 			pers		=> 1024,
 			posCron     => 0x3590,
 			cron        => 512,
@@ -2563,7 +2563,6 @@ sub pilotLimits {
 			fighter 	=> 36,
 			posBits		=> 0x1e7e,
 			spob		=> 1500,
-			posPers		=> 0xbbc,
 			pers		=> 512,
 		);
 		$l{bits} = $pilot->{game} eq 'override' ? 512 : 256;
@@ -2656,8 +2655,10 @@ sub pilotParseGlobals {
 	
 	$p->{version} = readShort($r);
 	$p->{strict} = readShort($r);
-	# TODO
-	skipTo($r, $limits{posPers});
+	readShort($r) if $limits{skipBeforeDef}; # unused?
+	
+	$p->{defense} = readSeq($r, \&readShort, $limits{spob});
+	
 	$p->{persAlive} = readSeq($r, \&readShort, $limits{pers});
 	$p->{persGrudge} = readSeq($r, \&readShort, $limits{pers});
 	
@@ -2778,11 +2779,24 @@ sub pilotPrint {
 	for my $i (0..$#{$p->{bit}}) {
 		printf "  %d\n", $i if $p->{bit}[$i];
 	}
+	
 	printf "Dominated:\n";
 	for my $i (sort keys %$spobs) {
-		printf "  %s\n", $spobs->{$i}{Name}
+		printf "  %d - %s\n", $i, $spobs->{$i}{Name}
 			if $p->{dominated}[$i - 128];
 	}
+	printf "Defense fleets:\n";
+	for my $i (sort keys %$spobs) {
+	    my ($dom, $def) = map { $p->{$_}[$i - 128] } qw(dominated defense);
+	    next if $dom || $def == 0 || $def == -1;
+	    
+	    my $tot = $spobs->{$i}{DefCount};
+	    next if $tot == 0 || $tot == -1;
+	    $tot = int(($tot - 1000) / 10) if $tot > 1000;
+	    next if $tot == $def;
+		printf "  %d - %s: %4d / %4d\n", $i, $spobs->{$i}{Name}, $def, $tot;
+	}
+	
 	printf "Escorts:\n";
 	for my $escType (qw(captured hired fighter)) {
 		my $escs = $p->{$escType};
@@ -2897,6 +2911,9 @@ sub dudeStrength {
 }	
 
 sub dominate {
+    my $pilot;
+    moreOpts(\@_, 'pilot|p=s' => sub { $pilot = pilotParse(shift) });
+	
 	my (@finds) = @_;
 	my @spobs = @finds ? map { findRes(spob => $_) } @finds
 		: values %{resource('spob')};
@@ -2912,9 +2929,8 @@ sub dominate {
 			$wave = $count;
 		} else {
 			$wave = $count % 10;
+			$count -= 1000;
 			$count = int($count / 10);
-			my $digits = length("$count");
-			$count -= 10 ** ($digits - 1);
 		}
 		
 		my $dude = findRes(dude => $spob->{DefDude});

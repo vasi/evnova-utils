@@ -2993,6 +2993,7 @@ sub legalGovt {
 	my %legal;
 	for my $s (values %$systs) {
 		next if defined $govt && $s->{Govt} != $govt->{ID};
+		next unless bitTestEvalPilot($s->{Visibility}, $pilot);
 		$legal{$s->{ID}} = $pilot->{legal}[$s->{ID} - 128];
 	}
 	

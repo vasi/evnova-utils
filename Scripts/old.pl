@@ -2739,7 +2739,10 @@ sub pilotPrint {
 	});
     $cat->('Rating', ratingStr($p->{rating}));
     $cat->('Cash', commaNum($p->{cash}));
-	$cat->('Last landed', findRes(spob => $p->{lastSpob} + 128)->{Name});
+	$cat->('Last landed', sub {
+	    my $s = findRes(spob => $p->{lastSpob} + 128);
+	    sprintf "%d - %s", $s->{ID}, resName($s);
+	});
 	
 	# SHIP
 	$cat->('Ship', findRes(ship => $p->{ship} + 128)->{Name});

@@ -1303,18 +1303,7 @@ sub dist {
 	my @searches = @_;
 	my $systs = resource('syst');
 	
-	my @places;
-	for my $s (@searches) {
-		if ($s =~ /^\d+$/) {
-			push @places, $s;
-		} else {
-			$s = qr/$s/i;
-			my ($r) = grep { $_->{Name} =~ /$s/ } values %$systs;
-			push @places, $r->{ID};
-		}
-	}
-	
-	my ($p1, $p2) = @places;
+	my ($p1, $p2) = map { findRes(syst => $_)->{ID} } @searches;
 	my @path = djikstra($systs, $p1, $p2, type => 'path');
 	
 	printf "Distance: %d\n", scalar(@path) - 1;
@@ -1602,19 +1591,24 @@ sub findRes {
 	if ($find =~ /^\d+$/) {
 		my $r = $res->{$find};
 		return wantarray ? ($r) : $r;
-	} else {
-		$find = qr/$find/i;
-		my @found;
-		for my $id (sort { $a <=> $b } keys %$res) {
-			my $r = $res->{$id};
-			my $name = resName($r);
-			if ($name =~ /$find/) {
-				return $r unless wantarray;
-				push @found, $r;
-			}
-		}
-		return @found;
 	}
+	
+    my @res = sort { $a->{ID} <=> $b->{ID} } values %$res;
+    
+    $find =~ s/\W//g; # strip punct
+    return @res if $find eq '';
+    
+    $find = qr/$find/i;
+	my $whole = qr/^$find$/i;
+	my @found;
+	for my $r (@res) {
+		my $name = resName($r);
+		$name =~ s/\W//g; # strip punct
+		return $r if $name =~ /$whole/ && !wantarray;
+		push @found, $r if $name =~ /$find/;
+	}
+	
+	return wantarray ? @found : $found[0];
 }
 
 sub escorts {

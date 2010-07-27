@@ -114,12 +114,9 @@ my %handlers; # predeclare
 	},
 	syst => sub {
 		# Silly ConText spelling bug
-		my %res = $handlers{default}->(@_);
-		if (exists $res{Visiblility}) {
-		    $res{Visibility} = $res{Visiblility};
-		    delete $res{Visiblility};
-		}
-		return %res;
+		my ($vals, $types, $titles) = @_;
+		map { s/^Visiblility$/Visibility/ } @$titles;
+		return $handlers{default}->(@_);
 	},
 );
 
@@ -470,13 +467,16 @@ sub printMisns {
 		map { misnText($_, verbose => $verbose)	} @misns;
 }	
 
+sub moreOpts {
+    my ($opts) = shift;
+    local @ARGV = @_;
+    GetOptions(%$opts) or die "Can't get options: $!\n";
+    return @ARGV;
+}
+
 sub misn {
 	my $verbose = 0;
-	{
-		local @ARGV = @_;
-		GetOptions('verbose|v+' => \$verbose) or die "Can't get options: $!\n";
-		@_ = @ARGV;
-	}
+	@_= moreOpts({ 'verbose|v+' => \$verbose }, @_);
 	printMisns($verbose,
 		map { findRes(misn => $_)				}
 		map { /^(\d+)-(\d+)$/ ? ($1..$2) : $_	}

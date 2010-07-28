@@ -147,20 +147,30 @@ use strict;
 use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(creatorCode typeCode);
-our @EXPORT_OK = qw(getxattr finderInfo);
+our @EXPORT_OK = qw(listxattr getxattr finderInfo);
 
 use Encode;
 
+sub xattr {
+    my ($file, @opts) = @_;
+    open my $fh, '-|', '/usr/bin/xattr', @opts, $file or die "Can't run xattr: $!\n";
+    my @lines = <$fh>;
+    close $fh;
+    chomp @lines;
+    return @lines;
+}
+
+sub listxattr {
+    my ($file) = @_;
+    return xattr($file);
+}
+
 sub getxattr {
     my ($file, $attr) = @_;
-    my $data = '';
-    open my $fh, '-|', '/usr/bin/xattr', '-px', $attr, $file;
-    while (defined(my $line = <$fh>)) {
-        $line =~ s/\s+//g;
-        $data .= pack 'H*', $line;
-    }
-    close $fh;
-    return $data;
+    return undef unless grep { $_ eq $attr } listxattr($file);
+    my $data = join('', xattr($file, '-px', $attr));
+    $data =~ s/\s+//g;
+    return pack 'H*', $data;
 }
 
 sub finderInfo {
@@ -170,12 +180,14 @@ sub finderInfo {
 
 sub typeCode {
     my ($file) = @_;
-    return decode('MacRoman', unpack('a4', finderInfo($file)));
+    my $finfo = finderInfo($file) or return undef;
+    return decode('MacRoman', unpack('a4', $finfo));
 }
 
 sub creatorCode {
     my ($file) = @_;
-    return decode('MacRoman', unpack('@4a4', finderInfo($file)));
+    my $finfo = finderInfo($file) or return undef;
+    return decode('MacRoman', unpack('@4a4', $finfo));
 }
 
 1;

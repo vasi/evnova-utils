@@ -30,6 +30,8 @@ our $globalCache;
 	$globalCache = File::Spec->catdir($dir, '.nova-cache');
 }
 our $conTextOpt;
+our @misnNCBset = qw(OnSuccess OnRefuse OnAccept
+    OnFailure OnAbort OnShipDone);
 
 sub parseData {
 	my ($data) = @_;
@@ -562,11 +564,9 @@ sub misnText {
 	if ($shiptype != 00 && $shiptype != -1) { 
 		$ret .= "AvailShipType: $shiptype\n";
 	}
-	if (my $bits = $m->{AvailBits}) {
-		$ret .= "AvailBits: $bits\n";
-	}
-	if (my $succ = $m->{OnSuccess}) {
-		$ret .= "OnSuccess: $succ\n";
+	for my $f ('AvailBits', @misnNCBset) {
+	    my $v = $m->{$f} or next;
+	    $ret .= "$f: $v\n";
 	}
 	$ret .= "\n" if $opts{verbose};
 	
@@ -749,8 +749,7 @@ sub bit {
 	    }
 	};
 	
-	$bitInResource->('misn', qw(OnSuccess OnRefuse OnAccept OnFailure OnAbort
-	        OnShipDone AvailBits));
+	$bitInResource->('misn', @misnNCBset, 'AvailBits');
 	$bitInResource->('cron', qw(EnableOn OnStart OnEnd));
 	$bitInResource->('outf', qw(Availability OnPurchase OnSell));
 	$bitInResource->('ship', qw(Availability AppearOn OnPurchase
@@ -3153,9 +3152,10 @@ sub setBits {
 }
 
 sub availMisns {
-	my ($verbose, $interesting);
+	my ($verbose, $unique, $fieldcheck) = (0, 0);
 	moreOpts(\@_, 'verbose|v+' => \$verbose,
-	    'interesting|i' => \$interesting);
+	    'unique|u:+' => \$unique,
+	    'fieldcheck|f' => \$fieldcheck);
 	my ($pfile, $progress) = @_;
 	
 	# Read the progress
@@ -3183,13 +3183,21 @@ sub availMisns {
 		push @{$bits{$misn->{AvailBits}}}, $misn;
 	}
 	
-	if ($interesting) {
+	# Filter interesting missions
+	if ($unique) {
 	    @ok = ();
 	    for my $ms (values %bits) {
-	        next unless @$ms <= 3;
+	        next unless @$ms <= $unique;
 	        push @ok, @$ms;
 	    }
 	}
+	if ($fieldcheck) {
+    	@ok = grep {
+    	    my $m = $_;
+    	    $m->{AvailBits} &&
+    	        grep { $m->{$_} } @misnNCBset;
+    	} @ok;
+    }
 	
 	# Print
     @ok = sort { $a->{ID} <=> $b->{ID} } @ok;

@@ -15,10 +15,11 @@ use List::Util		qw(min first);
 use File::Basename	qw(basename dirname);
 use Date::Manip;
 use Carp;
-use Fcntl qw(:seek);
+use Fcntl           qw(:seek);
+use English;
+use Encode		    qw(decode encode decode_utf8);
 
 use ResourceFork;
-use Encode		qw(decode encode decode_utf8);
 
 use utf8;
 binmode STDOUT, ":utf8";
@@ -2322,8 +2323,8 @@ sub writeResources {
     $rf ||= ResourceFork->new($file);		
 	for my $spec (@specs) {
 		my $r = $rf->resource($spec->{type}, $spec->{id});
-		# no name?
-		die "Can't change name" unless $r->{name} eq $spec->{name};
+		die "Can't change name"
+		    if $spec->{name} && $spec->{name} ne $r->{name};
 		$r->write($spec->{data});
 	}
 }
@@ -2405,7 +2406,7 @@ sub fileType {
 
 sub pilotVers {
 	my ($file) = @_;
-	my $type = fileType($file);
+	my $type = fileType($file) or return undef;
 
 	my %vers = (
 		'MpïL'	=> { game => 'classic',		key => 0xABCD1234 },
@@ -2447,15 +2448,31 @@ sub pilotEdit {
 }
 
 sub pilotDump {
-	my ($file, $rid, $out) = @_;
-	my $vers = pilotVers($file);
+	my ($in, $rid, $out) = @_;
 	
-	my ($res) = readResources($file, { type => $vers->{type}, id => $rid });
-	my $data = simpleCrypt($vers->{key}, $res->{data});
+	# pilot -> data
+	my $vers = pilotVers($in);
+	if ($vers) {
+    	my ($res) = readResources($in, { type => $vers->{type}, id => $rid });
+    	my $data = simpleCrypt($vers->{key}, $res->{data});	    
+    	open my $fh, '>', $out;
+    	print $fh $data;
+    	close $fh;
+    	return;
+	}
 	
-	open my $fh, '>', $out;
-	print $fh $data;
-	close $fh;
+    # data -> pilot
+	$vers = pilotVers($out);
+	die "No valid pilot file!\n" unless $vers;
+	my $data;
+	{
+	    local $RS; # slurp
+	    open my $fh, '<', $in;
+	    $data = <$fh>;
+	    close $fh;
+	}
+	$data = simpleCrypt($vers->{key}, $data);
+	writeResources($out, { type => $vers->{type}, id => $rid, data => $data });
 }
 
 sub resForkDump {
@@ -2755,14 +2772,15 @@ sub pilotPrint {
 	});
 	$catfor->(qw(Weapons weap weap), sub {
 	    my $ammo = $p->{ammo}[$idx];
-	    !$val ? 0 : sprintf "%s: %d (ammo: %d)", $name, $val, $ammo;
+	    (!$val && !$ammo) ? 0
+	        : sprintf "%s: %d (ammo: %d)", $name, $val, $ammo;
 	});
 	$cat->('Escorts ', sub {
 	    for my $type (qw(captured hired fighter)) {
 	        my $escs = $p->{$type} or next;
 	        push @lines, sprintf "%d - %s: %s", $_ + 128,
 	            findRes(ship => $_ + 128)->{Name}, $type
-	            foreach @$escs;
+	                foreach @$escs;
 	    } ();
 	});
 	
@@ -2915,11 +2933,13 @@ sub dominate {
 	for my $spob (@spobs) {
 		next if $spob->{Flags} & 0x20 || !($spob->{Flags} & 0x1);
 		next if $spob->{DefDude} == -1;
+		if (defined $pilot) {
+		    my $syst = spobSyst($spob->{ID});
+            next unless bitTestEvalPilot($syst->{Visibility}, $pilot);
+		}
 		
 		my $wave;
 		my $count = $spob->{DefCount};
-		$count = $pilot->{defense}[$spob->{ID} - 128]
-		    if defined $pilot;
 		if ($count <= 1000) {
 			$wave = $count;
 		} else {
@@ -2927,6 +2947,8 @@ sub dominate {
 			$count -= 1000;
 			$count = int($count / 10);
 		}
+		$count = $pilot->{defense}[$spob->{ID} - 128]
+		    if defined $pilot;
 		
 		my $dude = findRes(dude => $spob->{DefDude});
 		my $strength = $count * dudeStrength($dude);
@@ -2945,7 +2967,7 @@ sub dominate {
 		printf "Strength: %10s\n", commaNum($strength);
 		my @subs = sort { $a->{spob}{ID} <=> $b->{spob}{ID} }
 			@{$defense{$strength}};
-		for my $sub (@subs) {
+		for my $sub (sort { $b->{spob}{Tribute} <=> $a->{spob}{Tribute} } @subs) {
 			my $desc;
 			my $dudestr = sprintf "%s (%d)", @{$sub->{dude}}{'Name', 'ID'};
 			my $spobstr = sprintf "%d %s", @{$sub->{spob}}{'ID', 'Name'};

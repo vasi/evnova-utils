@@ -471,7 +471,7 @@ sub moreOpts {
     my ($args, %opts) = @_;
     local @ARGV = @$args;
     GetOptions(%opts) or die "Can't get options: $!\n";
-    $args = [ @ARGV ];
+    @$args = @ARGV;
 }
 
 sub misn {
@@ -2906,7 +2906,7 @@ sub dudeStrength {
 
 sub dominate {
     my $pilot;
-    moreOpts(\@_, 'pilot|p=s' => sub { $pilot = pilotParse(shift) });
+    moreOpts(\@_, 'pilot|p=s' => sub { $pilot = pilotParse($_[1]) });
 	
 	my (@finds) = @_;
 	my @spobs = @finds ? map { findRes(spob => $_) } @finds
@@ -2919,6 +2919,8 @@ sub dominate {
 		
 		my $wave;
 		my $count = $spob->{DefCount};
+		$count = $pilot->{defense}[$spob->{ID} - 128]
+		    if defined $pilot;
 		if ($count <= 1000) {
 			$wave = $count;
 		} else {

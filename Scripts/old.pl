@@ -3153,36 +3153,46 @@ sub setBits {
 }
 
 sub availMisns {
-	my $verbose = 0;
-	{
-		local @ARGV = @_;
-		GetOptions('verbose|v+' => \$verbose) or die "Can't get options: $!\n";
-		@_ = @ARGV;
-	}
+	my ($verbose, $interesting);
+	moreOpts(\@_, 'verbose|v+' => \$verbose,
+	    'interesting|i' => \$interesting);
 	my ($pfile, $progress) = @_;
 	
 	# Read the progress
 	my %completed;
-	open my $fh, '<', $progress or die $!;
-	while (<$fh>) {
-		if (/^\s*[^\s\d]\s*(\d+)/) {
-			$completed{$1} = 1;
-		}
-	}
+	if (defined $progress) {
+    	open my $fh, '<', $progress or die $!;
+    	while (<$fh>) {
+    		if (/^\s*[^\s\d]\s*(\d+)/) {
+    			$completed{$1} = 1;
+    		}
+    	}
+    }
 	
 	# Read the pilot
 	my $pilot = pilotParse($pfile);
 	
 	# Find ok missions
-	my @ok;
+	my (@ok, %bits);
 	my $misns = resource('misn');
-	for my $misn (sort { $a->{ID} <=> $b->{ID} } values %$misns) {
+	for my $misn (values %$misns) {
 		next if $completed{$misn->{ID}};
+		next unless $misn->{AvailRandom} > 0;
 		next unless bitTestEvalPilot($misn->{AvailBits}, $pilot);
 		push @ok, $misn;
+		push @{$bits{$misn->{AvailBits}}}, $misn;
+	}
+	
+	if ($interesting) {
+	    @ok = ();
+	    for my $ms (values %bits) {
+	        next unless @$ms <= 3;
+	        push @ok, @$ms;
+	    }
 	}
 	
 	# Print
+    @ok = sort { $a->{ID} <=> $b->{ID} } @ok;
 	if ($verbose) {
 		printMisns($verbose > 1, @ok);
 	} else {

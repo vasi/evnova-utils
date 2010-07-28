@@ -3309,7 +3309,7 @@ GetOptions(
 	'context|c=s'	=> \$conTextOpt,
 );
 
-my $cmd = shift;
+my $cmd = lc shift;
 die "No such command \"$cmd\"\n" unless exists $cmds{$cmd};
 &{$cmds{$cmd}}(@ARGV);
 

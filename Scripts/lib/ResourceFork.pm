@@ -7,7 +7,7 @@ use Encode;
 
 sub rsrcFork {
     my ($proto, $path) = @_;
-    $path .= "/rsrc";
+    $path .= "/..namedfork/rsrc";
     return $proto->new($path);
 }
 

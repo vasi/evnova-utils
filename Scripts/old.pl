@@ -24,7 +24,7 @@ use ResourceFork;
 use utf8;
 binmode STDOUT, ":utf8";
 
-our $pilotLog = '../EV Nova 1.0.9/pilotlog.txt';
+our $pilotLog = 'pilotlog.txt';
 our $globalCache;
 {
 	my $dir = File::Spec->rel2abs(dirname $0);
@@ -1444,8 +1444,9 @@ sub readPilotLogItem {
 		
 		# Decode
 		$txt = decode('MacRoman', $txt);
-		my @lines = split /\r/, $txt;
+		my @lines = split /[\r\n]/, $txt;
 		@lines = grep /\S/, @lines; # remove whitespace lines
+		@lines = grep !/Plugins loaded/, @lines; # breaks format
 		
 		# Read the header info
 		my %header;
@@ -3294,7 +3295,7 @@ my %cmds = (
 	where		=> \&where,
 	trade		=> \&trade,
 	legs		=> \&printLegs,
-	bitTest		=> \&bitTestPrint,
+	bittest		=> \&bitTestPrint,
 	spobsyst	=> \&printSpobSyst,
 	cantsell	=> \&cantSell,
 	diff		=> \&diff,

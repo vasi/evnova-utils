@@ -595,8 +595,10 @@ sub misnText {
 				LoadCargText ShipDoneText DropCargText CompText FailText)) {
 			my $descid = $m->{$type};
 			next if $descid < 128;
-			my $txt = findRes(desc => $descid)->{Description};
-			$ret .= sprintf "%s: %s$section", $type, $txt;
+			my $r = findRes(desc => $descid);
+			if ($r) {
+				$ret .= sprintf "%s: %s$section", $type, $r->{Description};
+			}
 		}
 	}
 	return $ret;
@@ -2554,6 +2556,7 @@ sub pilotLimits {
 			outf		=> 512,
 			weap		=> 256,
 			misn		=> 10,
+			misnSize	=> 2284,
 			bits		=> 10000,
 			escort		=> 74,
 			fighter 	=> 54,
@@ -2613,24 +2616,28 @@ sub pilotParsePlayer {
 			$p->{misnObjectives}[$i] = \%m if $m{active};
 		}
 		for my $i (0..$limits{misn}-1) {
-			my %m;
-			$m{travelSpob} = readShort($r);
-			$m{travelSyst} = readShort($r); # unused?
-			$m{returnSpob} = readShort($r);
-			$m{shipCount} = readShort($r);
-			$m{shipDude} = readShort($r);
-			$m{shipGoal} = readShort($r);
-			$m{shipBehavior} = readShort($r);
-			$m{shipStart} = readShort($r);
-			$m{shipSyst} = readShort($r);
-			$m{cargoType} = readShort($r);
-			$m{cargoQty} = readShort($r);
-			$m{pickupMode} = readShort($r);
-			$m{dropoffMode} = readShort($r);
-			
-			# TODO
-			
-			$p->{misnData}[$i] = \%m if exists $p->{misnObjectives}[$i];
+			my $o = $r->{offset};
+			if (exists $p->{misnObjectives}[$i]) {
+				my %m;
+				skipTo($r, $o + 120);
+				$m{travelSpob} = readShort($r);
+				$m{travelSyst} = readShort($r); # unused?
+				$m{returnSpob} = readShort($r);
+				$m{shipCount} = readShort($r);
+				$m{shipDude} = readShort($r);
+				$m{shipGoal} = readShort($r);
+				$m{shipBehavior} = readShort($r);
+				$m{shipStart} = readShort($r);
+				$m{shipSyst} = readShort($r);
+				$m{cargoType} = readShort($r);
+				$m{cargoQty} = readShort($r);
+				$m{pickupMode} = readShort($r);
+				$m{dropoffMode} = readShort($r);
+				skipTo($r, $o + 200);
+				$m{id} = readShort($r);
+				$p->{misnData}[$i] = \%m;
+			}
+			skipTo($r, $o + $limits{misnSize}); # TODO
 		}
 	}
 	
@@ -2759,6 +2766,14 @@ sub pilotPrint {
 	$cat->('Last landed', sub {
 	    my $s = findRes(spob => $p->{lastSpob} + 128);
 	    sprintf "%d - %s", $s->{ID}, resName($s);
+	});
+	
+	$cat->('Missions ', sub {
+		for my $midx (0..$#{$p->{misnObjectives}}) {
+			my ($mo, $md) = map { $p->{$_}[$midx] } qw(misnObjectives misnData);
+			my $misn = findRes(misn => $md->{id} + 128);
+			push @lines, sprintf "%d: %s", $misn->{ID}, $misn->{Name};
+		} ();
 	});
 	
 	# SHIP

@@ -2249,7 +2249,7 @@ sub printSpobSyst {
 	my ($find) = @_;
 	my $spob = findRes(spob => $find);
 	my $syst = spobSyst($spob->{ID});
-	print $syst->{Name}, "\n";
+	printf "%d: %s\n", $syst->{ID}, $syst->{Name};
 }
 
 sub diff {

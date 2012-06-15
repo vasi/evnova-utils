@@ -2598,6 +2598,7 @@ sub pilotParsePlayer {
 	$p->{month} = readShort($r);
 	$p->{day} = readShort($r);
 	$p->{year} = readShort($r);
+	$p->{date} = ParseDate(sprintf "%d-%d-%d", @$p{qw(year month day)});
 	$p->{explore} = readSeq($r, \&readShort, $limits{syst});
 	$p->{outf} = readSeq($r, \&readShort, $limits{outf});
 	$p->{legal} = readSeq($r, \&readShort, $limits{syst});
@@ -2634,8 +2635,12 @@ sub pilotParsePlayer {
 				$m{cargoQty} = readShort($r);
 				$m{pickupMode} = readShort($r);
 				$m{dropoffMode} = readShort($r);
+				skipTo($r, $o + 156);
+				$m{pay} = readLong($r);
 				skipTo($r, $o + 200);
 				$m{id} = readShort($r);
+				skipTo($r, $o + 230);
+				$m{auxLeft} = readShort($r);
 				$p->{misnData}[$i] = \%m;
 			}
 			skipTo($r, $o + $limits{misnSize}); # TODO
@@ -2758,10 +2763,7 @@ sub pilotPrint {
 	$cat->('Name', $p->{name});
 	$cat->('Ship name', $p->{shipName});
 	$cat->('Strict', $p->{strict} ? 'true' : 'false');
-	$cat->('Game date', sub {
-	    my $date = ParseDate(sprintf "%d-%d-%d", @$p{qw(year month day)});
-	    UnixDate($date, "%b %E, %Y");
-	});
+	$cat->('Game date', UnixDate($p->{date}, "%b %E, %Y"));
     $cat->('Rating', ratingStr($p->{rating}));
     $cat->('Cash', commaNum($p->{cash}));
 	$cat->('Last landed', sub {
@@ -2769,13 +2771,13 @@ sub pilotPrint {
 	    sprintf "%d - %s", $s->{ID}, resName($s);
 	});
 	
-	$cat->('Missions ', sub {
-		for my $midx (0..$#{$p->{misnObjectives}}) {
-			my ($mo, $md) = map { $p->{$_}[$midx] } qw(misnObjectives misnData);
-			my $misn = findRes(misn => $md->{id} + 128);
-			push @lines, sprintf "%d: %s", $misn->{ID}, $misn->{Name};
-		} ();
-	});
+	if ($p->{misnObjectives}) {
+		$cat->('Missions ', sub {
+			for my $midx (0..$#{$p->{misnObjectives}}) {
+				pilotMisn($p, $midx);
+			} ();
+		});
+	}
 	
 	# SHIP
 	$cat->('Ship', findRes(ship => $p->{ship} + 128)->{Name});
@@ -2856,6 +2858,43 @@ sub pilotPrint {
 	    return 0 if $val && !$grudge;
 		sprintf "%d - %s: %s", $id, $name, ($val ? 'grudge' : 'killed');
 	});
+}
+
+sub pilotMisn {
+	my ($p, $midx) = @_;
+	my ($mo, $md) = map { $p->{$_}[$midx] }
+		qw(misnObjectives misnData);
+	my $misn = findRes(misn => $md->{id} + 128);
+	push @lines, sprintf "%d: %s", $misn->{ID}, $misn->{Name};
+	push @lines, sprintf "  Failed!" if $mo->{failed};
+	if ($md->{travelSpob} != -1) {
+		push @lines, sprintf "  Travel: %s%s",
+			findRes(spob => $md->{travelSpob} + 128)->{Name},
+			$mo->{travelDone} ? " (done)" : '';
+	}
+	if ($misn->{ReturnStel} != -1) {
+		push @lines, sprintf "  Return: %s",
+			findRes(spob => $md->{returnSpob} + 128)->{Name};
+	}
+	if (!grep { $_ == $misn->{TimeLimit} } (0, -1)) {
+		push @lines, sprintf "  DaysLeft: %s",
+			Delta_Format(DateCalc($mo->{limit}, $p->{date}), "%dt");
+	}
+	if ($misn->{ShipCount} != -1) {
+		push @lines, sprintf "  ShipSyst: %s",
+		findRes(syst => $md->{shipSyst} + 128)->{Name};
+		
+		my $count = grep { $_ == $misn->{ShipGoal} } (0, 1, 2, 5, 6);
+		push @lines, sprintf "  Ships: %s%s",
+			# good for non-kills too?
+			($count ? sprintf("%d / %d", $md->{shipCount}, $misn->{ShipCount})
+				: ''),
+			($mo->{shipDone} ? " (done)" : '');
+	}
+	if ($misn->{AuxShipCount} != -1) {
+		push @lines, sprintf "  AuxShips: %d / %d",
+			$md->{auxLeft}, $misn->{AuxShipCount};
+	}
 }
 
 sub pilotShow {

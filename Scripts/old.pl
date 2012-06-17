@@ -1649,6 +1649,8 @@ sub myOutfits {
 }
 
 sub capture {
+	my $verbose = 0;
+	moreOpts(\@_, 'verbose|v+' => \$verbose);
 	my ($find) = @_;
 	my $ships = resource('ship');
 	my $outfs = resource('outf');
@@ -1694,6 +1696,12 @@ sub capture {
 	for my $o ($min, $max) {
 		$o = 75 if $o > 75;
 		$o = 1 if $o < 1;
+	}
+	
+	if ($verbose) {
+		printf "Effective crew: %s%s\n", $crew, $pct ? "(+$pct%)" : '';
+		printf "Effective strength: $strength\n";
+		printf "\n";
 	}
 	
 	printf "To capture %s\n", resName($enemy);

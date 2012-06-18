@@ -2,7 +2,7 @@ package ResourceFork;
 use warnings;
 use strict;
 
-use Fcntl qw(:seek);
+use Fcntl qw(:DEFAULT :seek);
 use Encode;
 
 sub rsrcFork {
@@ -27,7 +27,8 @@ sub DESTROY {
 
 sub init {
     my ($self, $path) = @_;
-    open $self->{fh}, '+<:bytes', $path or die "open: $!";
+	$self->{path} = $path;
+	$self->open('<');
     
     my ($filehdr, $map);
     read($self->{fh}, $filehdr, 16) == 16 or die "header too short";
@@ -72,6 +73,17 @@ sub init {
         
         $self->{rsrc}{$tname} = \%type;
     }
+}
+
+sub open {
+	my ($self, $mode) = @_;
+	close $self->{fh} if defined $self->{fh};
+    open $self->{fh}, "$mode:bytes", $self->{path} or die "open: $!";
+}
+sub writable {
+	my ($self) = @_;
+	my $mode = fcntl($self->{fh}, F_GETFL, 0);
+	$self->open('+<') unless $mode == O_RDWR;
 }
 
 sub types {
@@ -132,6 +144,7 @@ sub read {
 
 sub write {
     my ($self, $data) = @_;
+	$self->{fork}->writable();
     my $fh = $self->{fork}{fh};
     die "new data must be the same size" unless
         $self->_readLength == length($data);

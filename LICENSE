@@ -1,0 +1,31 @@
+NovaConText.txt was generated from the data files of Escape Velocity Nova[1] 1.1.1. These original data files are (C) Ambrosia Software[2], in collaboration with ATMOS. The text file was generated using ConText/ResStore[3], (C) Ralph and Roger Sutherland.
+
+EVCConText.txt and EVOConText.txt were generated from the data files of the ports 'EV Classic for Nova' and 'EV Override for Nova', as released by 'Guy'[4] on the Ambrosia forums[5]. Original EV Classic and EV Override are (C) Ambrosia Software, in collaboration with Matt Burch and Peter Carthwright, respectively. 
+
+MinersConText.txt was generated from the Miners total conversion plugin, by 'Arion' on the Ambrosia forums. The plugin appears to be no longer online anywhere. 
+
+FHConText.txt was generated from Guy's port to Nova of the Frozen Heart total conversion for EV Override. Original Frozen Heart plugin is (C) Martin Turner.
+
+The file "guy's pilot format.txt" is an attempt to reverse engineer the EV Nova pilot format, and was downloaded from Guy's web site. The file "pilot format.txt" is a previous attempt to reverse engineer the pilot format by myself, Dave Vasilevsky, based on the specification for EV Classic pilot files[6].
+
+[1] http://www.ambrosiasw.com/games/evn/
+[2] http://www.ambrosiasw.com/
+[3] http://davidarthur.evula.net/resedit/ResEdit/ResEdit_and_NovaTools.html
+[4] http://dl.dropbox.com/u/522679/ev/index.html
+[5] http://www.ambrosiasw.com/forums/index.php?showtopic=123064&st=0&p=1958984&fromsearch=1&#entry1958984
+[6] http://clocki.tripod.com/pilotfile-data.txt
+
+
+
+EVERYTHING ELSE:
+
+Copyright (c) 2009-2012 Dave Vasilevsky
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

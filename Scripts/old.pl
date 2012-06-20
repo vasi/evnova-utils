@@ -2624,7 +2624,6 @@ sub pilotParsePlayer {
 		$m{flags} = readShort($r) if $p->{game} eq 'nova';
 		$m{limit} = readDate($r);
 		$p->{misnObjectives}[$i] = \%m if $m{active};
-		print Dumper \%m;
 	}
 	if ($p->{game} eq 'nova') {
 		for my $i (0..$limits{misn}-1) {
@@ -2901,13 +2900,13 @@ sub pilotMisn {
 		push @lines, "  ShipSyst: $sname";
 		
 		my $count = grep { $_ == $misn->{ShipGoal} } (0, 1, 2, 5, 6);
-		my @parts;
-		push @parts, sprintf "%d / %d", $md->{shipCount}, $misn->{ShipCount}
-			if $count;
-		push @parts, '(done)' if $mo->{shipDone};
-		push @lines, sprintf "  Ships: %s", join(' ', @parts);
+		if ($count) {
+			my $line = sprintf "%d / %d", $md->{shipCount}, $misn->{ShipCount};
+			$line .= " (done)" if $mo->{shipDone};
+			push @lines, sprintf "  Ships: $line";
+		}
 	}
-	if ($misn->{AuxShipCount} != -1) {
+	if (!grep { $_ == $misn->{AuxShipCount} } (0, -1)) {
 		push @lines, sprintf "  AuxShips: %d / %d",
 			$md->{auxLeft}, $misn->{AuxShipCount};
 	}

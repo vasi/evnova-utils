@@ -2889,15 +2889,21 @@ sub pilotMisn {
 			Delta_Format(DateCalc($mo->{limit}, $p->{date}), "%dt");
 	}
 	if ($misn->{ShipCount} != -1) {
-		push @lines, sprintf "  ShipSyst: %s",
-		findRes(syst => $md->{shipSyst} + 128)->{Name};
+		my $syst = $md->{shipSyst};
+		my $sname;
+		if ($syst == -6) {
+			$sname = "follow player";
+		} else {
+			$sname = findRes(syst => $md->{shipSyst} + 128)->{Name};
+		}
+		push @lines, "  ShipSyst: $sname";
 		
 		my $count = grep { $_ == $misn->{ShipGoal} } (0, 1, 2, 5, 6);
-		push @lines, sprintf "  Ships: %s%s",
-			# good for non-kills too?
-			($count ? sprintf("%d / %d", $md->{shipCount}, $misn->{ShipCount})
-				: ''),
-			($mo->{shipDone} ? " (done)" : '');
+		my @parts;
+		push @parts, sprintf "%d / %d", $md->{shipCount}, $misn->{ShipCount}
+			if $count;
+		push @parts, '(done)' if $mo->{shipDone};
+		push @lines, sprintf "  Ships: %s", join(' ', @parts);
 	}
 	if ($misn->{AuxShipCount} != -1) {
 		push @lines, sprintf "  AuxShips: %d / %d",

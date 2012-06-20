@@ -2,6 +2,7 @@
 use warnings;
 use strict;
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
 
 use lib 'lib';
 
@@ -2506,6 +2507,10 @@ sub resourceLength {
 	return length $r->{data};
 }
 
+sub skip {
+	my ($r, $skip) = @_;
+	$r->{offset} += $skip;	
+}
 sub skipTo {
 	my ($r, $offset) = @_;
 	$r->{offset} = $offset;
@@ -2534,10 +2539,18 @@ sub readChar {
 
 sub readString {
 	my ($r, $len) = @_;
-	my @bytes = readItem($len + 1, 'C*');
+	my @bytes = readItem($r, $len, 'C*');
+	my ($end) = grep { $bytes[$_] == 0 } (0..$len-1);
+	return '' if $end == 0;
+	return pack('C*', @bytes[0..$end-1]);
+}
+
+sub readPString {
+	my ($r, $len) = @_;
+	my @bytes = readItem($r, $len + 1, 'C*');
 	my $strlen = shift @bytes;
 	return '' if $strlen == 0;
-	return join('', @bytes[0..$strlen-1]);
+	return pack('C*', @bytes[0..$strlen-1]);
 }
 
 sub readDate {
@@ -2564,8 +2577,7 @@ sub pilotLimits {
 			syst		=> 2048,
 			outf		=> 512,
 			weap		=> 256,
-			misn		=> 10,
-			misnSize	=> 2284,
+			misn		=> 16,
 			bits		=> 10000,
 			escort		=> 74,
 			fighter 	=> 54,
@@ -2627,37 +2639,53 @@ sub pilotParsePlayer {
 	}
 	if ($p->{game} eq 'nova') {
 		for my $i (0..$limits{misn}-1) {
-			my $o = $r->{offset};
 			if (exists $p->{misnObjectives}[$i]) {
 				my %m;
-				skipTo($r, $o + 120);
 				$m{travelSpob} = readShort($r);
-				$m{travelSyst} = readShort($r); # unused?
-				$m{returnSpob} = readShort($r);
-				$m{shipCount} = readShort($r);
-				$m{shipDude} = readShort($r);
-				$m{shipGoal} = readShort($r);
-				$m{shipBehavior} = readShort($r);
-				$m{shipStart} = readShort($r);
-				$m{shipSyst} = readShort($r);
-				$m{cargoType} = readShort($r);
-				$m{cargoQty} = readShort($r);
-				$m{pickupMode} = readShort($r);
-				$m{dropoffMode} = readShort($r);
-				skipTo($r, $o + 156);
+				readShort($r); # unused
+				my @keys = qw(returnSpob
+					shipCount shipDude shipGoal shipBehavior shipStart shipSyst
+					cargoType cargoQty pickupMode dropoffMode
+					scanMask compGovt compReward datePosInc);
+				for my $k (@keys) { $m{$k} = readShort($r); }
+				readShort($r); # unused
 				$m{pay} = readLong($r);
-				skipTo($r, $o + 200);
+				@keys = qw(Killed Boarded Disabled JumpedIn JumpedOut);
+				for my $k (@keys) { $m{"ships$k"} = readShort($r); }
+				$m{initialShips} = readShort($r);
+				$m{canAbort} = readChar($r);
+				$m{cargoLoaded} = readChar($r);
+				readShort($r); # unused
+				@keys = qw(brief quickBrief loadCargo dropOffCargo comp fail
+					refuse shipDone);
+				for my $k (@keys) { $m{"${k}Text"} = readShort($r); }
+				$m{timeLeft} = readShort($r);
+				$m{shipNameRes} = readShort($r);
+				$m{shipNameIdx} = readShort($r);
+				readShort($r); # unused
 				$m{id} = readShort($r);
-				skipTo($r, $o + 230);
-				$m{auxLeft} = readShort($r);
+				$m{shipSubtitleRes} = readShort($r);
+				$m{shipSubtitleIdx} = readShort($r);
+				readShort($r); # unused
+				$m{flags1} = readShort($r);
+				$m{flags2} = readShort($r);
+				readShort($r) for (1..4);
+				@keys = qw(Count Dude Syst JumpedIn Delay Left);
+				for my $k (@keys) { $m{"aux$k"} = readShort($r); }
+				$m{shipName} = readPString($r, 63);
+				$m{shipSubtitle} = readPString($r, 63);
+				skip($r, 255);
+				@keys = qw(Accept Refuse Success Failure Abort ShipDone);
+				for my $k (@keys) { $m{"on$k"} = readString($r,255); }
+				$m{name} = readPString($r, 127);
+				skip($r, 131);
+				
 				$p->{misnData}[$i] = \%m;
 			}
-			skipTo($r, $o + $limits{misnSize}); # TODO
 		}
 	}
 	
-	# TODO
-	skipTo($r, $limits{posBits});
+	skipTo($r, $limits{posBits}); # unknown
 	
 	$p->{bit} = readSeq($r, \&readChar, $limits{bits});
 	$p->{dominated} = readSeq($r, \&readChar, $limits{spob});
@@ -2675,9 +2703,7 @@ sub pilotParsePlayer {
 		next if $v == -1;
 		push @{$p->{fighter}}, $v;
 	}
-	
-	# TODO: ranks? contribute bits? other cargo?
-	
+		
 	skipTo($r, resourceLength($r) - 4);
 	$p->{rating} = readLong($r);
 }

@@ -2582,6 +2582,7 @@ sub pilotLimits {
 			syst		=> 1000,
 			outf		=> 128,
 			weap		=> 64,
+			misn		=> 8,
 			escort		=> 36,
 			fighter 	=> 36,
 			posBits		=> 0x1e7e,
@@ -2614,17 +2615,18 @@ sub pilotParsePlayer {
 	$p->{ammo} = readSeq($r, \&readShort, $limits{weap});
 	$p->{cash} = readLong($r);
 	
+	for my $i (0..$limits{misn}-1) {
+		my %m;
+		$m{active} = readChar($r);
+		$m{travelDone} = readChar($r);
+		$m{shipDone} = readChar($r);
+		$m{failed} = readChar($r);
+		$m{flags} = readShort($r) if $p->{game} eq 'nova';
+		$m{limit} = readDate($r);
+		$p->{misnObjectives}[$i] = \%m if $m{active};
+		print Dumper \%m;
+	}
 	if ($p->{game} eq 'nova') {
-		for my $i (0..$limits{misn}-1) {
-			my %m;
-			$m{active} = readChar($r);
-			$m{travelDone} = readChar($r);
-			$m{shipDone} = readChar($r);
-			$m{failed} = readChar($r);
-			$m{flags} = readShort($r);
-			$m{limit} = readDate($r);
-			$p->{misnObjectives}[$i] = \%m if $m{active};
-		}
 		for my $i (0..$limits{misn}-1) {
 			my $o = $r->{offset};
 			if (exists $p->{misnObjectives}[$i]) {

@@ -2637,52 +2637,9 @@ sub pilotParsePlayer {
 		$m{limit} = readDate($r);
 		$p->{misnObjectives}[$i] = \%m if $m{active};
 	}
-	if ($p->{game} eq 'nova') {
-		for my $i (0..$limits{misn}-1) {
-			if (exists $p->{misnObjectives}[$i]) {
-				my %m;
-				$m{travelSpob} = readShort($r);
-				readShort($r); # unused
-				my @keys = qw(returnSpob
-					shipCount shipDude shipGoal shipBehavior shipStart shipSyst
-					cargoType cargoQty pickupMode dropoffMode
-					scanMask compGovt compReward datePosInc);
-				for my $k (@keys) { $m{$k} = readShort($r); }
-				readShort($r); # unused
-				$m{pay} = readLong($r);
-				@keys = qw(Killed Boarded Disabled JumpedIn JumpedOut);
-				for my $k (@keys) { $m{"ships$k"} = readShort($r); }
-				$m{initialShips} = readShort($r);
-				$m{canAbort} = readChar($r);
-				$m{cargoLoaded} = readChar($r);
-				readShort($r); # unused
-				@keys = qw(brief quickBrief loadCargo dropOffCargo comp fail
-					refuse shipDone);
-				for my $k (@keys) { $m{"${k}Text"} = readShort($r); }
-				$m{timeLeft} = readShort($r);
-				$m{shipNameRes} = readShort($r);
-				$m{shipNameIdx} = readShort($r);
-				readShort($r); # unused
-				$m{id} = readShort($r);
-				$m{shipSubtitleRes} = readShort($r);
-				$m{shipSubtitleIdx} = readShort($r);
-				readShort($r); # unused
-				$m{flags1} = readShort($r);
-				$m{flags2} = readShort($r);
-				readShort($r) for (1..4);
-				@keys = qw(Count Dude Syst JumpedIn Delay Left);
-				for my $k (@keys) { $m{"aux$k"} = readShort($r); }
-				$m{shipName} = readPString($r, 63);
-				$m{shipSubtitle} = readPString($r, 63);
-				skip($r, 255);
-				@keys = qw(Accept Refuse Success Failure Abort ShipDone);
-				for my $k (@keys) { $m{"on$k"} = readString($r,255); }
-				$m{name} = readPString($r, 127);
-				skip($r, 131);
-				
-				$p->{misnData}[$i] = \%m;
-			}
-		}
+	for my $i (0..$limits{misn}-1) {
+		$p->{misnData}[$i] = parseMisnData($p, $r)
+			if exists $p->{misnObjectives}[$i];
 	}
 	
 	skipTo($r, $limits{posBits}); # unknown
@@ -2706,6 +2663,75 @@ sub pilotParsePlayer {
 		
 	skipTo($r, resourceLength($r) - 4);
 	$p->{rating} = readLong($r);
+}
+
+sub parseMisnData {
+	my ($p, $r) = @_;
+	my %m;
+	my $nova = ($p->{game} eq 'nova');
+	
+	$m{travelSpob} = readShort($r);
+	readShort($r); # unused
+	my @keys = (qw(returnSpob shipCount shipDude shipGoal shipBehavior),
+		$nova ? qw(shipStart) : (),
+		qw(shipSyst cargoType cargoQty pickupMode dropoffMode));
+	for my $k (@keys) { $m{$k} = readShort($r); }
+	if ($nova) {
+		$m{scanMask} = readShort($r);
+	} else {
+		$m{scanGovt} = readShort($r);
+		$m{compBits} = readSeq($r, \&readShort, 4);
+	}
+	for my $k qw(compGovt compReward) { $m{$k} = readShort($r); }
+	if ($nova) {
+		$m{datePostInc} = readShort($r);
+		readShort($r); # unused
+	} else {
+		$m{failBits} = readSeq($r, \&readShort, 2);
+	}
+	$m{pay} = readLong($r);
+	@keys = qw(Killed Boarded Disabled JumpedIn JumpedOut);
+	for my $k (@keys) { $m{"ships$k"} = readShort($r); }
+	$m{initialShips} = readShort($r);
+	$m{failIfScanned} = readChar($r) unless $nova;
+	$m{canAbort} = readChar($r);
+	$m{cargoLoaded} = readChar($r);
+	$nova ? readShort($r) : readChar($r); # padding
+	@keys = qw(brief quickBrief loadCargo dropOffCargo comp fail refuse);
+	push @keys, qw(shipDone) if $nova;
+	for my $k (@keys) { $m{"${k}Text"} = readShort($r); }
+	$m{timeLeft} = readShort($r);
+	$m{shipNameRes} = readShort($r);
+	$m{shipNameIdx} = readShort($r);
+	readShort($r); # unused
+	if ($nova) {
+		$m{id} = readShort($r);
+		$m{shipSubtitleRes} = readShort($r);
+		$m{shipSubtitleIdx} = readShort($r);
+		readShort($r); # unused
+	} else {
+		$m{shipDelay} = readShort($r);
+		$m{id} = readShort($r);
+	}
+	$m{flags} = readShort($r);
+	if ($nova) {
+		$m{flags2} = readShort($r);
+		readShort($r) for (1..4);
+	}
+	@keys = qw(Count Dude Syst JumpedIn Delay Left);
+	for my $k (@keys) { $m{"aux$k"} = readShort($r); }
+	$m{shipName} = readPString($r, $nova ? 63 : 31);
+	if ($nova) {
+		$m{shipSubtitle} = readPString($r, 63);
+		skip($r, 255);
+		@keys = qw(Accept Refuse Success Failure Abort ShipDone);
+		for my $k (@keys) { $m{"on$k"} = readString($r,255); }
+		$m{name} = readPString($r, 127);
+		skip($r, 131);
+	} else {
+		$m{name} = readPString($r, 255);
+	}
+	return \%m;
 }
 
 sub pilotParseGlobals {

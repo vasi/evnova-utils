@@ -613,7 +613,8 @@ sub rank {
 	for my $r (sort { $b->{$field} <=> $a->{$field} } values %$res) {
 		my $cost = $r->{Cost};
 		$cost = defined $cost ? commaNum($cost) : '';
-		printf "%6s: %-30s %10s\n", $r->{$field}, resName($r), $cost;
+		printf "%6s: %-30s %3d    %10s\n", $r->{$field}, resName($r),
+			$r->{ID}, $cost;
 	}
 }
 

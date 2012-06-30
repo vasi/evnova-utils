@@ -528,6 +528,11 @@ sub systText {
 	}
 }
 
+sub shipGoal {
+	my @goals = qw(destroy disable board escort observe rescue chase);
+	return $goals[shift];
+}
+
 sub misnText {
 	my ($m, %opts) = @_;
 	my $ret = '';
@@ -570,12 +575,35 @@ sub misnText {
 	    my $v = $m->{$f} or next;
 	    $ret .= "$f: $v\n";
 	}
-	$ret .= "\n" if $opts{verbose};
 	
 	# TODO
 	
-	# Descs
 	if ($opts{verbose}) {
+		$ret .= "\n";
+		
+		# Ships
+		my $ships = 0;
+		if ($m->{ShipCount} != -1) {
+			$ships = 1;
+			my $dude = findRes(dude => $m->{ShipDude});
+			my $goal = shipGoal($m->{ShipGoal});
+			$ret .= sprintf "Ships: %s%s%s (%d)\n",
+				($goal ? ucfirst "$goal " : ''),
+				($m->{ShipCount} > 1 ? "$m->{ShipCount} " : ''),
+				$dude->{Name}, $dude->{ID};
+			$ret .= "ShipSyst: " . systText($m->{ShipSyst}) . "\n";
+		}
+		if ($m->{AuxShipCount} != -1) {
+			$ships = 1;
+			my $dude = findRes(dude => $m->{AuxShipDude});
+			$ret .= sprintf "AuxShips: %s%s (%d)\n",
+				($m->{AuxShipCount} > 1 ? "$m->{AuxShipCount} " : ''),
+				$dude->{Name}, $dude->{ID};
+			$ret .= "AuxShipSyst: " . systText($m->{AuxShipSyst}) . "\n";
+		}
+		$ret .= "\n" if $ships;
+		
+		# Places to go
 		my $where = 0;
 		if ((my $spec = $m->{TravelStel}) != -1) {
 			$where = 1;
@@ -585,12 +613,9 @@ sub misnText {
 			$where = 1;
 			$ret .= "ReturnStel: " . spobText($spec) . "\n";
 		}
-		if ($m->{ShipCount} != -1 && (my $spec = $m->{ShipSyst}) != -2) {
-			$where = 1;
-			$ret .= "ShipSyst: " . systText($spec) . "\n";
-		}
 		$ret .= "\n" if $where;
 		
+		# Descs
 		$m->{InitialText} = $m->{ID} + 4000 - 128;
 		for my $type (qw(InitialText RefuseText BriefText QuickBrief
 				LoadCargText ShipDoneText DropCargText CompText FailText)) {

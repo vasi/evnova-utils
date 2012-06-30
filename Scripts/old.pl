@@ -2575,7 +2575,7 @@ sub readPString {
 	my ($r, $len) = @_;
 	my @bytes = readItem($r, $len + 1, 'C*');
 	my $strlen = shift @bytes;
-	return '' if $strlen == 0;
+	return '' if $strlen == 0 || $strlen > $len;
 	return pack('C*', @bytes[0..$strlen-1]);
 }
 
@@ -2653,6 +2653,7 @@ sub pilotParsePlayer {
 	$p->{ammo} = readSeq($r, \&readShort, $limits{weap});
 	$p->{cash} = readLong($r);
 	
+	my %misns;
 	for my $i (0..$limits{misn}-1) {
 		my %m;
 		$m{active} = readChar($r);
@@ -2661,12 +2662,13 @@ sub pilotParsePlayer {
 		$m{failed} = readChar($r);
 		$m{flags} = readShort($r) if $p->{game} eq 'nova';
 		$m{limit} = readDate($r);
-		$p->{misnObjectives}[$i] = \%m if $m{active};
+		$misns{$i} = \%m if $m{active};
 	}
 	for my $i (0..$limits{misn}-1) {
-		$p->{misnData}[$i] = parseMisnData($p, $r)
-			if exists $p->{misnObjectives}[$i];
+		my %m = parseMisnData($p, $r);
+		@{$misns{$i}}{keys %m} = values %m if $misns{$i};
 	}
+	$p->{missions} = [ values %misns ];
 	
 	skipTo($r, $limits{posBits}); # unknown
 	
@@ -2757,7 +2759,7 @@ sub parseMisnData {
 	} else {
 		$m{name} = readPString($r, 255);
 	}
-	return \%m;
+	return %m;
 }
 
 sub pilotParseGlobals {
@@ -2858,13 +2860,9 @@ sub pilotPrint {
 	    sprintf "%d - %s", $s->{ID}, resName($s);
 	});
 	
-	if ($p->{misnObjectives}) {
-		$cat->('Missions ', sub {
-			for my $midx (0..$#{$p->{misnObjectives}}) {
-				pilotMisn($p, $midx);
-			} ();
-		});
-	}
+	$cat->('Missions ', sub {
+		pilotMisn($p, $_) for (@{$p->{missions}}); ()
+	});
 	
 	# SHIP
 	$cat->('Ship', findRes(ship => $p->{ship} + 128)->{Name});
@@ -2948,45 +2946,43 @@ sub pilotPrint {
 }
 
 sub pilotMisn {
-	my ($p, $midx) = @_;
-	my ($mo, $md) = map { $p->{$_}[$midx] }
-		qw(misnObjectives misnData);
-	my $misn = findRes(misn => $md->{id} + 128);
+	my ($p, $m) = @_;
+	my $misn = findRes(misn => $m->{id} + 128);
 	push @lines, sprintf "%d: %s", $misn->{ID}, $misn->{Name};
-	push @lines, sprintf "  Failed!" if $mo->{failed};
-	if ($md->{travelSpob} != -1) {
+	push @lines, sprintf "  Failed!" if $m->{failed};
+	if ($m->{travelSpob} != -1) {
 		push @lines, sprintf "  Travel: %s%s",
-			findRes(spob => $md->{travelSpob} + 128)->{Name},
-			$mo->{travelDone} ? " (done)" : '';
+			findRes(spob => $m->{travelSpob} + 128)->{Name},
+			$m->{travelDone} ? " (done)" : '';
 	}
 	if ($misn->{ReturnStel} != -1) {
 		push @lines, sprintf "  Return: %s",
-			findRes(spob => $md->{returnSpob} + 128)->{Name};
+			findRes(spob => $m->{returnSpob} + 128)->{Name};
 	}
 	if (!grep { $_ == $misn->{TimeLimit} } (0, -1)) {
 		push @lines, sprintf "  DaysLeft: %s",
-			Delta_Format(DateCalc($mo->{limit}, $p->{date}), "%dt");
+			Delta_Format(DateCalc($m->{limit}, $p->{date}), "%dt");
 	}
 	if ($misn->{ShipCount} != -1) {
-		my $syst = $md->{shipSyst};
+		my $syst = $m->{shipSyst};
 		my $sname;
 		if ($syst == -6) {
 			$sname = "follow player";
 		} else {
-			$sname = findRes(syst => $md->{shipSyst} + 128)->{Name};
+			$sname = findRes(syst => $m->{shipSyst} + 128)->{Name};
 		}
 		push @lines, "  ShipSyst: $sname";
 		
 		my $count = grep { $_ == $misn->{ShipGoal} } (0, 1, 2, 5, 6);
 		if ($count) {
-			my $line = sprintf "%d / %d", $md->{shipCount}, $misn->{ShipCount};
-			$line .= " (done)" if $mo->{shipDone};
+			my $line = sprintf "%d / %d", $m->{shipCount}, $misn->{ShipCount};
+			$line .= " (done)" if $m->{shipDone};
 			push @lines, sprintf "  Ships: $line";
 		}
 	}
 	if (!grep { $_ == $misn->{AuxShipCount} } (0, -1)) {
 		push @lines, sprintf "  AuxShips: %d / %d",
-			$md->{auxLeft}, $misn->{AuxShipCount};
+			$m->{auxLeft}, $misn->{AuxShipCount};
 	}
 }
 

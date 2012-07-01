@@ -2318,24 +2318,44 @@ sub mapOver {
 	return find($type, $field, "1 == 1");
 }
 
-sub find {
-	my ($type, $field, $spec) = @_;
-	$spec = "\$_ == $spec" unless $spec =~ m,[<>=!/&|^()],;
-	
+sub makeFilt {
+	my ($spec) = @_;
+	if ($spec !~ m,[<>=!/&|^()],) {
+		if ($spec =~ m,[^-\d\.],) {
+			return sub { $_ eq $spec }; # string
+		} else {
+			my $num = +$spec;
+			return sub { $_ == $num }; # num
+		}
+	}
 	my $filt = eval "sub { $spec }";
 	die $@ if $@;
-	
+	return $filt;
+}
+
+sub find {
+	my $type = shift;
+	my ($fldfilt, $filt) = map { makeFilt($_) } @_;	
 	my $res = resource($type);
-	my $ftype;
+	
+	my (%fields, $fcnt);
 	for my $id (sort keys %$res) {
 		my $r = $res->{$id};
-		$ftype = fieldType($r, $field) unless defined $ftype;
+		unless (%fields) {
+			my @names = grep &$fldfilt, keys %$r;
+			@fields{@names} = map { fieldType($r, $_) } @names;
+			$fcnt = scalar(@names) or die "No fields matched";
+		}
 		
-		my $val = $r->{$field};
-		local $_ = $val;
-		next unless $filt->();
-		
-		printf "%6s: %s (%d)\n", formatField($ftype, $val), resName($r), $id;
+		for my $field (keys %fields) {
+			my $val = $r->{$field};
+			local $_ = $val;
+			next unless $filt->();
+			
+			my $name = sprintf "%s (%d)", resName($r), $id;
+			printf "%6s: %-50s%s\n", formatField($fields{$field}, $val),
+				$name, ($fcnt == 1 ? '' : " $field");
+		}
 	}
 }
 

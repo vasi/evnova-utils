@@ -3606,7 +3606,7 @@ GetOptions(
 );
 
 my %cmdh = @cmds;
-my $cmd = lc shift;
+my $cmd = lc shift || 'help';
 die "No such command \"$cmd\"\n" unless exists $cmdh{$cmd};
 &{$cmdh{$cmd}[0]}(@ARGV);
 

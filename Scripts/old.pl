@@ -734,6 +734,8 @@ sub crons {
 }
 
 sub rsrc {
+	my $verbose = 0;
+	moreOpts(\@_, 'verbose|v+' => \$verbose);
 	my (@files) = @_;
 	
 	for my $file (@files) {
@@ -747,6 +749,11 @@ sub rsrc {
 		for my $type ($rf->types) {
 		    my @rs = $rf->resources($type);
 			printf "  %4s: %d\n", $type, scalar(@rs);
+			if ($verbose) {
+				for my $r (@rs) {
+					printf "    %3d: %s\n", $r->{id}, $r->{name};
+				}
+			}
 		}
 	}
 }
@@ -1290,7 +1297,7 @@ sub limit {
 	my $misns = resource('misn');
 	
 	my $ref;
-	my $cache = 'cache/dist';
+	my $cache = File::Spec->catfile(contextCache(), 'dist');
 	if (-f $cache) {	# FIXME: Check out-of-date?
 		$ref = retrieve($cache);
 	} else {
@@ -2650,6 +2657,8 @@ sub pilotLimits {
 		$l{bits} = $pilot->{game} eq 'override' ? 512 : 256;
 	}
 	$l{posCash} = 2 * (7 + $l{cargo} + 2*$l{syst} + $l{outf} + 2*$l{weap});
+	$l{posPers} = 4 + 2*$l{spob} + ($l{skipBeforeDef} ? 2 : 0);
+	
 	return %l;
 }
 
@@ -2791,7 +2800,6 @@ sub pilotParseGlobals {
 	readShort($r) if $limits{skipBeforeDef}; # unused?
 	
 	$p->{defense} = readSeq($r, \&readShort, $limits{spob});
-	
 	$p->{persAlive} = readSeq($r, \&readShort, $limits{pers});
 	$p->{persGrudge} = readSeq($r, \&readShort, $limits{pers});
 	
@@ -3431,59 +3439,87 @@ sub closestTech {
 	}
 }
 
-my %cmds = (
-	misc		=> \&misc,
-	masstable	=> \&massTable,
-	mass		=> \&showShipMass,
-	mymass		=> \&myMass,
-	'dump'		=> \&resDump,
-	list		=> \&list,
-	rank		=> \&rank,
-	misn		=> \&misn,
-	crons		=> \&crons,
-	rsrc		=> \&rsrc,
-	bit			=> \&bit,
-	comm		=> \&commodities,
-	defense		=> \&defense,
-	persistent	=> \&persistent,
-	pers		=> \&pers,
-	limit		=> \&limit,
-	dist		=> \&dist,
-	spobtech	=> \&spobtech,
-	outftech	=> \&outftech,
-	rating		=> \&rating,
-	dude		=> \&dude,
-	records		=> \&records,
-	suckup		=> \&suckUp,
-	capture		=> \&capture,
-	where		=> \&where,
-	trade		=> \&trade,
-	legs		=> \&printLegs,
-	bittest		=> \&bitTestPrint,
-	spobsyst	=> \&printSpobSyst,
-	cantsell	=> \&cantSell,
-	diff		=> \&diff,
-	find		=> \&find,
-	resdump		=> \&resForkDump,
-	pilotdump	=> \&pilotDump,
-	pilothex	=> \&pilotHex,
-	pilot		=> \&pilotShow,
-	'map'		=> \&mapOver,
-	shiptech	=> \&shiptech,
-	'grep'		=> \&grepDescs,
-	legal		=> \&legalFromPilot,
-	legalgovt	=> \&legalGovt,
-	killable	=> \&killable,
-	dominate	=> \&dominate,
-	wherepers	=> \&wherePers,
-	hiddenspobs	=> \&hiddenSpobs,
-	getcontext	=> \&printConText,	
-	setcontext	=> \&setConText,
-	revive		=> \&revivePers,
-	cash		=> \&setCash,
-	avail		=> \&availMisns,
-	setbits		=> \&setBits,
-	closetech	=> \&closestTech,
+my @cmds = (
+	misc        => [\&misc, '', 'scratch pad'],
+	masstable	=> [\&massTable, '', 'show total space of all ships'],
+	mass		=> [\&showShipMass, 'SHIP', 'show space breakdown of a ship'],
+	mymass		=> [\&myMass, 'PILOT', 'show space breakdown of pilot'],
+	'dump'		=> [\&resDump, 'TYPE SPEC [FIELDS..]',
+		'dump fields of a resource'],
+	list		=> [\&list, 'TYPE [SPEC]', 'list resources'],
+	rank		=> [\&rank, 'TYPE FIELD', 'sort resources by field value'],
+	misn		=> [\&misn, '[-v] SPECSET', 'show mission details'],
+	crons		=> [\&crons, '[SPECS..]', 'show cron details'],
+	rsrc		=> [\&rsrc, '[-v] FILES..', 'dump raw resource types'],
+	bit			=> [\&bit, 'BIT', 'show where a bit is used'],
+	comm		=> [\&commodities, 'SPOB', "show what's bought and sold here"],
+	defense		=> [\&defense, '', 'rank ships by shield and armor'],
+	persistent	=> [\&persistent, '', 'list persistent outfits'],
+	pers		=> [\&pers, '', 'list pers missions'],
+	limit		=> [\&limit, '', 'list time-limited missions'],
+	dist		=> [\&dist, 'SYST1 SYSY2',
+		'show shortest path between systems'],
+	spobtech	=> [\&spobtech, '[govt GOVT | TECH]',
+		'show where to buy different tech levels',
+		'Can limit to spobs of one govt, or to one tech level'],
+	outftech	=> [\&outftech, '', 'show tech level of each outfit'],
+	rating		=> [\&rating, 'PILOT', 'show current combat rating'],
+	dude		=> [\&dude, 'DUDE', 'show ships and strength of a fleet'],
+	records		=> [\&records, '', 'list legal record names'],
+	suckup		=> [\&suckUp, 'GOVT',
+		'show missions that suck up to a govt'],
+	capture		=> [\&capture, '[-v] SHIP', 'show odds of capturing a ship',
+		'(requires pilotlog.txt)'],
+	where		=> [\&where, 'SHIP [MAXPLACES]',
+		'show where a ship type is likely to be'],
+	trade		=> [\&trade, '[ITERATIONS]',
+		'search for the best trade routes'],
+	legs		=> [\&printLegs, '', 'list the best legs (partial routes)'],
+	bittest		=> [\&bitTestPrint, 'NCB [BITS..]',
+		'evaluate a control bit expression', 'Given a set of bits'],
+	spobsyst	=> [\&printSpobSyst, 'SPOB', 'show system containing a planet'],
+	cantsell	=> [\&cantSell, '', 'show unsellable outfits'],
+	diff		=> [\&diff, 'TYPE SPEC1 SPEC2',
+		'show differences between two resources'],
+	find		=> [\&find, 'TYPE FIELDSPEC VALSPEC',
+		'find resources which match criteria',
+		'Specs can be regexps, strings, numbers, or code'],
+	resdump		=> [\&resForkDump, 'FILE TYPE ID',
+		'hex dump raw resource'],
+	pilotdump	=> [\&pilotDump, 'FILE RESOURCE_ID OUTPUT',
+		'export decrypted pilot resource'],
+	pilothex	=> [\&pilotHex, 'FILE', 'hex dump decrypted pilot file'],
+	pilot		=> [\&pilotShow, 'FILE [FIELDS..]', 'show pilot details'],
+	'map'		=> [\&mapOver, 'TYPE FIELDSPEC',
+		'show all values of a given field'],
+	shiptech	=> [\&shiptech, '', 'show tech level of each ship'],
+	'grep'		=> [\&grepDescs, 'REGEXP',
+		'search for a string in descriptions'],
+	legal		=> [\&legalFromPilot, 'PILOT SYSTS..',
+		'show legal record in systems'],
+	legalgovt	=> [\&legalGovt, 'PILOT GOVT [COUNT]',
+		'show where a govt likes you most'],
+	killable	=> [\&killable, '', 'show all killable pers ships'],
+	dominate	=> [\&dominate, '[-p PILOT]',
+		'rank planetary defense fleet strength'],
+	wherepers	=> [\&wherePers, 'PILOT PERS',
+		'show where a pers ship is likely to be'],
+	hiddenspobs	=> [\&hiddenSpobs, '', 'show planets without a nav preset'],
+	getcontext	=> [\&printConText, '', "show current data file"],
+	setcontext	=> [\&setConText, 'FILE', "set current data file"],
+	revive		=> [\&revivePers, 'FILE PERS', 'revive a killable pers'],
+	cash		=> [\&setCash, 'FILE CREDITS', 'set pilot credit count'],
+	avail		=> [\&availMisns, '[-vuf] PILOT [PROGRESS]',
+		'show available missions',
+		'Flag --unique only lists non-repeatable missions',
+		'Flag --fieldcheck only lists missions that set bits',
+		'A progress file can list missions to be ignored, eg:',
+		'  128: Include this mission',
+		'  -129: Ignore this one'],
+	setbits		=> [\&setBits, 'PILOT BITS..', 'set or unset pilot bits',
+		'Start a bit with ! to unset it'],
+	closetech	=> [\&closestTech, 'SYST TECH',
+		'find the closest planet that sells a tech level'],
 );
 
 sub misc {
@@ -3504,9 +3540,10 @@ GetOptions(
 	'context|c=s'	=> \$conTextOpt,
 );
 
+my %cmdh = @cmds;
 my $cmd = lc shift;
-die "No such command \"$cmd\"\n" unless exists $cmds{$cmd};
-&{$cmds{$cmd}}(@ARGV);
+die "No such command \"$cmd\"\n" unless exists $cmdh{$cmd};
+&{$cmdh{$cmd}[0]}(@ARGV);
 
 
 __DATA__

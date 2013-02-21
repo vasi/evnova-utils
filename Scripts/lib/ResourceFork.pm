@@ -152,7 +152,7 @@ sub write {
 	$self->{fork}->writable();
     my $fh = $self->{fork}{fh};
     die "new data must be the same size" unless
-        $self->_readLength == length($data);
+        $self->_readLength == CORE::length($data);
     seek $fh, $self->{offset} + 4, SEEK_SET or die "seek: $!";
     print $fh $data;
 }

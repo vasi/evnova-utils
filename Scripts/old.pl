@@ -751,7 +751,7 @@ sub rsrc {
 			printf "  %4s: %d\n", $type, scalar(@rs);
 			if ($verbose) {
 				for my $r (@rs) {
-					printf "    %3d: %s\n", $r->{id}, $r->{name};
+					printf "    %3d: %s\n", $r->{id}, ($r->{name} || "");
 				}
 			}
 		}

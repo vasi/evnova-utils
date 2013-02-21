@@ -410,7 +410,10 @@ sub tsv {
 }
 
 sub massTable {
-    my $cache = {};
+	my $tsv = 0;
+	moreOpts(\@_, 'tsv|t+' => \$tsv);
+    
+	my $cache = {};
     my $ships = resource('ship');
     my @ships = values %$ships;
 	for my $ship (@ships) {
@@ -418,9 +421,14 @@ sub massTable {
 	}
 	
 	@ships = sort { $b->{TotalMass} <=> $a->{TotalMass} } @ships;
-	print tsv(qw(ID Name SubTitle TotalMass));
+	print tsv(qw(ID Name SubTitle TotalMass)) if $tsv;
 	for my $ship (@ships) {
-		print tsv(@$ship{qw(ID Name SubTitle TotalMass)});
+		if ($tsv) {
+			print tsv(@$ship{qw(ID Name SubTitle TotalMass)});
+		} else {
+			printf "%4d  %s (%d)\n", $ship->{TotalMass}, resName($ship),
+				$ship->{ID};
+		}
 	}
 }
 
@@ -3504,7 +3512,7 @@ USAGE
 	0 => 'Ships',
 	mass		=> [\&showShipMass, 'SHIP', 'show space usage of a ship'],
 	mymass		=> [\&myMass, 'PILOT', 'show space usage of pilot'],
-	masstable	=> [\&massTable, '', 'rank ships by total space'],
+	masstable	=> [\&massTable, '[--tsv]', 'rank ships by total space'],
 	defense		=> [\&defense, '', 'rank ships by shield and armor'],
 	shiptech	=> [\&shiptech, '', 'show tech level of each ship'],
 	capture		=> [\&capture, '[-v] SHIP',

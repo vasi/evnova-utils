@@ -751,7 +751,15 @@ sub rsrc {
 			printf "  %4s: %d\n", $type, scalar(@rs);
 			if ($verbose) {
 				for my $r (@rs) {
-					printf "    %3d: %s\n", $r->{id}, ($r->{name} || "");
+					my $size = $r->length;
+					if ($size > 9999) {
+						$size = sprintf "%.4f", $size;
+						$size = substr($size, 0, 4) . " K";
+					} else {
+						$size .= " b";
+					}
+					printf "    %4d: %-40s (%6s)\n", $r->{id},
+						($r->{name} || ""), $size;
 				}
 			}
 		}
@@ -2551,7 +2559,7 @@ sub resForkDump {
 	}
 	
 	my ($res) = readResources($file, { type => $type, id => $id });
-	print $res->{name}, "\n";
+	print $res->{name}, "\n" if $res->{name};
 	hexdump($res->{data});
 }
 

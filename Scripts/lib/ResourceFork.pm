@@ -133,6 +133,11 @@ sub _readLength {
     return $self->{length} = unpack('N', $len);
 }
 
+sub length {
+	my ($self) = @_;
+	return $self->_readLength;
+}
+
 sub read {
     my ($self) = @_;
     my $fh = $self->{fork}{fh};

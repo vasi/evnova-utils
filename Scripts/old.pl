@@ -6,8 +6,6 @@ $Data::Dumper::Sortkeys = 1;
 
 use lib 'lib';
 
-use Fink::CLI		qw(print_breaking);
-use Fink::Command	qw(mkdir_p);
 use Storable		qw(nstore retrieve freeze thaw dclone);
 use Getopt::Long;
 use File::Spec;
@@ -19,6 +17,9 @@ use Carp;
 use Fcntl           qw(:seek);
 use English;
 use Encode		    qw(decode encode decode_utf8);
+use File::Path		qw(make_path);
+use Text::Wrap;
+use Term::ReadKey	qw(GetTerminalSize);
 
 use ResourceFork;
 
@@ -34,6 +35,23 @@ our $globalCache;
 our $conTextOpt;
 our @misnNCBset = qw(OnSuccess OnRefuse OnAccept
     OnFailure OnAbort OnShipDone);
+
+sub print_breaking {
+	my $string = shift;
+	my $linebreak = shift // 1; # ignore
+	my $pref1 = shift // "";
+	my $pref2 = shift // $pref1;
+	
+	my ($width) = GetTerminalSize();
+	$Text::Wrap::columns = $width if $width;
+	
+	print wrap($pref1, $pref2, $string), "\n";
+}
+
+sub mkdir_p {
+	my $dir = shift;
+	make_path($dir);
+}
 
 sub parseData {
 	my ($data) = @_;
@@ -1096,7 +1114,7 @@ sub refSystDist {
 			
 			my %h;
 			tie %h, DB_File => $cacheFile
-				or die "Can't tie cache: $!\n";
+				or die "Can't tie cache $cacheFile: $!\n";
 			$cache = \%h;
 			
 			unless ($inited) {
@@ -1809,7 +1827,7 @@ sub where {
 			my $file = File::Spec->catfile($dir, $name);
 			
 			my %hash;
-			tie %hash, 'DB_File', $file or die "Can't tie cache: $!\n";
+			tie %hash, 'DB_File', $file or die "Can't tie cache $file: $!\n";
 			$memory{$name} = \%hash;
 		}
 		return $memory{$name};
@@ -2755,7 +2773,7 @@ sub parseMisnData {
 		$m{scanGovt} = readShort($r);
 		$m{compBits} = readSeq($r, \&readShort, 4);
 	}
-	for my $k qw(compGovt compReward) { $m{$k} = readShort($r); }
+	for my $k (qw(compGovt compReward)) { $m{$k} = readShort($r); }
 	if ($nova) {
 		$m{datePostInc} = readShort($r);
 		readShort($r); # unused

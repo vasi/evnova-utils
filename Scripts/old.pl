@@ -20,6 +20,7 @@ use Encode		    qw(decode encode decode_utf8);
 use File::Path		qw(make_path);
 use Text::Wrap;
 use Term::ReadKey	qw(GetTerminalSize);
+use Scalar::Util	qw(looks_like_number);
 
 use ResourceFork;
 
@@ -656,12 +657,18 @@ sub misnText {
 	return $ret;
 }
 
+sub rankCmp {
+	my ($a, $b) = @_;
+	return $a <=> $b if looks_like_number($a) && looks_like_number($b);
+	return $a cmp $b;
+}
+
 sub rank {
 	my ($type, $field) = @_;
 	($type, $field) = ('ship', $type) unless defined $field;
 	
 	my $res = resource($type);
-	for my $r (sort { $b->{$field} <=> $a->{$field} } values %$res) {
+	for my $r (sort { -rankCmp($a->{$field}, $b->{$field}) } values %$res) {
 		my $cost = $r->{Cost};
 		$cost = defined $cost ? commaNum($cost) : '';
 		printf "%6s: %-30s %3d    %10s\n", $r->{$field}, resName($r),

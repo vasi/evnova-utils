@@ -667,12 +667,28 @@ sub rank {
 	my ($type, $field) = @_;
 	($type, $field) = ('ship', $type) unless defined $field;
 	
+	my $fieldMatch = qr/(\p{Letter}\w{2,})/;
+	my $isField = ($field =~ /^$fieldMatch$/);
+	my ($fieldSub, $xtra);
+	if ($isField) {
+		$fieldSub = sub { $::r{$field} };
+		$xtra = sub { $::r{Cost} ? commaNum($::r{Cost}) : () };
+	} else {
+		$fieldSub = eval "no strict 'vars'; sub { $field }";
+		my @used = ($field =~ /$fieldMatch/g);
+		$xtra = sub { grep { defined $_ } map { $::r{$_} } @used };
+	}
+	
 	my $res = resource($type);
-	for my $r (sort { -rankCmp($a->{$field}, $b->{$field}) } values %$res) {
-		my $cost = $r->{Cost};
-		$cost = defined $cost ? commaNum($cost) : '';
-		printf "%6s: %-30s %3d    %10s\n", $r->{$field}, resName($r),
-			$r->{ID}, $cost;
+	my @sorted = sort { -rankCmp($a->[1], $b->[1]) }
+		map { local %::r = %$_; [$_, $fieldSub->()] } values %$res;
+	
+	for my $item (@sorted) {
+		my ($r, $v) = @$item;
+		local %::r = %$r;
+		my @xtra = $xtra->();
+		printf "%6s: %-30s %3d    %s\n", $v, resName($r),
+			$r->{ID}, join "  ", map { sprintf "%10s", $_ } @xtra;
 	}
 }
 

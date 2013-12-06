@@ -556,8 +556,9 @@ sub systText {
 }
 
 sub shipGoal {
+	my ($i) = @_;
 	my @goals = qw(destroy disable board escort observe rescue chase);
-	return $goals[shift];
+	return $i > 0 ? $goals[$i] : undef;
 }
 
 sub misnText {
@@ -616,7 +617,7 @@ sub misnText {
 			my $goal = shipGoal($m->{ShipGoal});
 			$ret .= sprintf "Ships: %s%s%s (%d)\n",
 				($goal ? ucfirst "$goal " : ''),
-				($m->{ShipCount} > 1 ? "$m->{ShipCount} " : ''),
+				"$m->{ShipCount} ",
 				$dude->{Name}, $dude->{ID};
 			$ret .= "ShipSyst: " . systText($m->{ShipSyst}) . "\n";
 		}

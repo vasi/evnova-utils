@@ -1853,6 +1853,8 @@ sub where {
 	my $count = 0;
 	printf "Systems with %s (%d):\n", resName($ship), $ship->{ID};
 	for my $sid (sort { $systs{$b} <=> $systs{$a} } keys %systs) {
+		last if $systs{$sid} == 0;
+		
 		my $syst = $systs->{$sid};
 		my ($govt) = findRes(govt => $syst->{Govt});
 		printf "%6.2f %% - %4d: %-20s (%-20s)\n", $systs{$sid}, $sid, $syst->{Name}, govtName($govt);

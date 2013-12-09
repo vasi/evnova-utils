@@ -10,7 +10,7 @@ use Storable		qw(nstore retrieve freeze thaw dclone);
 use Getopt::Long;
 use File::Spec;
 use DB_File;
-use List::Util		qw(min first);
+use List::Util		qw(min first max);
 use File::Basename	qw(basename dirname);
 use Date::Manip;
 use Carp;
@@ -914,23 +914,78 @@ sub commodities {
 	}
 }
 
-sub defense {
+sub shipRank {
+	my @fields = @_;
+	my @names = map { $fields[2 * $_] } (0..$#fields/2);
+	my %weights = @fields;
+	my %ne1 = map { ($weights{$_} == 1) ? () : ($_, $weights{$_}) }
+		keys %weights;
+	
+	# Calculate ranks
+	my (%rank, %lengths);	
 	my $ships = resource('ship');
-	
-	my %def;
-	for my $ship (values %$ships) {
-		my $total = $ship->{Shield} + $ship->{Armor};
-		my $name = $ship->{Name};
-		$name .= ", $ship->{SubTitle}" if $ship->{SubTitle};
+	while (my ($id, $ship) = each %$ships) {
+		my $sum = 0;
+		while (my ($k, $weight) = each %weights) {
+			my $v = $ship->{$k};
+			$sum += $weight * $v;
+			push @{$lengths{$k}}, length $v;
+		}
 		
-		my $text = sprintf "%5d = %5d + %5d : %-25s %6d K\n", $total,
-			@$ship{qw(Shield Armor)}, $name, $ship->{Cost} / 1000;
-		$def{$text} = $total;
+		$rank{$id} = $sum;
+		push @{$lengths{Sum}}, length int($sum);
+		push @{$lengths{Cost}}, length commaNum($ship->{Cost} / 1000);
+		push @{$lengths{Name}}, length resName($ship);
 	}
 	
-	for my $text (sort { $def{$b} <=> $def{$a} } keys %def) {
-		print $text;
+	# Generate format string for each row
+	my %flen = map { $_ => max @{$lengths{$_}} } keys %lengths;
+	my (@fmts, @hdrs);
+	for my $k (@names) {
+		push @fmts, "%$flen{$k}d";
 	}
+	my $vfmt = "%$flen{Sum}d:   " . join('   ', @fmts);
+	my $fmt = $vfmt . "   %-$flen{Name}s %4d  %$flen{Cost}sK\n";
+	
+	# Print headers
+	my @hpos;
+	for my $i (0..$#names) {
+		my $sent = 123456789012;
+		my @vs = (0) x (1 + @names);
+		$vs[1 + $i] = $sent;
+		my $tmpl = sprintf $vfmt, @vs;
+		push @hpos, index $tmpl, $sent;
+	}
+	my $hdrs = '';
+	for my $i (0..$#names) {
+		my $h = $hpos[$i];
+		$hdrs = sprintf "%-*.*s", $h, $h, $hdrs; 
+		if ($i < $#names) {
+			my $l = $hpos[$i + 1] - $h - 1;
+			substr($hdrs, $h, $l) = sprintf "%-*.*s", $l, $l, $names[$i];
+		} else {
+			substr($hdrs, $h, 0) = $names[$i];
+		}
+	}
+	printf "%s\n", $hdrs;
+	
+	# Print rows
+	my $sort = sub { $rank{$b} <=> $rank{$a} || $a <=> $b };
+	for my $id (sort { $sort->() } keys %$ships) {
+		my $ship = $ships->{$id};
+		my @vals = map { $ship->{$_} } @names;
+		printf $fmt, $rank{$id}, @vals, resName($ship), $id,
+			commaNum($ship->{Cost} / 1000);
+	}
+}
+
+sub defense {
+	my ($arm) = @_;
+	shipRank(Shield => 1, Armor => $arm // 1);
+}
+sub agility {
+	my ($acc, $man) = @_;
+	shipRank(Speed => 1, Accel => $acc // 0.02, Maneuver => $man // 1);
 }
 
 sub persistent {
@@ -3577,7 +3632,10 @@ USAGE
 	mass		=> [\&showShipMass, 'SHIP', 'show space usage of a ship'],
 	mymass		=> [\&myMass, 'PILOT', 'show space usage of pilot'],
 	masstable	=> [\&massTable, '[--tsv]', 'rank ships by total space'],
-	defense		=> [\&defense, '', 'rank ships by shield and armor'],
+	defense		=> [\&defense, '[ARMOR_WEIGHT]',
+		'rank ships by shield and armor'],
+	agility		=> [\&agility, '[ACCEL_WEIGHT] [MANEUVER_WEIGHT]',
+		'rank ships by speed and agility'],
 	shiptech	=> [\&shiptech, '', 'show tech level of each ship'],
 	capture		=> [\&capture, '[-v] SHIP',
 		'calculate odds of capturing a ship',

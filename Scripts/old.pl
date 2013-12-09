@@ -515,6 +515,26 @@ sub misn {
 	);
 }
 
+sub desc {
+	my ($type, $find) = @_;
+	$find = '' unless defined $find;
+	my $rtype = ($type eq 'hire' ? 'ship' : $type);
+	
+	my %rbase = (spob => 128, outf => 3000, misn => 4000, ship => 13000,
+		hire => 14000);
+	my $base = $rbase{$type};
+	
+	my $last = 0;
+	for my $res (findRes($rtype => $find)) {
+		print "\n" if $last++;
+		
+		my $descID = $base + $res->{ID} - 128;
+		my $desc = findRes(desc => $descID);
+		printf "%4d: %-20s -> %5d\n", $res->{ID}, resName($res), $descID;
+		print_breaking $desc->{Description}, 1, '    ', '    ';
+	}
+}
+
 sub spobText {
 	my ($spec) = @_;
 	if ($spec == -2) {
@@ -3600,6 +3620,8 @@ USAGE
 	0 => 'Other resource types',
 	'grep'		=> [\&grepDescs, 'REGEXP',
 		'search for a string in descriptions'],
+	desc		=> [\&desc, 'TYPE SPEC', 'show description resources',
+		'TYPE is one of spob, outf, misn, ship, hire'],
 	crons		=> [\&crons, '[SPECS..]', 'show cron details'],
 	comm		=> [\&commodities, 'SPOB',
 		"show what commodities a planet has"],

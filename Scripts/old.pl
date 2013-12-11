@@ -1777,7 +1777,7 @@ sub findRes {
 	if (ref($find) eq 'ARRAY') {
 		@$find = ('') unless @$find;
 		my %res = map { $_->{ID} => $_ } map { findRes($type, $_) } @$find;
-		return map { $res{$_} } sort keys %res;
+		return map { $res{$_} } sort { $a <=> $b } keys %res;
 	}
 	
 	my $res = resource($type, cache => 1);

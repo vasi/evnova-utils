@@ -1631,7 +1631,7 @@ sub readPilotLogItem {
 		$txt = decode('MacRoman', $txt);
 		my @lines = split /[\r\n]/, $txt;
 		@lines = grep /\S/, @lines; # remove whitespace lines
-		@lines = grep !/Plugins loaded/, @lines; # breaks format
+		#@lines = grep !/Plugins loaded/, @lines; # breaks format
 		
 		# Read the header info
 		my %header;

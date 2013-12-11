@@ -2462,6 +2462,8 @@ sub mapOver {
 
 sub makeFilt {
 	my ($spec) = @_;
+	return sub { 1 } unless defined $spec;
+	
 	if ($spec !~ m,[<>=!/&|^()],) {
 		if ($spec =~ m,[^-\d\.],) {
 			return sub { $_ eq $spec }; # string
@@ -2476,8 +2478,11 @@ sub makeFilt {
 }
 
 sub find {
+	my ($idonly) = (0);
+	moreOpts(\@_, 'idonly|i+' => \$idonly);
+
 	my $type = shift;
-	my ($fldfilt, $filt) = map { makeFilt($_) } @_;	
+	my ($fldfilt, $filt) = map { makeFilt($_) } (@_, undef, undef);	
 	my $res = resource($type);
 	
 	my (%fields, $fcnt);
@@ -2494,9 +2499,14 @@ sub find {
 			local $_ = $val;
 			next unless $filt->();
 			
-			my $name = sprintf "%s (%d)", resName($r), $id;
-			printf "%6s: %-50s%s\n", formatField($fields{$field}, $val),
-				$name, ($fcnt == 1 ? '' : " $field");
+			if ($idonly) {
+				printf "%d\n", $id;
+			} else {
+				my $name = sprintf "%s (%d)", resName($r), $id;
+				printf "%6s: %-50s%s\n", formatField($fields{$field}, $val),
+					$name, ($fcnt == 1 ? '' : " $field");
+			}
+			last if $idonly;
 		}
 	}
 }
@@ -3619,8 +3629,9 @@ USAGE
 	list		=> [\&list, 'TYPE [SPEC]', 'list resources'],
 	'dump'		=> [\&resDump, 'TYPE SPEC [FIELDS..]',
 		'dump fields of a resource'],
-	find		=> [\&find, 'TYPE FIELDSPEC VALSPEC',
+	find		=> [\&find, '[-i] TYPE FIELDSPEC VALSPEC',
 		'find resources which match criteria',
+		'Flag --idonly only displays resource ID',
 		'Specs can be regexps, strings, numbers, or code'],
 	rank		=> [\&rank, 'TYPE FIELD', 'sort resources by field value'],
 	'map'		=> [\&mapOver, 'TYPE FIELDSPEC',

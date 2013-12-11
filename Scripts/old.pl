@@ -3030,8 +3030,10 @@ sub pilotPrint {
 	    my ($c, $key, $type, $sub) = @_;
 	    $cat->("$c ", sub {
     	    my $resources = resource($type);
+			my $size = @{$p->{$key}};
     	    for $id (sort keys %$resources) {
     	        local ($idx, $rez) = ($id - 128, $resources->{$id});
+				next if $idx >= $size;
     	        local ($val, $name) = ($p->{$key}[$idx], resName($rez));
     	        my $line = $sub->();
     	        push @lines, $line if $line;

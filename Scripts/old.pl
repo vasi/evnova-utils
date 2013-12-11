@@ -515,25 +515,43 @@ sub misn {
 	);
 }
 
-sub desc {
-	my ($type, @finds) = @_;
-	@finds = ('') unless @finds;
-	my $rtype = ($type eq 'hire' ? 'ship' : $type);
+sub descOne {
+	my ($res, $type, $trailing) = @_;
+
+	my %dbase = (spob => 128, outf => 3000, misn => 4000, ship => 13000,
+		hire => 14000, bar => 10000);
+	my $base = $dbase{$type};
+
+	my $descID = $base + $res->{ID} - 128;
+	my $desc = findRes(desc => $descID);
+	return 0 unless $desc->{Description};
 	
-	my %rbase = (spob => 128, outf => 3000, misn => 4000, ship => 13000,
-		hire => 14000);
-	my $base = $rbase{$type};
+	printf "\n" if $trailing;
+	printf "%4d: %-20s -> %4s %5d\n", $res->{ID}, resName($res),
+		$type, $descID;
+	print_breaking $desc->{Description}, 1, '    ', '    ';
+	return 1;
+}
+
+sub desc {
+	my ($types, @finds) = @_;
+	my @types = split ',', $types;
+	@finds = ('') unless @finds;
+	
+	my $t0 = $types[0];
+	my %typemap = (hire => 'ship', bar => 'spob');
+	my $rtype = $typemap{$t0} || $t0;
 	
 	my %res = map { $_->{ID} => $_ } map { findRes($rtype => $_) } @finds;
 	
-	my $notfirst = 0;
+	my $trailing = 0;
 	for my $res (map { $res{$_} } sort keys %res) {
-		print "\n" if $notfirst++;
-		
-		my $descID = $base + $res->{ID} - 128;
-		my $desc = findRes(desc => $descID);
-		printf "%4d: %-20s -> %5d\n", $res->{ID}, resName($res), $descID;
-		print_breaking $desc->{Description}, 1, '    ', '    ';
+		my $next = 0;
+		for my $t (@types) {
+			$next |= descOne($res, $t, $trailing);
+			$trailing = 0 if $next;
+		}
+		$trailing = 1;
 	}
 }
 

@@ -452,10 +452,9 @@ sub massTable {
 }
 
 sub list {
-	my ($type, $find) = @_;
-	$find = '' unless defined $find;
+	my ($type, @finds) = @_;
 	
-	for my $res (findRes($type => $find)) {
+	for my $res (findRes($type => \@finds)) {
 		printf "%4d: %s\n", $res->{ID}, resName($res);
 	}
 }
@@ -536,16 +535,13 @@ sub descOne {
 sub desc {
 	my ($types, @finds) = @_;
 	my @types = split ',', $types;
-	@finds = ('') unless @finds;
 	
 	my $t0 = $types[0];
 	my %typemap = (hire => 'ship', bar => 'spob');
 	my $rtype = $typemap{$t0} || $t0;
 	
-	my %res = map { $_->{ID} => $_ } map { findRes($rtype => $_) } @finds;
-	
 	my $trailing = 0;
-	for my $res (map { $res{$_} } sort keys %res) {
+	for my $res (findRes($rtype => \@finds)) {
 		my $next = 0;
 		for my $t (@types) {
 			$next |= descOne($res, $t, $trailing);
@@ -1777,6 +1773,12 @@ sub resName {
 
 sub findRes {
 	my ($type, $find) = @_;
+	
+	if (ref($find) eq 'ARRAY') {
+		@$find = ('') unless @$find;
+		my %res = map { $_->{ID} => $_ } map { findRes($type, $_) } @$find;
+		return map { $res{$_} } sort keys %res;
+	}
 	
 	my $res = resource($type, cache => 1);
 	if ($find =~ /^\d+$/) {

@@ -516,17 +516,19 @@ sub misn {
 }
 
 sub desc {
-	my ($type, $find) = @_;
-	$find = '' unless defined $find;
+	my ($type, @finds) = @_;
+	@finds = ('') unless @finds;
 	my $rtype = ($type eq 'hire' ? 'ship' : $type);
 	
 	my %rbase = (spob => 128, outf => 3000, misn => 4000, ship => 13000,
 		hire => 14000);
 	my $base = $rbase{$type};
 	
-	my $last = 0;
-	for my $res (findRes($rtype => $find)) {
-		print "\n" if $last++;
+	my %res = map { $_->{ID} => $_ } map { findRes($rtype => $_) } @finds;
+	
+	my $notfirst = 0;
+	for my $res (map { $res{$_} } sort keys %res) {
+		print "\n" if $notfirst++;
 		
 		my $descID = $base + $res->{ID} - 128;
 		my $desc = findRes(desc => $descID);

@@ -476,16 +476,23 @@ sub formatField {
 	
 sub resDump {
 	my ($type, $find, @fields) = @_;
-	my %fields = map { $_ => 1 } @fields;
+	my @filters = map { makeFilt($_) } @fields;
 	
 	my $res = findRes($type => $find);
 	die "No such item '$find' of type '$type'\n" unless defined $res;
 	
 	my $idx = 0;
 	for my $k (@{$res->{_priv}->{order}}) {
+		my $want = !@filters;
+		for my $f (@filters) {
+			local $_ = $k;
+			$want = $f->();
+			last if $want;
+		}
+		
 		printf "%s: %s\n", $k,
 			formatField($res->{_priv}->{types}->[$idx], $res->{$k}),
-			if !@fields || $fields{$k};
+			if $want;
 		++$idx;
 	}
 }
@@ -1934,7 +1941,8 @@ sub where {
 		
 		my $syst = $systs->{$sid};
 		my ($govt) = findRes(govt => $syst->{Govt});
-		printf "%6.2f %% - %4d: %-20s (%-20s)\n", $systs{$sid}, $sid, $syst->{Name}, govtName($govt);
+		printf "%6.2f %% - %4d: %-20s %2d  %s\n", $systs{$sid}, $sid,
+			$syst->{Name}, $syst->{AvgShips}, govtName($govt);
 		last if $count++ >= $max;
 	}
 }

@@ -3639,6 +3639,18 @@ sub closestTech {
 	}
 }
 
+sub closestOutfit {
+    my ($pfile, $spec) = @_;
+    
+    my $outf = findRes(outf => $spec);
+    my $tech = $outf->{TechLevel};
+    
+    my $pilot = pilotParse($pfile);
+    my $syst = spobSyst($pilot->{lastSpob} + 128);
+    
+    closestTech($syst->{ID}, $tech);
+}
+
 my @cmds;
 sub help {
 	my ($cmd) = @_;
@@ -3737,6 +3749,8 @@ USAGE
 		'Can limit to spobs of one govt, or to one tech level'],
 	closetech	=> [\&closestTech, 'SYST TECH',
 		'find the closest planet that sells items of a tech level'],
+	closeoutf	=> [\&closestOutfit, 'PILOT OUTFIT',
+		'find the closest place to buy an outfit'],
 	where		=> [\&where, 'SHIP [MAXPLACES]',
 		'show where a ship type likely to be found'],
 	wherepers	=> [\&wherePers, 'PILOT PERS',

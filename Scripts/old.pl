@@ -273,25 +273,28 @@ sub weaponOutfits {
 }
 
 sub outfitMass {
-	my ($outfs, $id) = @_;
+	my ($outfs, $id, %opts) = @_;
 	unless (exists $outfs->{$id}) {
 		warn "No outfit ID $id\n";
 		return 0;
 	}
+    return 0 if $opts{removable} && $outfs->{$id}->{Flags} & 0x8;
 	return $outfs->{$id}->{Mass};
 }
 
 sub weaponMass {
-	my ($w2o, $id) = @_;
+	my ($w2o, $id, %opts) = @_;
 	unless (exists $w2o->{$id}->{weapon}) {
 		warn "No outfit found for weapon ID $id\n";
 		return 0;
 	}
-	return $w2o->{$id}->{weapon}->[0]->{Mass};
+    my $outf = $w2o->{$id}->{weapon}->[0];
+    return 0 if $opts{removable} && $outf->{Flags} & 0x8;
+	return $outf->{Mass};
 }
 
 sub ammoMass {
-	my ($w2o, $id) = @_;
+	my ($w2o, $id, %opts) = @_;
 	unless (exists $w2o->{$id}->{source}) {
 		warn "No source found for weapon ID $id\n";
 		return 0;
@@ -361,9 +364,9 @@ sub measureItems {
     my $total = 0;
     for my $i (@$items) {
         unless (defined $i->{mass}) {
-            $i->{mass} = $i->{type} eq 'weapon'   ? weaponMass($w2o, $i->{id})
-                       : $i->{type} eq 'ammo'     ? ammoMass($w2o, $i->{id})
-                       : outfitMass($outfs, $i->{id});
+            $i->{mass} = $i->{type} eq 'weapon'   ? weaponMass($w2o, $i->{id}, %opts)
+                       : $i->{type} eq 'ammo'     ? ammoMass($w2o, $i->{id}, %opts)
+                       : outfitMass($outfs, $i->{id}, %opts);
         }
         $total += $i->{mass} * $i->{count};
     }
@@ -429,14 +432,15 @@ sub tsv {
 }
 
 sub massTable {
-	my $tsv = 0;
-	moreOpts(\@_, 'tsv|t+' => \$tsv);
+	my ($tsv, $removable) = (0, 0);
+	moreOpts(\@_, 'tsv|t+' => \$tsv, 'removable|r+' => \$removable);
     
 	my $cache = {};
     my $ships = resource('ship');
     my @ships = values %$ships;
 	for my $ship (@ships) {
-		$ship->{TotalMass} = shipTotalMass($ship, cache => $cache);
+		$ship->{TotalMass} = shipTotalMass($ship, cache => $cache,
+            removable => $removable);
 	}
 	
 	@ships = sort { $b->{TotalMass} <=> $a->{TotalMass} } @ships;
@@ -3709,7 +3713,8 @@ USAGE
 	0 => 'Ships',
 	mass		=> [\&showShipMass, 'SHIP', 'show space usage of a ship'],
 	mymass		=> [\&myMass, 'PILOT', 'show space usage of pilot'],
-	masstable	=> [\&massTable, '[--tsv]', 'rank ships by total space'],
+	masstable	=> [\&massTable, '[--tsv] [--removable]',
+        'rank ships by total space'],
 	defense		=> [\&defense, '[ARMOR_WEIGHT]',
 		'rank ships by shield and armor'],
 	agility		=> [\&agility, '[ACCEL_WEIGHT] [MANEUVER_WEIGHT]',

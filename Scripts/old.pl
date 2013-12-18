@@ -1035,6 +1035,29 @@ sub cantSell {
 	}
 }
 
+sub sellable {
+    my ($file) = @_;
+    my $pilot = pilotParse($file);
+    my @items = pilotItems($pilot);
+    my $outfs = resource('outf');
+    
+    my @sellable;
+    for my $item (@items) {
+        my $outf = $outfs->{$item->{id}};
+        next if $outf->{Flags} & 0xC; # persistent or can't sell
+        
+        my $count = $item->{count};
+        push @sellable, { outf => $outf, count => $count,
+            cost => $outf->{Cost} * $count };
+    }
+    
+    for my $s (sort { $b->{cost} <=> $a->{cost} } @sellable) {
+        my $outf = $s->{outf};
+        printf "%12s: %-20s * %3d (%3d)\n", commaNum($s->{cost}),
+            resName($outf), $s->{count}, $outf->{ID};
+    }
+}
+
 sub govtName {
 	my ($govt) = @_;
 	return defined $govt ? $govt->{Name} : "independent";
@@ -3689,6 +3712,7 @@ USAGE
 	persistent	=> [\&persistent, '', 'list persistent outfits'],
 	cantsell	=> [\&cantSell, '', 'list unsellable outfits'],
 	outftech	=> [\&outftech, '', 'show tech level of each outfit'],
+    sellable    => [\&sellable, 'PILOT', 'show outfits that can be sold'],
 
 	0 => 'Missions',
 	misn		=> [\&misn, '[-v] SPECSET', 'show mission details'],

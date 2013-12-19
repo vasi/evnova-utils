@@ -2546,7 +2546,7 @@ sub find {
 	for my $id (sort keys %$res) {
 		my $r = $res->{$id};
 		unless (%fields) {
-			my @names = grep &$fldfilt, keys %$r;
+			my @names = grep &$fldfilt, grep { $_ ne '_priv' } keys %$r;
 			@fields{@names} = map { fieldType($r, $_) } @names;
 			$fcnt = scalar(@names) or die "No fields matched";
 		}

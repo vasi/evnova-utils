@@ -1550,6 +1550,10 @@ sub printTechs {
 }
 
 sub spobtech {
+	my ($flags) = 0x1;
+	moreOpts(\@_, 'outfit|o' => sub { $flags = 0x5 },
+        'ship|s' => sub { $flags = 0x9 });
+
 	my ($filtType, @filtVals) = @_;
 	$filtType = 'none' unless defined $filtType;
 	if ($filtType =~ /^\d+$/) {
@@ -1568,6 +1572,7 @@ sub spobtech {
 	for my $sid (sort keys %$sps) {
 		my $s = $sps->{$sid};
 		next if defined $govt && !$govt->{$s->{Govt}};
+        next unless ($s->{Flags} & $flags) == $flags;
 		push @{$tech{$s->{TechLevel}}}, $s;
 		for my $kst (grep /^SpecialTech/, keys %$s) {
 			my $st = $s->{$kst};
@@ -3749,7 +3754,7 @@ USAGE
 		'find which system contains a planet'],
 	dist		=> [\&dist, 'SYST1 SYSY2',
 		'find shortest path between systems'],
-	spobtech	=> [\&spobtech, '[govt GOVT | TECH]',
+	spobtech	=> [\&spobtech, '[--outfit | --ship] [govt GOVT | TECH]',
 		'find where to buy items of a tech level',
 		'Can limit to spobs of one govt, or to one tech level'],
 	closetech	=> [\&closestTech, 'SYST TECH',

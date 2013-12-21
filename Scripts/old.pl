@@ -225,7 +225,7 @@ sub readContext {
 			if ($opts{cache} && -f $cacheFile && -M $cacheFile < -M getConText()) {
 				$cache{$type} = retrieve $cacheFile;
 			} else {
-				my $ret = readContext(getConText(), $type)->{$type};
+				my $ret = readContext(getConText(), $type)->{$type} || {};
 				if ($opts{cache}) {
 					mkdir_p $dir unless -d $dir;
 					nstore $ret, $cacheFile;

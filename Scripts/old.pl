@@ -1779,7 +1779,12 @@ sub records {
 }
 
 sub suckUp {
+    my ($pfile);
+	moreOpts(\@_, 'pilot|p=s' => \$pfile);
 	my (@govts) = @_;
+
+    my $pilot = pilotParse($pfile) if defined $pfile;
+	
 	@govts = map { scalar(findRes(govt => $_)) } @govts;
 	my %govts = map { $_->{ID} => 1 } @govts;
 	
@@ -1789,6 +1794,7 @@ sub suckUp {
 		my $m = $ms->{$mid};
 		my $gv = $m->{CompGovt};
 		next unless $govts{$gv};
+		next unless !$pilot || bitTestEvalPilot($m->{AvailBits}, $pilot);        
 		push @{$ms{$m->{CompReward}}}, $m;
 	}
 	
@@ -3784,7 +3790,7 @@ USAGE
 		'show legal record in systems'],
 	legalgovt	=> [\&legalGovt, 'PILOT GOVT [COUNT]',
 		'show where a government likes you most'],
-	suckup		=> [\&suckUp, 'GOVT',
+	suckup		=> [\&suckUp, '[--pilot PILOT] GOVT',
 		'show missions that affect your record with a government'],	
 	
 	0 => 'Pilot files',

@@ -1794,7 +1794,7 @@ sub suckUp {
 		my $m = $ms->{$mid};
 		my $gv = $m->{CompGovt};
 		next unless $govts{$gv};
-		next unless !$pilot || bitTestEvalPilot($m->{AvailBits}, $pilot);        
+		next unless !$pilot || isAvail($pilot, $m);        
 		push @{$ms{$m->{CompReward}}}, $m;
 	}
 	
@@ -3561,6 +3561,23 @@ sub setBits {
 	});
 }
 
+sub isAvail {
+    my ($pilot, $misn) = @_;
+    return 0 if $misn->{AvailRandom} <= 0;
+    return 1 unless $pilot;
+    
+    return 0 if !bitTestEvalPilot($misn->{AvailBits}, $pilot);
+    
+    # Very basic test if spob exists
+    my $spob = $misn->{AvailStel};
+    if ($spob >= 128 && $spob < 5000) {
+        my $syst = spobSyst($spob);
+        return 0 unless bitTestEvalPilot($syst->{Visibility}, $pilot);
+    }
+    
+    return 1;
+}
+
 sub availMisns {
 	my ($verbose, $unique, $fieldcheck) = (0, 0);
 	moreOpts(\@_, 'verbose|v+' => \$verbose,
@@ -3587,8 +3604,7 @@ sub availMisns {
 	my $misns = resource('misn');
 	for my $misn (values %$misns) {
 		next if $completed{$misn->{ID}};
-		next unless $misn->{AvailRandom} > 0;
-		next unless bitTestEvalPilot($misn->{AvailBits}, $pilot);
+        next unless isAvail($pilot, $misn);
 		push @ok, $misn;
 		push @{$bits{$misn->{AvailBits}}}, $misn;
 	}

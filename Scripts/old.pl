@@ -3363,8 +3363,8 @@ sub dominate {
 			$wave = $count;
 		} else {
 			$wave = $count % 10;
-			$count -= 1000;
 			$count = int($count / 10);
+            $count -= 10 ** int(log($count) / log(10));
 		}
 		$count = $pilot->{defense}[$spob->{ID} - 128]
 		    if defined $pilot;

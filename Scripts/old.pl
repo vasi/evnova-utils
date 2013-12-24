@@ -764,7 +764,7 @@ sub dps {
     rankHeaders(qw(EnergyDmg MassDmg Reload));
     rankSub('weap', sub {
         my $shot = $::r{MassDmg} * (100 - $shield) + $::r{EnergyDmg} * $shield;
-        sprintf "%.0f", $shot / 100 * 30 / $::r{Reload};
+        sprintf "%.1f", $shot / 100 * 30 / $::r{Reload};
     },
         sub { ~$::r{Flags} & 2 },
         sub { @::r{qw(EnergyDmg MassDmg Reload)} }

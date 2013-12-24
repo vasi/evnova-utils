@@ -712,8 +712,9 @@ sub rankCmp {
 }
 
 sub rank {
-	my ($type, $field) = @_;
+	my ($type, $field, $filt) = @_;
 	($type, $field) = ('ship', $type) unless defined $field;
+    $filt = defined $filt ? eval "no strict 'vars'; sub { $filt }": sub { 1 };
 	
 	my $fieldMatch = qr/(\p{Letter}\w{2,})/;
 	my $isField = ($field =~ /^$fieldMatch$/);
@@ -729,7 +730,10 @@ sub rank {
 	
 	my $res = resource($type);
 	my @sorted = sort { -rankCmp($a->[1], $b->[1]) }
-		map { local %::r = %$_; [$_, $fieldSub->()] } values %$res;
+		map {
+            local %::r = %$_;
+            $filt->() ? [$_, $fieldSub->()] : ();
+        } values %$res;
 	
 	for my $item (@sorted) {
 		my ($r, $v) = @$item;
@@ -3731,7 +3735,8 @@ USAGE
 		'find resources which match criteria',
 		'Flag --idonly only displays resource ID',
 		'Specs can be regexps, strings, numbers, or code'],
-	rank		=> [\&rank, 'TYPE FIELD', 'sort resources by field value'],
+	rank		=> [\&rank, 'TYPE FIELD [FILT]',
+        'sort resources by field value'],
 	'map'		=> [\&mapOver, 'TYPE FIELDSPEC',
 		'show all values of a given field'],
 	diff		=> [\&diff, 'TYPE SPEC1 SPEC2',

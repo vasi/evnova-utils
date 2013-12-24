@@ -726,22 +726,49 @@ sub rank {
 		$fieldSub = eval "no strict 'vars'; sub { $field }";
 		my @used = ($field =~ /$fieldMatch/g);
 		$xtra = sub { grep { defined $_ } map { $::r{$_} } @used };
+        rankHeaders(@used);
 	}
 	
+    rankSub($type, $fieldSub, $filt, $xtra);
+}
+
+sub rankHeaders {
+    my (@headers) = @_;
+    printf "%s%s\n", (' ' x 46), join '  ', map { sprintf '%10s', $_ } @headers;
+}
+
+sub rankSub {
+    my ($type, $sortBy, $filter, $printExtra) = @_;
 	my $res = resource($type);
 	my @sorted = sort { -rankCmp($a->[1], $b->[1]) }
 		map {
             local %::r = %$_;
-            $filt->() ? [$_, $fieldSub->()] : ();
+            $filter->() ? [$_, $sortBy->()] : ();
         } values %$res;
 	
 	for my $item (@sorted) {
 		my ($r, $v) = @$item;
 		local %::r = %$r;
-		my @xtra = $xtra->();
+		my @xtra = $printExtra->();
 		printf "%6s: %-30s %3d    %s\n", $v, resName($r),
 			$r->{ID}, join "  ", map { sprintf "%10s", $_ } @xtra;
 	}
+}
+
+sub dps {
+    my ($shield) = 50;
+    moreOpts(\@_,
+        'armor|a:100' => sub { $shield = 100 - $_[1] },
+        'shield|s:100' => sub { $shield = $_[1] });
+    
+    rankHeaders(qw(EnergyDmg MassDmg Reload));
+    rankSub('weap', sub {
+        my $shot = $::r{MassDmg} * (100 - $shield) + $::r{EnergyDmg} * $shield;
+        sprintf "%.0f", $shot / 100 * 30 / $::r{Reload};
+    },
+        sub { ~$::r{Flags} & 2 },
+        sub { @::r{qw(EnergyDmg MassDmg Reload)} }
+    );
 }
 
 sub crons {
@@ -3762,6 +3789,8 @@ USAGE
 	cantsell	=> [\&cantSell, '', 'list unsellable outfits'],
 	outftech	=> [\&outftech, '', 'show tech level of each outfit'],
     sellable    => [\&sellable, 'PILOT', 'show outfits that can be sold'],
+    dps         => [\&dps, '[--armor | --shield | --shield=%]',
+        'rank primary weapons by damage output'],
 
 	0 => 'Missions',
 	misn		=> [\&misn, '[-v] SPECSET', 'show mission details'],

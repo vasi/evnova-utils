@@ -1201,7 +1201,7 @@ sub pers {
 
 sub djikstra {
 	my ($systs, $s1, $s2, %opts) = @_;
-	my $cachefun = $opts{cache} || sub { };
+	my $cachefun = $opts{cache};
 	my $debug = $opts{debug};
 	my $type = $opts{type} || 'path';	# 'dist' or 'path'
 										# 'dist' assumes total coverage
@@ -1214,6 +1214,15 @@ sub djikstra {
 	my %new = %seen;
 	my $dist = 0;
 	my $found;
+    my $path = sub {
+        my $cur = shift;
+        my @path;
+        while (defined($cur)) {
+            unshift @path, $cur;
+            $cur = $seen{$cur};
+        }
+        return @path;
+    };
 	
 	while (1) {
 		$dist++;
@@ -1230,20 +1239,18 @@ sub djikstra {
 				unless (exists $seen{$con}) {
 					print "Adding $con\n" if $debug;
 					$seen{$con} = $systid;
-					$cachefun->($s1, $con, $dist);
+					$cachefun->($s1, $con, $dist) if $cachefun;
 					$new{$con} = 1;
 					
+                    my @path;
+                    if ($type eq 'path' && ($cachefun || $con == $s2)) {
+                        @path = $path->($con);
+                    }
+                    $cachefun->($s1, $con, \@path) if $cachefun && @path;
+                    
 					if ($con == $s2) {
 						$found = $dist;
-						if ($type eq 'path') {
-							my @path;
-							my $cur = $s2;
-							while (defined $cur) {
-								unshift @path, $cur;
-								$cur = $seen{$cur};
-							}
-							return @path;
-						}
+						return @path if $type eq 'path';
 					}
 				}
 			}
@@ -1260,6 +1267,14 @@ sub systDist {
 	return memoize(@_, sub {
 		my ($memo, $s1, $s2) = @_;
 		return djikstra(resource('syst'), $s1, $s2, type => 'dist',
+			cache => sub { $memo->(@_); $memo->(@_[1,0,2]) });
+	});
+}
+
+sub systPath {
+	return memoize_complex(@_, sub {
+		my ($memo, $s1, $s2) = @_;
+		return djikstra(resource('syst'), $s1, $s2, type => 'path',
 			cache => sub { $memo->(@_); $memo->(@_[1,0,2]) });
 	});
 }
@@ -1344,13 +1359,13 @@ sub govtsMatching {
 		if ($cat == 10) {
 			@govts = ($id);
 		} elsif ($cat == 20) {
-			@govts = grep { $_ != $id } (-1, keys %{resource('govt')});
+			@govts = grep { $_ != $id } (keys %{resource('govt')});
 		} elsif ($cat == 15 || $cat == 25) {
 			my $govt = findRes(govt => $id);
-			my $str = $cat == 15 ? "Ally" : "Enemy";
+			my $str = $cat == 15 ? "Allies" : "Enemies";
 			my @kt = grep /^$str\d/, keys %$govt;
 			my @vt = map { $govt->{$_} } @kt;
-			@govts = grep { $_ != -1 } @vt;
+			@govts = map { $_ + 128 } grep { $_ != -1 } @vt;
 		} else {
 			die "Don't know what to do about govt spec $spec\n";
 		}
@@ -1405,8 +1420,8 @@ sub systsSelect {
 	unless (exists $ref->{systsSelect}{$type}{$id}) {
 		if ($type eq 'spob') {
 			my @spobs = spobsMatching($id);
-			$ref->{systsSelect}{$type}{$id} =
-				[ map { refSpobSyst($ref, $_) } @spobs ];
+			$ref->{systsSelect}{$type}{$id} = [
+                map { eval { refSpobSyst($ref, $_) } } @spobs ];
 		} elsif ($type eq 'syst') {
 			$ref->{systsSelect}{$type}{$id} = [ $id ];
 		} elsif ($type eq 'adjacent') {
@@ -1555,17 +1570,66 @@ sub limit {
 	nstore $ref, $cache;
 }
 
+sub printPath {
+    my @path = @_;
+    my $systs = resource('syst');
+    
+	printf "Distance: %d\n", scalar(@path) - 1;
+	for (my $i = 0; $i <= $#path; ++$i) {
+		printf "%2d: %s\n", $i, $systs->{$path[$i]}{Name};
+	}    
+}
+
 sub dist {
 	my @searches = @_;
 	my $systs = resource('syst');
 	
 	my ($p1, $p2) = map { findRes(syst => $_)->{ID} } @searches;
 	my @path = djikstra($systs, $p1, $p2, type => 'path');
-	
-	printf "Distance: %d\n", scalar(@path) - 1;
-	for (my $i = 0; $i <= $#path; ++$i) {
-		printf "%2d: %s\n", $i, $systs->{$path[$i]}{Name};
-	}
+	printPath(@path);
+}
+
+sub placeSpec {
+    my $spec = shift;
+    my $type = shift @$spec;
+    
+    my ($ptype, $stype, $add, $val) = ('syst', undef, 0, undef);
+    if ($type eq 'govt') {
+        ($ptype, $stype, $add) = ('spob', 'govt', 10000 - 128);
+    } elsif ($type eq 'ally') {
+        ($ptype, $stype, $add) = ('spob', 'govt', 15000 - 128);
+    } elsif ($type eq 'ngovt') {
+        ($ptype, $stype, $add) = ('spob', 'govt', 20000 - 128);
+    } elsif ($type eq 'enemy') {
+        ($ptype, $stype, $add) = ('spob', 'govt', 25000 - 128);
+    } elsif ($type eq 'adjacent') {
+        ($ptype, $stype) = ('adjacent', 'syst');
+    } elsif ($type eq 'spob') {
+        ($ptype, $stype) = ('spob', 'spob');
+    } elsif ($type eq 'syst') {
+        ($stype) = ('syst');
+    } else {
+        ($stype, $val) = ('syst', $type);
+    }
+    
+    $val //= shift @$spec;
+    my $res = $stype ? findRes($stype => $val)->{ID} : $val;
+    return { $ptype => $res + $add };
+}
+
+sub showPlaceDist {
+    my $ref = { syst => resource('syst') };
+	my @s1 = systsSelect($ref, placeSpec(\@_));
+	my @s2 = systsSelect($ref, placeSpec(\@_));
+    my @best = ();
+    
+    for my $s1 (@s1) {
+        for my $s2 (@s2) {
+            my @path = systPath($s1, $s2);
+            @best = @path if !@best || scalar(@path) < scalar(@best);
+        }
+    }
+    printPath(@best);
 }
 
 sub printTechs {
@@ -3816,6 +3880,9 @@ USAGE
 		'find which system contains a planet'],
 	dist		=> [\&dist, 'SYST1 SYSY2',
 		'find shortest path between systems'],
+    placedist => [\&showPlaceDist, '[TYPE1] SPEC1 [TYPE2] SPEC2',
+        'find shortest distance between two place specs',
+        'Types include: syst spob adjacent govt ngovt ally enemy'],
 	spobtech	=> [\&spobtech, '[--outfit | --ship] [govt GOVT | TECH]',
 		'find where to buy items of a tech level',
 		'Can limit to spobs of one govt, or to one tech level'],

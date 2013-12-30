@@ -756,16 +756,22 @@ sub rankSub {
 }
 
 sub dps {
+    my ($weap, $shield) = @_;
+    $shield //= 50;
+    my $shot = $weap->{MassDmg} * (100 - $shield) +
+        $weap->{EnergyDmg} * $shield;
+    return $shot / 100 * 30 / $weap->{Reload};
+}
+
+sub showDPS {
     my ($shield) = 50;
     moreOpts(\@_,
         'armor|a:100' => sub { $shield = 100 - $_[1] },
         'shield|s:100' => sub { $shield = $_[1] });
     
     rankHeaders(qw(EnergyDmg MassDmg Reload));
-    rankSub('weap', sub {
-        my $shot = $::r{MassDmg} * (100 - $shield) + $::r{EnergyDmg} * $shield;
-        sprintf "%.1f", $shot / 100 * 30 / $::r{Reload};
-    },
+    rankSub('weap',
+        sub { sprintf "%.1f", dps(\%::r) },
         sub { ~$::r{Flags} & 2 },
         sub { @::r{qw(EnergyDmg MassDmg Reload)} }
     );
@@ -3789,7 +3795,7 @@ USAGE
 	cantsell	=> [\&cantSell, '', 'list unsellable outfits'],
 	outftech	=> [\&outftech, '', 'show tech level of each outfit'],
     sellable    => [\&sellable, 'PILOT', 'show outfits that can be sold'],
-    dps         => [\&dps, '[--armor | --shield | --shield=%]',
+    dps         => [\&showDPS, '[--armor | --shield | --shield=%]',
         'rank primary weapons by damage output'],
 
 	0 => 'Missions',

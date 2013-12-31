@@ -3425,6 +3425,7 @@ sub dominate {
 		if (defined $pilot) {
 		    my $syst = spobSyst($spob->{ID});
             next unless bitTestEvalPilot($syst->{Visibility}, $pilot);
+            next if $pilot->{dominated}->[$spob->{ID} - 128];
 		}
 		
 		my $wave;

@@ -656,6 +656,11 @@ sub misnText {
 	if ($opts{verbose}) {
 		$ret .= "\n";
 		
+        # Reward
+        if ($m->{PayVal} > 0) {
+            $ret .= sprintf "PayVal: %dK\n", $m->{PayVal} / 1000;
+        }
+        
 		# Ships
 		my $ships = 0;
 		if ($m->{ShipCount} != -1) {

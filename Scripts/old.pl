@@ -3474,9 +3474,8 @@ sub dominate {
 	}
 }
 
-sub wherePers {
-	my ($pilotFile, $find) = @_;
-	my $pilot = pilotParse($pilotFile);
+sub persBySyst {
+    my ($pilot) = @_;
 	
 	my %systsPers;
 	for my $p (values %{resource('pers')}) {
@@ -3484,16 +3483,28 @@ sub wherePers {
 		my @systs = systsMatching($p->{LinkSyst});
 		push @{$systsPers{$_}}, $p for @systs;
 	}
+    
+    return %systsPers;
+}
+
+sub wherePers {
+	my ($pilotFile, $find) = @_;
 	
+    my $pilot = pilotParse($pilotFile);
+    my %systsPers = persBySyst($pilot);
+    
 	my $pers = findRes(pers => $find);
+    my $systs = resource('syst');
 	my @systs = systsMatching($pers->{LinkSyst});
 	my %pcts;
 	for my $s (@systs) {
+        next unless bitTestEvalPilot($systs->{$s}{Visibility}, $pilot);
 		my $count = scalar(@{$systsPers{$s}});
 		my $frac = 1 / $count;
 		$frac /= 20;
 		
 		my $syst = findRes(syst => $s);
+        # FIXME: no replacement of pers ships
 		$frac = 1 - ((1-$frac) ** $syst->{AvgShips});
 		$pcts{$s} = $frac * 100;
 	}
@@ -3505,6 +3516,16 @@ sub wherePers {
 		printf "%5.3f %% - %4d: %s\n", $pcts{$sid}, $sid, $syst->{Name};
 		last if $count++ >= 20;
 	}
+}
+
+sub systPers {
+    my ($pilotFile, $systSpec) = @_;
+    
+    my $pilot = pilotParse($pilotFile);
+    my %systsPers = persBySyst($pilot);
+   
+    my $syst = findRes(syst => $systSpec);
+    list('pers', map { $_->{ID} } @{$systsPers{$syst->{ID}}});
 }
 
 sub legalGovt {
@@ -3907,6 +3928,8 @@ USAGE
 	comm		=> [\&commodities, 'SPOB',
 		"show what commodities a planet has"],
 	killable	=> [\&killable, '', 'list all killable pers ships'],
+    systpers    => [\&systPers, 'PILOT SYST',
+        'list pers ships that could appear in a system'],
 	
 	0 => 'Legal records',
 	records		=> [\&records, '', 'list legal record names'],

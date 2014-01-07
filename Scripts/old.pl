@@ -3496,10 +3496,10 @@ sub wherePers {
     
 	my $pers = findRes(pers => $find);
     my $systs = resource('syst');
-	my @systs = systsMatching($pers->{LinkSyst});
+	my @systs = grep { bitTestEvalPilot($systs->{$_}{Visibility}, $pilot) }
+        systsMatching($pers->{LinkSyst});
 	my %pcts;
 	for my $s (@systs) {
-        next unless bitTestEvalPilot($systs->{$s}{Visibility}, $pilot);
 		my $count = scalar(@{$systsPers{$s}});
 		my $frac = 1 / $count;
 		$frac /= 20;

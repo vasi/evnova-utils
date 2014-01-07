@@ -3479,6 +3479,7 @@ sub persBySyst {
 	
 	my %systsPers;
 	for my $p (values %{resource('pers')}) {
+        next unless bitTestEvalPilot($p->{ActivateOn}, $pilot);
 		next unless $pilot->{persAlive}[$p->{ID} - 128];
 		my @systs = systsMatching($p->{LinkSyst});
 		push @{$systsPers{$_}}, $p for @systs;

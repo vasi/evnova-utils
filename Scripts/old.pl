@@ -717,7 +717,15 @@ sub rankCmp {
 }
 
 sub rank {
-	my ($type, $field, $filt) = @_;
+    listBuild(1, @_);
+}
+
+sub mapOver {
+    listBuild(0, @_);
+}
+
+sub listBuild {
+	my ($sort, $type, $field, $filt) = @_;
 	($type, $field) = ('ship', $type) unless defined $field;
     $filt = defined $filt ? eval "no strict 'vars'; sub { $filt }": sub { 1 };
 	
@@ -741,8 +749,8 @@ sub rank {
         rankHeaders(@used);
 	}
 	
-    rankSub(type => $type, value => $fieldSub, filter => $filt,
-        print => $xtra, sort => 1);
+    listBuildSub(type => $type, value => $fieldSub, filter => $filt,
+        print => $xtra, sort => $sort);
 }
 
 sub rankHeaders {
@@ -750,7 +758,7 @@ sub rankHeaders {
     printf "%s%s\n", (' ' x 46), join '  ', map { sprintf '%10s', $_ } @headers;
 }
 
-sub rankSub {
+sub listBuildSub {
     my %opts = @_;
     
     my $type = $opts{type};
@@ -760,11 +768,12 @@ sub rankSub {
     my $print = $opts{print} // sub { () };
     
 	my $res = resource($type);
-    my @items =  map {
+    $sort = $sort ? sub { -rankCmp($a->[1], $b->[1]) }
+        : sub { $a->[0]{ID} <=> $b->[0]{ID} };
+    my @items = sort $sort map {
         local %::r = %$_;
         $filter->() ? [$_, $value->()] : ();
     } values %$res;
-	@items = sort { -rankCmp($a->[1], $b->[1]) } @items if $sort;
 	
 	for my $item (@items) {
 		my ($r, $v) = @$item;
@@ -790,7 +799,7 @@ sub showDPS {
         'shield|s:100' => sub { $shield = $_[1] });
     
     rankHeaders(qw(EnergyDmg MassDmg Reload));
-    rankSub(type => 'weap',
+    listBuildSub(type => 'weap',
         value => sub { sprintf "%.1f", dps(\%::r) },
         filter => sub { ~$::r{Flags} & 2 },
         print => sub { @::r{qw(EnergyDmg MassDmg Reload)} }
@@ -2642,11 +2651,6 @@ sub fieldType {
 	my @order = @{$res->{_priv}{order}};
 	my ($idx) = grep { $order[$_] eq $field } (0..$#order);
 	return $res->{_priv}{types}[$idx];
-}
-
-sub mapOver {
-	my ($type, $field) = @_;
-	return find($type, $field, "1 == 1");
 }
 
 sub makeFilt {

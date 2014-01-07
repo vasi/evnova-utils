@@ -729,12 +729,20 @@ sub rank {
 		$xtra = sub { $::r{Cost} ? commaNum($::r{Cost}) : () };
 	} else {
 		$fieldSub = eval "no strict 'vars'; sub { $field }";
-		my @used = ($field =~ /$fieldMatch/g);
-		$xtra = sub { grep { defined $_ } map { $::r{$_} } @used };
+        
+        my $rez = resource($type);
+        my ($i1, $r1) = each %$rez;
+		my @used = grep { $_ ne 'Type' && defined $r1->{$_} }
+            ($field =~ /$fieldMatch/g);
+        
+		$xtra = sub { map {
+            defined($::r{$_}) ? formatField(fieldType(\%::r, $_), $::r{$_}) : ()
+        } @used };
         rankHeaders(@used);
 	}
 	
-    rankSub($type, $fieldSub, $filt, $xtra);
+    rankSub(type => $type, value => $fieldSub, filter => $filt,
+        print => $xtra, sort => 1);
 }
 
 sub rankHeaders {
@@ -743,18 +751,25 @@ sub rankHeaders {
 }
 
 sub rankSub {
-    my ($type, $sortBy, $filter, $printExtra) = @_;
+    my %opts = @_;
+    
+    my $type = $opts{type};
+    my $value = $opts{value};
+    my $filter = $opts{filter} // sub { 1 };
+    my $sort = $opts{sort} // 1;
+    my $print = $opts{print} // sub { () };
+    
 	my $res = resource($type);
-	my @sorted = sort { -rankCmp($a->[1], $b->[1]) }
-		map {
-            local %::r = %$_;
-            $filter->() ? [$_, $sortBy->()] : ();
-        } values %$res;
+    my @items =  map {
+        local %::r = %$_;
+        $filter->() ? [$_, $value->()] : ();
+    } values %$res;
+	@items = sort { -rankCmp($a->[1], $b->[1]) } @items if $sort;
 	
-	for my $item (@sorted) {
+	for my $item (@items) {
 		my ($r, $v) = @$item;
 		local %::r = %$r;
-		my @xtra = $printExtra->();
+		my @xtra = $print->();
 		printf "%6s: %-30s %3d    %s\n", $v, resName($r),
 			$r->{ID}, join "  ", map { sprintf "%10s", $_ } @xtra;
 	}
@@ -775,10 +790,10 @@ sub showDPS {
         'shield|s:100' => sub { $shield = $_[1] });
     
     rankHeaders(qw(EnergyDmg MassDmg Reload));
-    rankSub('weap',
-        sub { sprintf "%.1f", dps(\%::r) },
-        sub { ~$::r{Flags} & 2 },
-        sub { @::r{qw(EnergyDmg MassDmg Reload)} }
+    rankSub(type => 'weap',
+        value => sub { sprintf "%.1f", dps(\%::r) },
+        filter => sub { ~$::r{Flags} & 2 },
+        print => sub { @::r{qw(EnergyDmg MassDmg Reload)} }
     );
 }
 

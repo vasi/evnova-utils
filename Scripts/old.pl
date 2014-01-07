@@ -3727,10 +3727,11 @@ sub isAvail {
 }
 
 sub availMisns {
-	my ($verbose, $unique, $fieldcheck) = (0, 0);
+	my ($verbose, $unique, $fieldcheck, $idonly) = (0, 0, 0);
 	moreOpts(\@_, 'verbose|v+' => \$verbose,
 	    'unique|u:+' => \$unique,
-	    'fieldcheck|f' => \$fieldcheck);
+	    'fieldcheck|f' => \$fieldcheck,
+        'idonly|i' => \$idonly);
 	my ($pfile, $progress) = @_;
 	
 	# Read the progress
@@ -3775,7 +3776,9 @@ sub availMisns {
 	
 	# Print
     @ok = sort { $a->{ID} <=> $b->{ID} } @ok;
-	if ($verbose) {
+    if ($idonly) {
+        printf "%d\n", $_->{ID} for @ok;
+    } elsif ($verbose) {
 		printMisns($verbose > 1, @ok);
 	} else {
 		for my $misn (@ok) {
@@ -3881,7 +3884,7 @@ USAGE
 		'Specs can be regexps, strings, numbers, or code'],
 	rank		=> [\&rank, 'TYPE FIELD [FILT]',
         'sort resources by field value'],
-	'map'		=> [\&mapOver, 'TYPE FIELDSPEC',
+	'map'		=> [\&mapOver, 'TYPE FIELD [FILT]',
 		'show all values of a given field'],
 	diff		=> [\&diff, 'TYPE SPEC1 SPEC2',
 		'show differences between two resources'],
@@ -3914,10 +3917,11 @@ USAGE
 	pers		=> [\&pers, '', 'list pers missions'],
 	limit		=> [\&limit, '', 'list time-limited missions'],
 	bit			=> [\&bit, 'BIT', 'show where a bit is used'],
-	avail		=> [\&availMisns, '[-vuf] PILOT [PROGRESS]',
+	avail		=> [\&availMisns, '[-vufi] PILOT [PROGRESS]',
 		'show currently available missions',
 		'Flag --unique only lists non-repeatable missions',
 		'Flag --fieldcheck only lists missions that set bits',
+		'Flag --idonly only shows ID of available missions',        
 		'A progress file can list missions to be ignored, eg:',
 		'  128: Include this mission',
 		'  -129: Ignore this one'],

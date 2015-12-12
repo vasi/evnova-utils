@@ -2994,7 +2994,8 @@ sub pilotLimits {
 		);
 		$l{bits} = $pilot->{game} eq 'override' ? 512 : 256;
 	}
-	$l{posOutf} = 2 * (7 + $l{cargo} + $l{syst});
+	$l{posExplore} = 2 * (7 + $l{cargo});
+	$l{posOutf} = $l{posExplore} + 2 * $l{syst};
 	$l{posWeap} = $l{posOutf} + 2 * ($l{syst} + $l{outf});
 	$l{posCash} = $l{posWeap} + 2 * 2 * $l{weap};
 	$l{posPers} = 4 + 2*$l{spob} + ($l{skipBeforeDef} ? 2 : 0);
@@ -3771,11 +3772,29 @@ sub setShip {
 sub setSpob {
 	my ($file, $spec) = @_;
 	my $spob = findRes('spob' => $spec);
-		
+	
 	pilotEdit($file, 128, sub {
 		my ($data) = @_;
 		substr($data, 0, 2) = pack('S>', $spob->{ID} - 128);
 		printf "Pilot is now at %s\n", resName($spob);
+		return $data;
+	});
+}
+
+sub setExplore {
+	my ($file, @specs) = @_;	
+	my @systs = findRes('syst' => \@specs);
+	
+	my $vers = pilotVers($file);
+	my %limits = pilotLimits($vers);
+	
+	pilotEdit($file, 128, sub {
+		my ($data) = @_;
+		for my $syst (@systs) {
+			my $pos = $limits{posExplore} + 2 * ($syst->{ID} - 128);
+			my $val = systCanLand($syst) ? 2 : 1;
+			substr($data, $pos, 2) = pack('S>', $pos, $val);
+		}
 		return $data;
 	});
 }
@@ -4050,6 +4069,7 @@ USAGE
 	setoutf => [\&setOutf, 'PILOT OUTFIT [COUNT]', 'give or remove outfits'],
 	setship => [\&setShip, 'PILOT SHIP', 'change the ship type'],
 	teleport => [\&setSpob, 'PILOT SPOD', "change the pilot's location"],
+	explore => [\&setExplore, 'PILOT [SYSTS...]', "add to the pilot's map"],
 	
 	0 => 'Miscellaneous',
 	trade		=> [\&trade, '[ITERATIONS]',

@@ -3756,6 +3756,18 @@ sub setOutf {
 	});
 }
 
+sub setShip {
+	my ($file, $spec) = @_;
+	my $ship = findRes('ship' => $spec);
+
+	pilotEdit($file, 128, sub {
+		my ($data) = @_;
+		substr($data, 2, 2) = pack('S>', $ship->{ID} - 128);
+		printf "Pilot is now in a %s\n", resName($ship);
+		return $data;
+	});
+}
+
 sub isAvail {
     my ($pilot, $misn) = @_;
     return 0 if $misn->{AvailRandom} <= 0;
@@ -4024,6 +4036,7 @@ USAGE
 	setbits		=> [\&setBits, 'PILOT BITS..', 'set or unset pilot bits',
 		'Start a bit with ! to unset it'],
 	setoutf => [\&setOutf, 'PILOT OUTFIT [COUNT]', 'give or remove outfits'],
+	setship => [\&setShip, 'PILOT SHIP', 'change the ship'],
 	
 	0 => 'Miscellaneous',
 	trade		=> [\&trade, '[ITERATIONS]',

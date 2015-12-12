@@ -2995,7 +2995,8 @@ sub pilotLimits {
 		$l{bits} = $pilot->{game} eq 'override' ? 512 : 256;
 	}
 	$l{posOutf} = 2 * (7 + $l{cargo} + $l{syst});
-	$l{posCash} = $l{posOutf} + 2 * ($l{outf} + $l{syst} + 2*$l{weap});
+	$l{posWeap} = $l{posOutf} + 2 * ($l{syst} + $l{outf});
+	$l{posCash} = $l{posWeap} + 2 * 2 * $l{weap};
 	$l{posPers} = 4 + 2*$l{spob} + ($l{skipBeforeDef} ? 2 : 0);
 	
 	return %l;
@@ -3718,18 +3719,39 @@ sub setOutf {
 	my %limits = pilotLimits($vers);
 	my $posOutf = $limits{posOutf};
 	my $pos = $posOutf + 2 * ($outf->{ID} - 128);
-		
+	
+	# Special handling for weapons and ammo
+	my @wpos;
+	my %mods = multiPropsHash($outf, 'ModType', 'ModVal');
+	for my $type (1, 3) {
+		next unless exists $mods{$type};
+		for my $val (@{$mods{$type}}) {
+			my $w = $limits{posWeap} + 2 * ($val - 128);
+			$w += 2 * $limits{weap} if $type == 3;
+			push @wpos, $w;
+		}
+	}
+	
 	pilotEdit($file, 128, sub {
 		my ($data) = @_;
 		
+		my $cur = unpack('S>', substr($data, $pos, 2));
 		if (!defined($count)) {
-			# Default to one more than we have.
-			my $cur = unpack('S>', substr($data, $pos, 2));
+			# Default to one more than we have
 			$count = $cur + 1;
+		}
+		my $diff = $count - $cur;
+		
+		substr($data, $pos, 2) = pack('S>', $count);
+		
+		# Handle weapons and ammo
+		for my $w (@wpos) {
+			$cur = unpack('S>', substr($data, $w, 2));
+			my $new = max($cur + $diff, 0);
+			substr($data, $w, 2) = pack('S>', $new);
 		}
 		
 		printf "Pilot now has %d %s\n", $count, resName($outf);
-		substr($data, $pos, 2) = pack('S>', $count);
 		return $data;
 	});
 }

@@ -2994,7 +2994,8 @@ sub pilotLimits {
 		);
 		$l{bits} = $pilot->{game} eq 'override' ? 512 : 256;
 	}
-	$l{posCash} = 2 * (7 + $l{cargo} + 2*$l{syst} + $l{outf} + 2*$l{weap});
+	$l{posOutf} = 2 * (7 + $l{cargo} + $l{syst});
+	$l{posCash} = $l{posOutf} + 2 * ($l{outf} + $l{syst} + 2*$l{weap});
 	$l{posPers} = 4 + 2*$l{spob} + ($l{skipBeforeDef} ? 2 : 0);
 	
 	return %l;
@@ -3709,6 +3710,30 @@ sub setBits {
 	});
 }
 
+sub setOutf {
+	my ($file, $spec, $count) = @_;
+	my $outf = findRes('outf' => $spec);
+
+	my $vers = pilotVers($file);
+	my %limits = pilotLimits($vers);
+	my $posOutf = $limits{posOutf};
+	my $pos = $posOutf + 2 * ($outf->{ID} - 128);
+		
+	pilotEdit($file, 128, sub {
+		my ($data) = @_;
+		
+		if (!defined($count)) {
+			# Default to one more than we have.
+			my $cur = unpack('S>', substr($data, $pos, 2));
+			$count = $cur + 1;
+		}
+		
+		printf "Pilot now has %d %s\n", $count, resName($outf);
+		substr($data, $pos, 2) = pack('S>', $count);
+		return $data;
+	});
+}
+
 sub isAvail {
     my ($pilot, $misn) = @_;
     return 0 if $misn->{AvailRandom} <= 0;
@@ -3976,6 +4001,7 @@ USAGE
 	cash		=> [\&setCash, 'FILE CREDITS', 'set pilot credit count'],
 	setbits		=> [\&setBits, 'PILOT BITS..', 'set or unset pilot bits',
 		'Start a bit with ! to unset it'],
+	setoutf => [\&setOutf, 'PILOT OUTFIT [COUNT]', 'give or remove outfits'],
 	
 	0 => 'Miscellaneous',
 	trade		=> [\&trade, '[ITERATIONS]',

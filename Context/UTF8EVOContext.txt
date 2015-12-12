@@ -1,7 +1,7 @@
 ﻿ EVN Resources: ConText 1.0.0
  ---------------------------------
  Analysed: 2006.05.10 at 16:24
- 
+
  Files :
  -------
    1 : Icon
@@ -2682,7 +2682,7 @@ spöb	402	"Gorky"	"Override Data 2"	0	0	9	0x00000021	1000	-1	-1	-1	-1	-1	-1	-1	-
 spöb	403	"F-9012"	"Override Data 2"	0	0	21	0x00000021	1000	0	-1	-1	-1	-1	-1	-1	-1	-1	-1	0	-1	-1	0	0	0x0000	0	0	-1	-1	-1	-1	-1	-1	-1	-1	""	""	0	0	-1	-1	-1	-1	0	""	""	"•"
 spöb	404	"Diumin"	"Override Data 2"	0	0	33	0x00000021	1000	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	0	10016	-1	0	0	0x0000	0	0	-1	-1	-1	-1	-1	-1	-1	-1	""	""	0	0	-1	-1	-1	-1	0	""	""	"•"
 • Begin sÿst
-"Type"	"ID"	"Name"	"File"	"xPos"	"yPos"	"con0"	"con1"	"con2"	"con3"	"con4"	"con5"	"con6"	"con7"	"con8"	"con9"	"con10"	"con11"	"con12"	"con13"	"con14"	"con15"	"nav0"	"nav1"	"nav2"	"nav3"	"nav4"	"nav5"	"nav6"	"nav7"	"nav8"	"nav9"	"nav10"	"nav11"	"nav12"	"nav13"	"nav14"	"nav15"	"DudeTypes0"	"DudeTypes1"	"DudeTypes2"	"DudeTypes3"	"DudeTypes4"	"DudeTypes5"	"DudeTypes6"	"DudeTypes7"	"Probs0"	"Probs1"	"Probs2"	"Probs3"	"Probs4"	"Probs5"	"Probs6"	"Probs7"	"AvgShips"	"Govt"	"Message"	"Asteroids"	"Interference"	"Person0"	"Person1"	"Person2"	"Person3"	"Person4"	"Person5"	"Person6"	"Person7"	"PersonProb0"	"PersonProb1"	"PersonProb2"	"PersonProb3"	"PersonProb4"	"PersonProb5"	"PersonProb6"	"PersonProb7"	"BkgndColor"	"Murk"	"AstTypes"	"Visibiility"	"ReinfFleet"	"ReinfTime"	"ReinfIntrval"	"EOR"
+"Type"	"ID"	"Name"	"File"	"xPos"	"yPos"	"con0"	"con1"	"con2"	"con3"	"con4"	"con5"	"con6"	"con7"	"con8"	"con9"	"con10"	"con11"	"con12"	"con13"	"con14"	"con15"	"nav0"	"nav1"	"nav2"	"nav3"	"nav4"	"nav5"	"nav6"	"nav7"	"nav8"	"nav9"	"nav10"	"nav11"	"nav12"	"nav13"	"nav14"	"nav15"	"DudeTypes0"	"DudeTypes1"	"DudeTypes2"	"DudeTypes3"	"DudeTypes4"	"DudeTypes5"	"DudeTypes6"	"DudeTypes7"	"Probs0"	"Probs1"	"Probs2"	"Probs3"	"Probs4"	"Probs5"	"Probs6"	"Probs7"	"AvgShips"	"Govt"	"Message"	"Asteroids"	"Interference"	"Person0"	"Person1"	"Person2"	"Person3"	"Person4"	"Person5"	"Person6"	"Person7"	"PersonProb0"	"PersonProb1"	"PersonProb2"	"PersonProb3"	"PersonProb4"	"PersonProb5"	"PersonProb6"	"PersonProb7"	"BkgndColor"	"Murk"	"AstTypes"	"Visibility"	"ReinfFleet"	"ReinfTime"	"ReinfIntrval"	"EOR"
 sÿst	128	"Sol"	"Override Data 2"	0	0	129	130	131	133	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	128	145	144	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	143	129	130	136	-1	-1	-1	-1	15	30	30	25	0	0	0	0	10	128	1	4	21	-1	-1	-1	-1	-1	-1	-1	-1	25	25	25	25	0	0	0	0	#000000	0	0x0003	""	-1	0	0	"•"
 sÿst	129	"Centauri"	"Override Data 2"	-4	-30	128	134	153	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	129	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	129	130	136	143	-1	-1	-1	-1	20	30	30	20	0	0	0	0	7	128	1	2	21	0	0	0	0	-1	-1	-1	-1	25	25	25	25	0	0	0	0	#000000	0	0x0003	""	-1	0	0	"•"
 sÿst	130	"Eltor"	"Override Data 2"	-23	25	128	132	135	140	229	432	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	-1	132	135	128	148	-1	-1	-1	-1	15	35	30	20	0	0	0	0	4	-1	1	3	21	0	0	0	0	-1	-1	-1	-1	25	25	25	25	0	0	0	0	#000000	0	0x0003	""	-1	0	0	"•"

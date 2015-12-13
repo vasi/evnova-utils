@@ -2998,6 +2998,7 @@ sub pilotLimits {
 	$l{posOutf} = $l{posExplore} + 2 * $l{syst};
 	$l{posWeap} = $l{posOutf} + 2 * ($l{syst} + $l{outf});
 	$l{posCash} = $l{posWeap} + 2 * 2 * $l{weap};
+	$l{posEscort} = $l{posBits} + $l{bits} + $l{spob};
 	$l{posPers} = 4 + 2*$l{spob} + ($l{skipBeforeDef} ? 2 : 0);
 	
 	return %l;
@@ -3044,8 +3045,10 @@ sub pilotParsePlayer {
 	
 	$p->{bit} = readSeq($r, \&readChar, $limits{bits});
 	$p->{dominated} = readSeq($r, \&readChar, $limits{spob});
+	
 	for my $i (0..$limits{escort}-1) {
 		my $v = readShort($r);
+		print "e: $v\n";
 		next if $v == -1;
 		if ($v >= 1000) {
 			push @{$p->{hired}}, $v - 1000;
@@ -3055,6 +3058,7 @@ sub pilotParsePlayer {
 	}
 	for my $i (0..$limits{fighter}-1) {
 		my $v = readShort($r);
+		print "f: $v\n";
 		next if $v == -1;
 		push @{$p->{fighter}}, $v;
 	}
@@ -3743,7 +3747,7 @@ sub setOutf {
 		}
 		my $diff = $count - $cur;
 		
-		substr($data, $pos, 2) = pack('S>', $count);
+		substr($data, $pos, 2) = pack('S>', max($count, 0));
 		
 		# Handle weapons and ammo
 		for my $w (@wpos) {
@@ -3781,7 +3785,7 @@ sub setSpob {
 	});
 }
 
-sub setExplore {
+sub addExplore {
 	my ($file, @specs) = @_;	
 	my @systs = findRes('syst' => \@specs);
 	
@@ -3795,6 +3799,33 @@ sub setExplore {
 			my $val = systCanLand($syst) ? 2 : 1;
 			substr($data, $pos, 2) = pack('S>', $pos, $val);
 		}
+		return $data;
+	});
+}
+
+sub addEscort {
+	my ($file, $spec, $count) = @_;
+	$count ||= 1;
+	my $ship = findRes('ship' => $spec);
+	
+	my $vers = pilotVers($file);
+	my %limits = pilotLimits($vers);
+	
+	pilotEdit($file, 128, sub {
+		my ($data) = @_;
+		
+		my $added = 0;
+		for my $i (0..$limits{escort} - 1) {
+			my $pos = $limits{posEscort} + 2 * $i;
+			my $val = unpack('s>', substr($data, $pos, 2));
+			if ($added < $count && $val == -1) {
+				# Found room
+				$val = $ship->{ID} - 128;
+				++$added;
+			}
+			substr($data, $pos, 2) = pack('s>', $val);
+		}
+		printf "Added %d %s as escort\n", $added, resName($ship);
 		return $data;
 	});
 }
@@ -4069,7 +4100,8 @@ USAGE
 	setoutf => [\&setOutf, 'PILOT OUTFIT [COUNT]', 'give or remove outfits'],
 	setship => [\&setShip, 'PILOT SHIP', 'change the ship type'],
 	teleport => [\&setSpob, 'PILOT SPOD', "change the pilot's location"],
-	explore => [\&setExplore, 'PILOT [SYSTS...]', "add to the pilot's map"],
+	explore => [\&addExplore, 'PILOT [SYSTS...]', "add to the pilot's map"],
+	escort => [\&addEscort, 'PILOT SHIP [COUNT]', "add escorts"],
 	
 	0 => 'Miscellaneous',
 	trade		=> [\&trade, '[ITERATIONS]',

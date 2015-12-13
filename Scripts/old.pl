@@ -25,6 +25,7 @@ use ResourceFork;
 
 use lib 'lib/Nova/Old';
 require 'bit.pl';
+require 'capture.pl';
 require 'cargo.pl';
 require 'cli.pl';
 require 'command.pl';

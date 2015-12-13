@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 
-our $pilotLog = 'pilotlog.txt';
+my $pilotLogDefault = 'pilotlog.txt';
 
 sub readPilotLogItem {
 	my $lines = shift;
@@ -41,46 +41,41 @@ sub readPilotLogItem {
 	}
 }
 
-{
-	my $cache;
+sub readPilotLog {
+	my ($logfile) = @_;
+	$logfile ||= $pilotLogDefault;
 
-	sub readPilotLog {
-		my (%opts) = (cache => 1, @_);
-		return $cache if defined $cache && $opts{cache};
+	# Read
+	open my $log, $logfile or die "Can't read pilot log: $!\n";
+	my $txt = join('', <$log>);
+	close $log;
 
-		# Read
-		open my $log, $pilotLog or die "Can't read pilot log: $!\n";
-		my $txt = join('', <$log>);
-		close $log;
+	# Decode
+	$txt = decode('MacRoman', $txt);
+	my @lines = split /[\r\n]/, $txt;
+	@lines = grep /\S/, @lines; # remove whitespace lines
+	#@lines = grep !/Plugins loaded/, @lines; # breaks format
 
-		# Decode
-		$txt = decode('MacRoman', $txt);
-		my @lines = split /[\r\n]/, $txt;
-		@lines = grep /\S/, @lines; # remove whitespace lines
-		#@lines = grep !/Plugins loaded/, @lines; # breaks format
-
-		# Read the header info
-		my %header;
-		while (defined(local $_ = shift @lines)) {
-			next if /EV Nova pilot data dump/;
-			if (/^Output on (\S+) at (.*?)\s*$/) {
-				@header{qw(Date Time)} = ($1, $2);
-				last;
-			} else {
-				die "Can't parse line $_\n";
-			}
+	# Read the header info
+	my %header;
+	while (defined(local $_ = shift @lines)) {
+		next if /EV Nova pilot data dump/;
+		if (/^Output on (\S+) at (.*?)\s*$/) {
+			@header{qw(Date Time)} = ($1, $2);
+			last;
+		} else {
+			die "Can't parse line $_\n";
 		}
-
-		my $data = readPilotLogItem(\@lines);
-		$data->{$_} = $header{$_} for keys %header;
-
-		$cache = $data if $opts{cache};
-		return $data;
 	}
+
+	my $data = readPilotLogItem(\@lines);
+	$data->{$_} = $header{$_} for keys %header;
+
+	return $data;
 }
 
-sub escorts {
-	my $pl = readPilotLog(cache => 1);
+sub logEscorts {
+	my ($pl) = @_;
 	my $escorts = $pl->{Escorts};
 
 	return () if scalar(@$escorts) == 1 && $escorts->[0] eq 'none';
@@ -92,15 +87,15 @@ sub escorts {
 	return @escorts;
 }
 
-sub myShip {
-	my $pl = readPilotLog(cache => 1);
+sub logShip {
+	my ($pl) = @_;
 	my $type = $pl->{'Ship type'};
 	$type =~ /\((\d+)\)$/ or die "Can't parse ship type '$type'\n";
 	return $1;
 }
 
-sub myOutfits {
-	my $pl = readPilotLog(cache => 1);
+sub logOutfits {
+	my ($pl) = @_;
 	my $outfits = $pl->{'Items currently owned'};
 
 	return () if scalar(@$outfits) == 1 && $outfits->[0] eq 'none';

@@ -96,6 +96,7 @@ sub pilotLimits {
 sub pilotParsePlayer {
 	my ($p, $r) = @_;
 	my %limits = pilotLimits($p);
+	$p->{limits} = \%limits;
 
 	$p->{lastSpob} = readShort($r);
 	$p->{ship} = readShort($r);

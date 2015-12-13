@@ -37,9 +37,8 @@ our @cmds;
 	agility		=> [\&agility, '[ACCEL_WEIGHT] [MANEUVER_WEIGHT]',
 		'rank ships by speed and agility'],
 	shiptech	=> [\&shiptech, '', 'show tech level of each ship'],
-	capture		=> [\&capture, '[-v] SHIP',
-		'calculate odds of capturing a ship',
-		'(requires pilotlog.txt)'],
+	capture		=> [\&capture, '[--pilot PILOT | --log PILOTLOG] [-v] SHIP',
+		'calculate odds of capturing a ship'],
 	dude		=> [\&dude, 'DUDE', 'show ships and strength of a fleet'],
 
 	0 => 'Outfits',

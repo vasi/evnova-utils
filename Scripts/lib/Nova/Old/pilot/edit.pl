@@ -177,22 +177,36 @@ sub addEscort {
 
 	my $vers = pilotVers($file);
 	my %limits = pilotLimits($vers);
+	my $maxEscorts = 6; # Hard max in EV
 
 	pilotEdit($file, 128, sub {
 		my ($data) = @_;
 
-		my $added = 0;
+		my @free;
+		my $existing = 0;
 		for my $i (0..$limits{escort} - 1) {
 			my $pos = $limits{posEscort} + 2 * $i;
 			my $val = unpack('s>', substr($data, $pos, 2));
-			if ($added < $count && $val == -1) {
-				# Found room
-				$val = $ship->{ID} - 128;
-				++$added;
+			if ($val == -1) {
+				push @free, $pos;
+			} elsif ($val < 1000) {
+				++$existing;
 			}
-			substr($data, $pos, 2) = pack('s>', $val);
 		}
-		printf "Added %d %s as escort\n", $added, resName($ship);
+
+		# Limit to the allowed number of escorts
+		my $room = max(0, $maxEscorts - $existing);
+		splice @free, min($room, $count);
+		if (!@free) {
+			print "No more room for escorts!\n";
+			return $data;
+		}
+
+		for my $pos (@free) {
+			substr($data, $pos, 2) = pack('s>', $ship->{ID} - 128);
+		}
+
+		printf "Added %d %s escorts\n", scalar(@free), resName($ship);
 		return $data;
 	});
 }

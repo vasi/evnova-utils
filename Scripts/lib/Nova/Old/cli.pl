@@ -94,6 +94,7 @@ our @cmds;
 	crons		=> [\&crons, '[SPECS..]', 'show cron details'],
 	comm		=> [\&commodities, 'SPOB',
 		"show what commodities a planet has"],
+	junk		=> [\&listJunk, '[SPECS..]', 'show weird trade items'],
 	killable	=> [\&killable, '', 'list all killable pers ships'],
     systpers    => [\&systPers, 'PILOT SYST',
         'list pers ships that could appear in a system'],

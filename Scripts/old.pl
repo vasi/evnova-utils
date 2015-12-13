@@ -53,6 +53,7 @@ require 'rsrc.pl';
 require 'scratch.pl';
 require 'ship.pl';
 require 'tech.pl';
+require 'trade.pl';
 require 'util.pl';
 
 run();

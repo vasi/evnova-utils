@@ -189,19 +189,28 @@ sub refSystDist {
 	return $ref->{systDist}{$s1}{$s2};
 }
 
-sub showPlaceDist {
-    my $ref = { syst => resource('syst') };
-	my @s1 = systsSelect($ref, placeSpec(\@_));
-	my @s2 = systsSelect($ref, placeSpec(\@_));
+sub systSetDist {
+	my ($src, $dest) = @_;
     my @best = ();
 
-    for my $s1 (@s1) {
-        for my $s2 (@s2) {
+    for my $s1 (@$src) {
+        for my $s2 (@$dest) {
             my @path = systPath($s1, $s2);
             @best = @path if !@best || scalar(@path) < scalar(@best);
         }
     }
-    printPath(@best);
+
+	# Make sure the order is ok.
+	@best = reverse @best unless grep { $_  == $best[0] } @$src;
+
+	return @best;
+}
+
+sub showPlaceDist {
+    my $ref = { syst => resource('syst') };
+	my @s1 = systsSelect($ref, placeSpec(\@_));
+	my @s2 = systsSelect($ref, placeSpec(\@_));
+	printPath(systSetDist(\@s1, \@s2));
 }
 
 sub printPath {

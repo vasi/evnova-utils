@@ -3048,7 +3048,6 @@ sub pilotParsePlayer {
 	
 	for my $i (0..$limits{escort}-1) {
 		my $v = readShort($r);
-		print "e: $v\n";
 		next if $v == -1;
 		if ($v >= 1000) {
 			push @{$p->{hired}}, $v - 1000;
@@ -3058,7 +3057,6 @@ sub pilotParsePlayer {
 	}
 	for my $i (0..$limits{fighter}-1) {
 		my $v = readShort($r);
-		print "f: $v\n";
 		next if $v == -1;
 		push @{$p->{fighter}}, $v;
 	}
@@ -3786,18 +3784,25 @@ sub setSpob {
 }
 
 sub addExplore {
-	my ($file, @specs) = @_;	
+	my ($file, @specs) = @_;
+	my @origSpecs = @specs;
 	my @systs = findRes('syst' => \@specs);
 	
 	my $vers = pilotVers($file);
 	my %limits = pilotLimits($vers);
+	
+	if (!@origSpecs) {
+		# Limit to visible map
+		my $pilot = pilotParse($file);
+		@systs = grep { bitTestEvalPilot($_->{Visibility}, $pilot) } @systs;
+	}
 	
 	pilotEdit($file, 128, sub {
 		my ($data) = @_;
 		for my $syst (@systs) {
 			my $pos = $limits{posExplore} + 2 * ($syst->{ID} - 128);
 			my $val = systCanLand($syst) ? 2 : 1;
-			substr($data, $pos, 2) = pack('S>', $pos, $val);
+			substr($data, $pos, 2) = pack('S>', $val);
 		}
 		return $data;
 	});

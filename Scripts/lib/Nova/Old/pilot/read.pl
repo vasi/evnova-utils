@@ -85,7 +85,8 @@ sub pilotLimits {
 	}
 	$l{posExplore} = 2 * (7 + $l{cargo});
 	$l{posOutf} = $l{posExplore} + 2 * $l{syst};
-	$l{posWeap} = $l{posOutf} + 2 * ($l{syst} + $l{outf});
+	$l{posLegal} = $l{posOutf} + 2 * $l{outf};
+	$l{posWeap} = $l{posLegal} + 2 * $l{syst};
 	$l{posCash} = $l{posWeap} + 2 * 2 * $l{weap};
 	$l{posEscort} = $l{posBits} + $l{bits} + $l{spob};
 	$l{posPers} = 4 + 2*$l{spob} + ($l{skipBeforeDef} ? 2 : 0);

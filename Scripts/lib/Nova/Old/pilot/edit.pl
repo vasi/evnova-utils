@@ -133,6 +133,34 @@ sub setShip {
 	});
 }
 
+sub setRating {
+	my ($file, $rating) = @_;
+
+	pilotEdit($file, 128, sub {
+		my ($data) = @_;
+
+		my $pos = length($data) - 4;
+		substr($data, $pos, 4) = pack('L>', $rating);
+		return $data;
+	});
+}
+
+sub setRecord {
+	my ($file, $spec, $record) = @_;
+	my $syst = findRes('syst' => $spec);
+
+	my $vers = pilotVers($file);
+	my %limits = pilotLimits($vers);
+	my $pos = $limits{posLegal} + 2 * ($syst->{ID} - 128);
+
+	pilotEdit($file, 128, sub {
+		my ($data) = @_;
+		substr($data, $pos, 2) = pack('s>', $record);
+		printf "Pilot's record in %s is now %d\n", resName($syst), $record;
+		return $data;
+	});
+}
+
 sub setSpob {
 	my ($file, $spec) = @_;
 	my $spob = findRes('spob' => $spec);

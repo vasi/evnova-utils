@@ -78,7 +78,7 @@ our @cmds;
 		'Can limit to spobs of one govt, or to one tech level'],
 	closetech	=> [\&closestTech, 'SYST TECH',
 		'find the closest planet that sells items of a tech level'],
-	closeoutf	=> [\&closestOutfit, 'PILOT OUTFIT',
+	closeoutf	=> [\&closestOutfit, '[PILOT | --syst SYST] OUTFIT',
 		'find the closest place to buy an outfit'],
 	where		=> [\&whereShip, 'SHIP [MAXPLACES]',
 		'show where a ship type likely to be found'],

@@ -122,16 +122,24 @@ sub closestTech {
 }
 
 sub closestOutfit {
-    my ($pfile, $spec) = @_;
+	my $systSpec;
+	moreOpts(\@_, 'syst|s=s' => \$systSpec);
 
-    my $outf = findRes(outf => $spec);
+	my $syst;
+	if (defined $systSpec) {
+		$syst = findRes(syst => $systSpec);
+	} else {
+		my $pfile = shift;
+	    my $pilot = pilotParse($pfile);
+	    $syst = spobSyst($pilot->{lastSpob} + 128);
+	}
+
+    my ($spec) = @_;
+
+	my $outf = findRes(outf => $spec);
     my $tech = $outf->{TechLevel};
-
-    my $pilot = pilotParse($pfile);
-    my $syst = spobSyst($pilot->{lastSpob} + 128);
 
     closestTech($syst->{ID}, $tech);
 }
-
 
 1;

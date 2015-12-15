@@ -13,11 +13,12 @@ sub suckUp {
 
 	my $ms = resource('misn');
 	my %ms;
+	my %cache;
 	for my $mid (sort keys %$ms) {
 		my $m = $ms->{$mid};
 		my $gv = $m->{CompGovt};
 		next unless $govts{$gv};
-		next unless !$pilot || isAvail($pilot, $m);
+		next unless !$pilot || isAvail(\%cache, $pilot, $m);
 		push @{$ms{$m->{CompReward}}}, $m;
 	}
 

@@ -5,28 +5,48 @@ our @misnNCBset = qw(OnSuccess OnRefuse OnAccept
     OnFailure OnAbort OnShipDone);
 
 sub isAvail {
-    my ($pilot, $misn) = @_;
+    my ($cache, $pilot, $misn, %options) = @_;
     return 0 if $misn->{AvailRandom} <= 0;
     return 1 unless $pilot;
 
     return 0 if !bitTestEvalPilot($misn->{AvailBits}, $pilot);
+	return 0 if $options{rating} && $misn->{AvailRating} > $pilot->{rating};
 
-    # Very basic test if spob exists
-    my $spob = $misn->{AvailStel};
-    if ($spob >= 128 && $spob < 5000) {
-        my $syst = spobSyst($spob);
-        return 0 unless bitTestEvalPilot($syst->{Visibility}, $pilot);
-    }
+	# Check if there's a system where this mission is available
+	return 1 if $misn->{AvailStel} == -1;
+	my $systs = resource('syst');
+	my @avail = systsSelect($cache, { spob => $misn->{AvailStel} });
+	for my $systID (@avail) {
+		my $syst = $systs->{$systID};
 
-    return 1;
+		# Check visibility
+		next unless bitTestEvalPilot($syst->{Visibility}, $pilot);
+
+		# Check legal record
+		if ($options{legal} && $misn->{AvailRecord}) {
+			my $arec = $misn->{AvailRecord};
+			my $srec = $pilot->{legal}[$systID - 128];
+			next if $arec > 0 && $arec > $srec;
+			next if $arec < 0 && $arec < $srec;
+		}
+
+		# This syst is ok
+		return 1;
+	}
+
+	# Found no systs
+	return 0;
 }
 
 sub availMisns {
 	my ($verbose, $unique, $fieldcheck, $idonly) = (0, 0, 0);
+	my %options;
 	moreOpts(\@_, 'verbose|v+' => \$verbose,
 	    'unique|u:+' => \$unique,
 	    'fieldcheck|f' => \$fieldcheck,
-        'idonly|i' => \$idonly);
+        'idonly|i' => \$idonly,
+		'rating|r' => \$options{rating},
+		'legal|l' => \$options{legal});
 	my ($pfile, $progress) = @_;
 
 	# Read the progress
@@ -45,10 +65,11 @@ sub availMisns {
 
 	# Find ok missions
 	my (@ok, %bits);
+	my %cache;
 	my $misns = resource('misn');
 	for my $misn (values %$misns) {
 		next if $completed{$misn->{ID}};
-        next unless isAvail($pilot, $misn);
+        next unless isAvail(\%cache, $pilot, $misn, %options);
 		push @ok, $misn;
 		push @{$bits{$misn->{AvailBits}}}, $misn;
 	}

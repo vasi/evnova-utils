@@ -146,17 +146,31 @@ sub setRating {
 }
 
 sub setRecord {
-	my ($file, $spec, $record) = @_;
-	my $syst = findRes('syst' => $spec);
+	my $govt = 0;
+    moreOpts(\@_, '--govt|g' => \$govt);
 
-	my $vers = pilotVers($file);
-	my %limits = pilotLimits($vers);
-	my $pos = $limits{posLegal} + 2 * ($syst->{ID} - 128);
+	my ($file, $record, @spec) = @_;
+	my $pilot = pilotParse($file);
+	my %limits = %{$pilot->{limits}};
+
+	my @systs;
+	if ($govt) {
+		my %govts = map { $_->{ID} => 1 } findRes(govt => \@spec);
+		my $allSyst = resource('syst');
+		@systs = grep { $govts{$_->{Govt}} } values %$allSyst;
+	} else {
+		@systs = findRes(syst => \@spec);
+	}
+
+	# Filter out invisible systs
+	@systs = grep { bitTestEvalPilot($_->{Visibility}, $pilot) } @systs;
 
 	pilotEdit($file, 128, sub {
 		my ($data) = @_;
-		substr($data, $pos, 2) = pack('s>', $record);
-		printf "Pilot's record in %s is now %d\n", resName($syst), $record;
+		foreach my $syst (@systs) {
+			my $pos = $limits{posLegal} + 2 * ($syst->{ID} - 128);
+			substr($data, $pos, 2) = pack('s>', $record);
+		}
 		return $data;
 	});
 }

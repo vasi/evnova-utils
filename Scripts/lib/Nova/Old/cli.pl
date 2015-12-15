@@ -122,7 +122,7 @@ our @cmds;
 	explore => [\&addExplore, 'PILOT [SYSTS...]', "add to the pilot's map"],
 	escort => [\&addEscort, 'PILOT SHIP [COUNT]', "add escorts"],
 	setrating => [\&setRating, 'PILOT RATING', "set rating"],
-	setrecord => [\&setRecord, 'PILOT SYST RECORD', "set legal record"],
+	setrecord => [\&setRecord, 'PILOT RECORD [--govt] SPECS...', "set legal record"],
 
 	0 => 'Miscellaneous',
 	trade		=> [\&trade, '[ITERATIONS]',

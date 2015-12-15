@@ -47,9 +47,14 @@ sub spobText {
 }
 
 sub systText {
-	my ($spec) = @_;
+	my ($res, $field) = @_;
+	my $spec = $res->{$field};
 	if ($spec == -1) {
-		return "AvailStel syst";
+		if ($field eq 'ShipSyst') {
+			return "AvailStel syst";
+		} else {
+			return "follow the player";
+		}
 	} elsif ($spec == -3) {
 		return "TravelStel syst";
 	} elsif ($spec == -4) {
@@ -135,7 +140,7 @@ sub misnText {
 				($goal ? ucfirst "$goal " : ''),
 				"$m->{ShipCount} ",
 				$dude->{Name}, $dude->{ID};
-			$ret .= "ShipSyst: " . systText($m->{ShipSyst}) . "\n";
+			$ret .= "ShipSyst: " . systText($m, 'ShipSyst') . "\n";
 		}
 		if ($m->{AuxShipCount} != -1) {
 			$ships = 1;
@@ -143,7 +148,7 @@ sub misnText {
 			$ret .= sprintf "AuxShips: %s%s (%d)\n",
 				($m->{AuxShipCount} > 1 ? "$m->{AuxShipCount} " : ''),
 				$dude->{Name}, $dude->{ID};
-			$ret .= "AuxShipSyst: " . systText($m->{AuxShipSyst}) . "\n";
+			$ret .= "AuxShipSyst: " . systText($m, 'AuxShipSyst') . "\n";
 		}
 		$ret .= "\n" if $ships;
 

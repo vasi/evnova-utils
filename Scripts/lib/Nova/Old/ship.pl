@@ -1,6 +1,8 @@
 use warnings;
 use strict;
 
+use utf8;
+
 sub shipRank {
 	my @fields = @_;
 	my @names = map { $fields[2 * $_] } (0..$#fields/2);
@@ -115,6 +117,32 @@ sub whereShip {
 			$syst->{Name}, $syst->{AvgShips}, govtName($govt);
 		last if $count++ >= $max;
 	}
+}
+
+sub shieldRegen {
+	my ($rezFile, @specs) = @_;
+	my %ids = map { $_->{ID} => 1 } findRes(ship => \@specs);
+
+	# Read resource files
+	my @rezSpecs = map { { type => 'shïp', id => $_ } } keys %ids;
+	my %rez = map { $_->{id} => $_ } readResources($rezFile, @rezSpecs);
+
+	my $pos = 0x10; # Position of ShieldRe in resource
+	my $shieldre = sub {
+		my $data = $rez{$::r{ID}}{data};
+		unpack('S>', substr($data, $pos, 2));
+	};
+
+    rankHeaders(qw(Shield Armor cS/s));
+	listBuildSub(type => 'ship',
+		value => $shieldre,
+		filter => sub { exists $rez{$::r{ID}} },
+        print => sub {
+			my $re = $shieldre->() || 1;
+			my ($shield, $armor) = @::r{qw(Shield Armor)};
+			($shield, $armor, sprintf "%d", $shield * 30 / $re);
+		 },
+	);
 }
 
 1;

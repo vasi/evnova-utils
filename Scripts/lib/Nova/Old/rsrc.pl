@@ -10,6 +10,8 @@ sub readResources {
     $rf ||= ResourceFork->new($file);
 	for my $spec (@specs) {
 		my $r = $rf->resource($spec->{type}, $spec->{id});
+		next unless $r;
+
 		my %res = %$spec;
 		$res{name} = $r->{name};
 		$res{data} = $r->read;

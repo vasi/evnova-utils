@@ -120,28 +120,38 @@ sub whereShip {
 }
 
 sub shieldRegen {
-	my ($rezFile, @specs) = @_;
-	my %ids = map { $_->{ID} => 1 } findRes(ship => \@specs);
+	my ($rezFile, $remod, $smod) = @_;
+	$remod ||= 0;
+	$smod ||= 0;
+
+	my $ships = resource('ship');
 
 	# Read resource files
-	my @rezSpecs = map { { type => 'shïp', id => $_ } } keys %ids;
-	my %rez = map { $_->{id} => $_ } readResources($rezFile, @rezSpecs);
-
+	my @rezSpecs = map { { type => 'shïp', id => $_ } } keys %$ships;
+	my @rez = readResources($rezFile, @rezSpecs);
 	my $pos = 0x10; # Position of ShieldRe in resource
-	my $shieldre = sub {
-		my $data = $rez{$::r{ID}}{data};
-		unpack('S>', substr($data, $pos, 2));
-	};
 
-    rankHeaders(qw(Shield Armor cS/s));
+	# Find rechard data
+	my (%shieldre, %rate);
+	for my $rez (@rez) {
+		my $id = $rez->{id};
+		my $ship = $ships->{$id};
+
+		$shieldre{$id} = unpack('S>', substr($rez->{data}, $pos, 2));
+
+		# In hundredths of shield point per second
+		my $re = $shieldre{$id} - $remod;
+		$re = 1 if $re < 1;
+
+		my $shield = $ship->{Shield} + $smod;
+		$rate{$id} = int($shield * 30 / $re);
+	}
+
+    rankHeaders(qw(ShieldRe Shield Armor Cargo));
 	listBuildSub(type => 'ship',
-		value => $shieldre,
-		filter => sub { exists $rez{$::r{ID}} },
-        print => sub {
-			my $re = $shieldre->() || 1;
-			my ($shield, $armor) = @::r{qw(Shield Armor)};
-			($shield, $armor, sprintf "%d", $shield * 30 / $re);
-		 },
+		value => sub { $rate{$::r{ID}} },
+		filter => sub { exists $rate{$::r{ID}} },
+        print => sub { $shieldre{$::r{ID}}, @::r{qw(Shield Armor holds)} },
 	);
 }
 

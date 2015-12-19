@@ -89,12 +89,18 @@ sub shiptech {
 
 sub closestTech {
 	my ($curSyst, @techs) = @_;
+	closestTechHelper($curSyst, sub { 1 }, @techs);
+}
+
+sub closestTechHelper {
+	my ($curSyst, $systFilter, @techs) = @_;
 	$curSyst = findRes(syst => $curSyst);
 
 	my %dists;
 	SPOB: for my $spob (values %{resource('spob')}) {
 		my $syst = eval { spobSyst($spob->{ID}) };
 		next if $@;
+		next unless $systFilter->($syst);
 
 		my $dist = systDist($curSyst->{ID}, $syst->{ID});
 		my @special = multiProps($spob, 'SpecialTech');
@@ -125,6 +131,7 @@ sub closestOutfit {
 	my $systSpec;
 	moreOpts(\@_, 'syst|s=s' => \$systSpec);
 
+	my $filter = sub { 1 };
 	my $syst;
 	if (defined $systSpec) {
 		$syst = findRes(syst => $systSpec);
@@ -132,6 +139,10 @@ sub closestOutfit {
 		my $pfile = shift;
 	    my $pilot = pilotParse($pfile);
 	    $syst = spobSyst($pilot->{lastSpob} + 128);
+		$filter = sub {
+			my ($syst) = @_;
+			return $pilot->{explore}[$syst->{ID} - 128];
+		};
 	}
 
     my ($spec) = @_;
@@ -139,7 +150,7 @@ sub closestOutfit {
 	my $outf = findRes(outf => $spec);
     my $tech = $outf->{TechLevel};
 
-    closestTech($syst->{ID}, $tech);
+    closestTechHelper($syst->{ID}, $filter, $tech);
 }
 
 1;

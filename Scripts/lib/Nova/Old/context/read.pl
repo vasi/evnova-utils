@@ -1,6 +1,13 @@
 use warnings;
 use strict;
 
+sub setFieldType {
+	my ($res, $field, $type) = @_;
+	my $order = $res->{_priv}{order};
+	my ($idx) = grep { $order->[$_] eq $field } (0..$#$order);
+	$res->{_priv}{types}[$idx] = $type;
+}
+
 my %handlers; # predeclare
 %handlers = (
 	'str#' => sub {
@@ -37,14 +44,10 @@ my %handlers; # predeclare
 		my %res = $handlers{default}->(@_);
 		my @ktypes = grep /^ModType/, keys %res;
 		@ktypes = grep { $outfhex{$res{ModType}} } @ktypes;
-		my $order = $res{_priv}{order};
 		for my $k (@ktypes) {
 			(my $v = $k) =~ s/ModType/ModVal/;
-			my ($idx) = grep { $order->[$_] eq $v } (0..$#$order);
-			$res{_priv}{types}[$idx] = 'hex4';
+			setFieldType(\%res, $v, 'hex4');
 		}
-
-
 		return %res;
 	},
 	syst => sub {
@@ -52,6 +55,11 @@ my %handlers; # predeclare
 		my ($vals, $types, $titles) = @_;
 		map { s/^Visiblility$/Visibility/ } @$titles;
 		return $handlers{default}->(@_);
+	},
+	weap => sub {
+		my %res = $handlers{default}->(@_);
+		setFieldType(\%res, 'Seeker', 'hex4');
+		return %res;
 	},
 );
 

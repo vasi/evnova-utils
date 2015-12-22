@@ -50,14 +50,15 @@ sub availMisns {
 	my ($pfile, $progress) = @_;
 
 	# Read the progress
-	my %completed;
+	my (%include, %exclude);
 	if (defined $progress) {
-    	open my $fh, '<', $progress or die $!;
-    	while (<$fh>) {
-    		if (/^\s*[^\s\d]\s*(\d+)/) {
-    			$completed{$1} = 1;
-    		}
-    	}
+		open my $fh, '<', $progress or die $!;
+		while (<$fh>) {
+			if (/^\s*(-?)(\d+)/) {
+				my $h = $1 ? \%exclude : \%include;
+				$h->{$2} = 1;
+			}
+		}
     }
 
 	# Read the pilot
@@ -68,7 +69,7 @@ sub availMisns {
 	my %cache;
 	my $misns = resource('misn');
 	for my $misn (values %$misns) {
-		next if $completed{$misn->{ID}};
+		next if $exclude{$misn->{ID}} || (%include && !$include{$misn->{ID}});
         next unless isAvail(\%cache, $pilot, $misn, %options);
 		push @ok, $misn;
 		push @{$bits{$misn->{AvailBits}}}, $misn;

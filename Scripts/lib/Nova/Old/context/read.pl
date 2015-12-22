@@ -27,16 +27,16 @@ my %handlers; # predeclare
 	},
 	default => sub {
 		my ($vals, $types, $titles) = @_;
-		my @t = @$titles;
-		my @order;
-		my %res;
-		while (scalar(@$vals) > 1) {
-			my $t = shift @t;
-			$res{$t} = shift @$vals;
-			push @order, $t;
+
+		# Remove EOR
+		my @order = @$titles;
+		pop @order;
+
+		my %res = (_priv => { types => [], order => \@order });
+		for my $k (@order) {
+			$res{$k} = shift @$vals;
+			push @{$res{_priv}{types}}, shift @$types;
 		}
-		$res{$t[-1]} = shift @$vals;
-		$res{_priv} = { types => $types, order => [ @order, $t[-1] ] };
 		return %res;
 	},
 	outf => sub {
@@ -99,6 +99,7 @@ sub readType {
 	$handler = $handlers{default} unless defined $handler;
 
 	($titles) = parseLine(scalar(<$fh>));
+
 	while (my $line = readLineSafe($fh)) {
 		$line =~ /^(\S*)/;
 		my $begin = deaccent($1);

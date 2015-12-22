@@ -35,6 +35,7 @@ require 'cron.pl';
 require 'desc.pl';
 require 'dist.pl';
 require 'dominate.pl';
+require 'extras.pl';
 require 'generic.pl';
 require 'legal.pl';
 require 'list.pl';

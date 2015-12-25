@@ -1,6 +1,8 @@
 use warnings;
 use strict;
 
+use List::Util qw(max);
+
 sub list {
 	my ($type, @finds) = @_;
 
@@ -74,11 +76,12 @@ sub listBuildSub {
         $filter->() ? [$_, $value->()] : ();
     } values %$res;
 
+	my $size = max (6, map { length($$_[1]) } @items);
 	for my $item (@items) {
 		my ($r, $v) = @$item;
 		local %::r = %$r;
 		my @xtra = $print->();
-		printf "%6s: %-30s %3d    %s\n", $v, resName($r),
+		printf "%${size}s: %-30s %3d    %s\n", $v, resName($r),
 			$r->{ID}, join "  ", map { sprintf "%10s", $_ } @xtra;
 	}
 }

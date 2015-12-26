@@ -40,8 +40,8 @@ our @cmds;
 	capture		=> [\&capture, '[--pilot PILOT | --log PILOTLOG] [-v] SHIP',
 		'calculate odds of capturing a ship'],
 	dude		=> [\&dude, 'DUDE', 'show ships and strength of a fleet'],
-	shieldre	=> [\&shieldRegen, 'RSRC SHIP...',
-		'show old EV shield regen values',
+	shieldre	=> [\&shieldRegen, 'RSRC [REGEN_MOD] [SHIELD_MOD]',
+		'show old EV shield regen rates',
 		'Use "Override Data 2" as the resource file for EVO'],
 
 	0 => 'Outfits',

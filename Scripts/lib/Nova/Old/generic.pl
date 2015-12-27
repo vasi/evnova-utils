@@ -68,6 +68,17 @@ sub resDump {
 	}
 }
 
+sub dumpMany {
+	my ($type, $fields, @specs) = @_;
+	my @res = findRes($type => \@specs);
+
+	my $i = 0;
+	for my $r (@res) {
+		print "\n" if $i++;
+		resDump($type, $r->{ID}, 'ID', $fields);
+	}
+}
+
 sub govtName {
 	my ($govt) = @_;
 	return defined $govt ? $govt->{Name} : "independent";

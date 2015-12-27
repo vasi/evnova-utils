@@ -16,6 +16,8 @@ our @cmds;
 	list		=> [\&list, 'TYPE [SPEC]', 'list resources'],
 	'dump'		=> [\&resDump, 'TYPE SPEC [FIELDS..]',
 		'dump fields of a resource'],
+	'dumps'		=> [\&dumpMany, 'TYPE FIELDS SPECS...',
+		'dump fields of several resources'],
 	find		=> [\&find, '[-i] TYPE FIELDSPEC VALSPEC',
 		'find resources which match criteria',
 		'Flag --idonly only displays resource ID',

@@ -76,13 +76,19 @@ sub listBuildSub {
         $filter->() ? [$_, $value->()] : ();
     } values %$res;
 
-	my $size = max (6, map { length($$_[1]) } @items);
-	for my $item (@items) {
-		my ($r, $v) = @$item;
-		local %::r = %$r;
+	# Set a max of three decimal places
+	my @values = map { $$_[1] } @items;
+	if (grep { $_ - int($_) } @values) {
+		@values = map { sprintf '%.3f', $_ } @values;
+	}
+
+	my $size = max (6, map { length($_) } @values);
+	for my $i (0..$#items-1) {
+		my $v = $values[$i];
+		local %::r = %{$items[$i][0]};
 		my @xtra = $print->();
-		printf "%${size}s: %-30s %3d    %s\n", $v, resName($r),
-			$r->{ID}, join "  ", map { sprintf "%10s", $_ } @xtra;
+		printf "%${size}s: %-30s %3d    %s\n", $v, resName(\%::r),
+			$::r{ID}, join "  ", map { sprintf "%10s", $_ } @xtra;
 	}
 }
 

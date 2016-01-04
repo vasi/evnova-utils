@@ -18,19 +18,35 @@ sub pilotEdit {
 }
 
 sub revivePers {
+	my $alive = 1;
+	my @systSpecs;
+    moreOpts(\@_,
+		'--kill|k' => sub { $alive = 0 },
+		'--syst|s=s' => \@systSpecs);
+
 	my ($file, @find) = @_;
+
+	my $pilot = pilotParse($file);
+	my $posPers = $pilot->{limits}{posPers};
+
 	my @pers = map { findRes(pers => $_) } @find;
-	my $vers = pilotVers($file);
-	my %limits = pilotLimits($vers);
-	my $posPers = $limits{posPers};
+	if (@systSpecs) {
+		my %bySyst = persBySyst($pilot, 'all');
+		for my $syst (findRes(syst => @systSpecs)) {
+			push @pers, @{$bySyst{$syst->{ID}}};
+		}
+	}
+
+	# Filter out Bounty Hunter
+	@pers = grep { $_->{ID} != 1150 } @pers;
 
 	pilotEdit($file, 129, sub {
 		my ($data) = @_;
-		print "Reviving:\n";
+		printf "%s:\n", $alive ? 'Reviving' : 'Killing';
 		for my $p (@pers) {
 			printf "  %4d - %s\n", $p->{ID}, $p->{Name};
 			my $pos = $posPers + 2 * ($p->{ID} - 128);
-			substr($data, $pos, 2) = pack('s>', 1);
+			substr($data, $pos, 2) = pack('s>', $alive);
 		}
 		return $data;
 	});

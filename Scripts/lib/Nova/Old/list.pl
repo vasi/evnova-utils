@@ -83,7 +83,7 @@ sub listBuildSub {
 	}
 
 	my $size = max (6, map { length($_) } @values);
-	for my $i (0..$#items-1) {
+	for my $i (0..$#items) {
 		my $v = $values[$i];
 		local %::r = %{$items[$i][0]};
 		my @xtra = $print->();

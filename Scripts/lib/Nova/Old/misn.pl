@@ -46,7 +46,8 @@ sub availMisns {
 	    'fieldcheck|f' => \$fieldcheck,
         'idonly|i' => \$idonly,
 		'rating|r' => \$options{rating},
-		'legal|l' => \$options{legal});
+		'legal|l' => \$options{legal},
+		'nopers|p' => \$options{nopers});
 	my ($pfile, $progress) = @_;
 
 	# Read the progress
@@ -69,6 +70,7 @@ sub availMisns {
 	my %cache;
 	my $misns = resource('misn');
 	for my $misn (values %$misns) {
+		next if $options{nopers} && $misn->{AvailLoc} == 2;
 		next if $exclude{$misn->{ID}} || (%include && !$include{$misn->{ID}});
         next unless isAvail(\%cache, $pilot, $misn, %options);
 		push @ok, $misn;

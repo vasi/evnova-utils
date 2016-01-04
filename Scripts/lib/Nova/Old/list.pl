@@ -30,7 +30,7 @@ sub listBuild {
 	($type, $field) = ('ship', $type) unless defined $field;
     $filt = defined $filt ? eval "no strict 'vars'; sub { $filt }": sub { 1 };
 
-	my $fieldMatch = qr/(\p{Letter}\w{2,})/;
+	my $fieldMatch = qr/(\p{Letter}\w{2,}|ID)/;
 	my $isField = ($field =~ /^$fieldMatch$/);
 	my ($fieldSub, $xtra);
 	if ($isField) {

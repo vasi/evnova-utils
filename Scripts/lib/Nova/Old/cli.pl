@@ -45,6 +45,8 @@ our @cmds;
 	shieldre	=> [\&shieldRegen, 'RSRC [REGEN_MOD] [SHIELD_MOD]',
 		'show old EV shield regen rates',
 		'Use "Override Data 2" as the resource file for EVO'],
+	guns		=> [\&maxGuns, 'TURRET_FACTOR',
+		'show the maximum number of guns on a ship'],
 
 	0 => 'Outfits',
 	persistent	=> [\&persistent, '', 'list persistent outfits'],

@@ -155,4 +155,19 @@ sub shieldRegen {
 	);
 }
 
+sub maxGuns {
+	# Reasonable turret factors, based on turret reload/strength differences,
+	# and whether or not turrets count as guns too.
+	#	EVC: laser - 1.75, proton - 3
+	#	EVO: blaze, phase - 1, neutron, emalgha - 0
+	#	EVN: light blaster - 1, med blaster - 1.3, fusion - 6, biorelay - 1,
+	#		 100mm railgun - 0.65
+	my ($turretFactor) = shift // 1;
+
+	rankHeaders('MaxGun', 'MaxTur');
+	listBuildSub(type => 'ship',
+		value => sub { $::r{MaxGun} + $::r{MaxTur} * $turretFactor },
+		print => sub { @::r{'MaxGun', 'MaxTur'} });
+}
+
 1;

@@ -35,42 +35,39 @@ sub weaponOutfits {
 	return $ret;
 }
 
-sub outfitMass {
-	my ($outfs, $id, %opts) = @_;
-	unless (exists $outfs->{$id}) {
-		warn "No outfit ID $id\n";
-		return 0;
+sub itemOutfit {
+	my ($w2o, $outfs, $item) = @_;
+	my ($type, $id) = @$item{'type', 'id'};
+
+	return $outfs->{$id} if $type eq 'outfit';
+
+	if ($type eq 'ammo') {
+		die "No source found for weapon ID $id\n"
+			unless exists $w2o->{$id}{source};
+		my $source = $w2o->{$id}{source};
+		return undef if $source == 0;
+		die "No ammo found for weapon ID $source\n"
+			unless exists $w2o->{$source}{ammo};
+		return $w2o->{$source}{ammo}[0];
+	} elsif ($type eq 'weapon') {
+		die "No outfit found for weapon ID $id\n"
+			unless exists $w2o->{$id}{weapon};
+		return $w2o->{$id}{weapon}[0];
 	}
-    return 0 if $opts{removable} && $outfs->{$id}->{Flags} & 0x8;
-	return $outfs->{$id}->{Mass};
+	return undef;
 }
 
-sub weaponMass {
-	my ($w2o, $id, %opts) = @_;
-	unless (exists $w2o->{$id}->{weapon}) {
-		warn "No outfit found for weapon ID $id\n";
-		return 0;
-	}
-    my $outf = $w2o->{$id}->{weapon}->[0];
-    return 0 if $opts{removable} && $outf->{Flags} & 0x8;
+sub itemMass {
+	my ($w2o, $outfs, $item, %opts) = @_;
+	my $outf = eval {
+		itemOutfit($w2o, $outfs, $item);
+	};
+	warn $@ if $@;
+	return 0 unless $outf;
+	return 0 if $opts{removable} && ($outf->{Flags} & 0x8);
 	return $outf->{Mass};
 }
 
-sub ammoMass {
-	my ($w2o, $id, %opts) = @_;
-	unless (exists $w2o->{$id}->{source}) {
-		warn "No source found for weapon ID $id\n";
-		return 0;
-	}
-	my $source = $w2o->{$id}->{source};
-	return 0 if $source == 0;
-
-	unless (exists $w2o->{$source}->{ammo}) {
-		warn "No ammo found for weapon ID $source\n";
-		return 0;
-	}
-	return $w2o->{$source}->{ammo}->[0]->{Mass};
-}
 
 sub shipDefaultItems {
     my ($ship) = @_;
@@ -114,9 +111,7 @@ sub measureItems {
     my $total = 0;
     for my $i (@$items) {
         unless (defined $i->{mass}) {
-            $i->{mass} = $i->{type} eq 'weapon'   ? weaponMass($w2o, $i->{id}, %opts)
-                       : $i->{type} eq 'ammo'     ? ammoMass($w2o, $i->{id}, %opts)
-                       : outfitMass($outfs, $i->{id}, %opts);
+			$i->{mass} = itemMass($w2o, $outfs, $i, %opts);
         }
         $total += $i->{mass} * $i->{count};
     }
@@ -142,10 +137,14 @@ sub showMass {
 
 	printf "  %3d              - free\n", $free;
 	for my $i (@$items) {
+		my $outf = eval { itemOutfit($w2o, $outfs, $i) };
+		my $nonremovable = $outf && ($outf->{Flags} & 0x8);
+		my $remc = $nonremovable ? '*' : '-';
+
 	    my $rtype = $i->{type} eq 'outfit' ? $outfs : $weaps;
 	    my $rez = $rtype->{$i->{id}};
-	    printf "  %3d = %4d x %3d - %-6s %4d: %s\n", $i->{mass} * $i->{count},
-	        $i->{count}, $i->{mass}, $i->{type}, $i->{id}, resName($rez)
+	    printf "  %3d = %4d x %3d %s %-6s %4d: %s\n", $i->{mass} * $i->{count},
+	        $i->{count}, $i->{mass}, $remc, $i->{type}, $i->{id}, resName($rez)
 	            if $filter->($i, $rez);
     }
 	print "  ", "-" x 50, "\n";

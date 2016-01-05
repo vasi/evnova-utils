@@ -4,9 +4,10 @@ use strict;
 sub dps {
     my ($weap, $shield) = @_;
     $shield //= 50;
+	my $reload = $weap->{Reload} || 1;
     my $shot = $weap->{MassDmg} * (100 - $shield) +
         $weap->{EnergyDmg} * $shield;
-    return $shot / 100 * 30 / $weap->{Reload};
+    return $shot / 100 * 30 / $reload;
 }
 
 sub showDPS {

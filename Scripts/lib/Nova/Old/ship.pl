@@ -120,7 +120,7 @@ sub whereShip {
 }
 
 sub shieldRegen {
-	my ($rezFile, $remod, $smod) = @_;
+	my ($rezFile, $remod, $smod, @fields) = @_;
 	$remod ||= 0;
 	$smod ||= 0;
 
@@ -147,11 +147,11 @@ sub shieldRegen {
 		$rate{$id} = int($shield * 30 / $re);
 	}
 
-    rankHeaders(qw(ShieldRe Shield Armor Cargo));
+    rankHeaders('ShieldRe', @fields);
 	listBuildSub(type => 'ship',
 		value => sub { $rate{$::r{ID}} },
 		filter => sub { exists $rate{$::r{ID}} },
-        print => sub { $shieldre{$::r{ID}}, @::r{qw(Shield Armor holds)} },
+        print => sub { $shieldre{$::r{ID}}, @::r{@fields} },
 	);
 }
 

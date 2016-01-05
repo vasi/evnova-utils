@@ -18,7 +18,8 @@ sub suckUp {
 		my $m = $ms->{$mid};
 		my $gv = $m->{CompGovt};
 		next unless $govts{$gv};
-		next unless !$pilot || isAvail(\%cache, $pilot, $m);
+		next unless !$pilot ||
+			isAvail(\%cache, $pilot, $m, legal => 1, rating => 1);
 		push @{$ms{$m->{CompReward}}}, $m;
 	}
 

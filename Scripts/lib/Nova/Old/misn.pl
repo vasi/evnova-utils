@@ -7,6 +7,7 @@ our @misnNCBset = qw(OnSuccess OnRefuse OnAccept
 sub isAvail {
     my ($cache, $pilot, $misn, %options) = @_;
     return 0 if $misn->{AvailRandom} <= 0;
+	return 0 if $options{bar} && $misn->{AvailLoc} != 1;
     return 1 unless $pilot;
 
     return 0 if !bitTestEvalPilot($misn->{AvailBits}, $pilot);
@@ -47,7 +48,8 @@ sub availMisns {
         'idonly|i' => \$idonly,
 		'rating|r' => \$options{rating},
 		'legal|l' => \$options{legal},
-		'nopers|p' => \$options{nopers});
+		'nopers|p' => \$options{nopers},
+		'bar|b' => \$options{bar});
 	my ($pfile, $progress) = @_;
 
 	# Read the progress

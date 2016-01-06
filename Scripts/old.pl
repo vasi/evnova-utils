@@ -34,6 +34,7 @@ require 'context/read.pl';
 require 'cron.pl';
 require 'desc.pl';
 require 'dist.pl';
+require 'djikstra.pl';
 require 'dominate.pl';
 require 'extras.pl';
 require 'generic.pl';

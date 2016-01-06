@@ -86,83 +86,15 @@ sub misnDist {
 	return ($land, placeListDist($ref, @places));
 }
 
-sub djikstra {
-	my ($systs, $s1, $s2, %opts) = @_;
-	my $cachefun = $opts{cache};
-	my $debug = $opts{debug};
-	my $type = $opts{type} || 'path';	# 'dist' or 'path'
-										# 'dist' assumes total coverage
-
-	if ($s1 == $s2) {
-		return $type eq 'path' ? ($s1, $s2) : 0;
-	}
-
-	my %seen = ( $s1 => undef );
-	my %new = %seen;
-	my $dist = 0;
-	my $found;
-    my $path = sub {
-        my $cur = shift;
-        my @path;
-        while (defined($cur)) {
-            unshift @path, $cur;
-            $cur = $seen{$cur};
-        }
-        return @path;
-    };
-
-	while (1) {
-		$dist++;
-
-		my @edge = keys %new;
-		%new = ();
-		for my $systid (@edge) {
-			my $syst = $systs->{$systid};
-			print "Looking at $syst->{ID}: $syst->{Name}\n" if $debug;
-			for my $kcon (grep /^con/, keys %$syst) {
-				my $con = $syst->{$kcon};
-				next if $con == -1;
-
-				unless (exists $seen{$con}) {
-					print "Adding $con\n" if $debug;
-					$seen{$con} = $systid;
-					$cachefun->($s1, $con, $dist) if $cachefun;
-					$new{$con} = 1;
-
-                    my @path;
-                    if ($type eq 'path' && ($cachefun || $con == $s2)) {
-                        @path = $path->($con);
-                    }
-                    $cachefun->($s1, $con, \@path) if $cachefun && @path;
-
-					if ($con == $s2) {
-						$found = $dist;
-						return @path if $type eq 'path';
-					}
-				}
-			}
-		}
-
-		last unless %new;
-	}
-
-	die "Can't find connection between $s1 and $s2\n" unless defined $found;
-	return $found;
-}
-
 sub systDist {
 	return memoize(@_, sub {
 		my ($memo, $s1, $s2) = @_;
-		return djikstra(resource('syst'), $s1, $s2, type => 'dist',
-			cache => sub { $memo->(@_); $memo->(@_[1,0,2]) });
-	});
-}
-
-sub systPath {
-	return memoize_complex(@_, sub {
-		my ($memo, $s1, $s2) = @_;
-		return djikstra(resource('syst'), $s1, $s2, type => 'path',
-			cache => sub { $memo->(@_); $memo->(@_[1,0,2]) });
+		my %seen = djikstra(edgesSyst(), $s1, end => $s2);
+		while (my ($sid, $r) = each %seen) {
+			$memo->($s1, $sid, $r->{dist});
+			$memo->($sid, $s1, $r->{dist});
+		}
+		return $seen{$s2}{dist};
 	});
 }
 
@@ -191,19 +123,20 @@ sub refSystDist {
 
 sub systSetDist {
 	my ($src, $dest) = @_;
-    my @best = ();
+	my $best;
+    my @bestEnds = ();
 
     for my $s1 (@$src) {
         for my $s2 (@$dest) {
-            my @path = systPath($s1, $s2);
-            @best = @path if !@best || scalar(@path) < scalar(@best);
+            my $dist = systDist($s1, $s2);
+			if (!defined($best) || $best > $dist) {
+				@bestEnds = ($s1, $s2);
+				$best = $dist;
+			}
         }
     }
 
-	# Make sure the order is ok.
-	@best = reverse @best unless grep { $_  == $best[0] } @$src;
-
-	return @best;
+	return djikstraPath(edgesSyst(), @bestEnds);
 }
 
 sub showPlaceDist {
@@ -224,11 +157,10 @@ sub printPath {
 }
 
 sub showDist {
-	my @searches = @_;
-	my $systs = resource('syst');
-
-	my ($p1, $p2) = map { findRes(syst => $_)->{ID} } @searches;
-	my @path = djikstra($systs, $p1, $p2, type => 'path');
+	my ($src, $dst) = @_;
+	$src = findRes(syst => $src);
+	$dst = findRes(syst => $dst);
+	my @path = djikstraPath(edgesSyst(), $src->{ID}, $dst->{ID});
 	printPath(@path);
 }
 

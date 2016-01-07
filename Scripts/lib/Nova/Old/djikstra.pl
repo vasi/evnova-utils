@@ -1,34 +1,26 @@
 use warnings;
 use strict;
 
+use PQueue;
+
 sub djikstra {
 	my ($edgeSub, $start, %opts) = @_;
 
 	my %seen;
-	my @prios = ([[$start, undef]]);
+	my $q = PQueue->new('min', [$start, undef], 0);
 
-	my $dist = 0;
-	OUTER:
-	while (@prios) {
-		last if $opts{max} && $dist > $opts{max};
+	while (my ($item, $cost) = $q->pop()) {
+		my ($node, $prev) = @$item;
+		next if $seen{$node};
+		last if $opts{max} && $cost > $opts{max};
 
-		my $items = $prios[$dist];
-		if ($items) {
-			for my $item (@$items) {
-				my ($node, $prev) = @$item;
-				next if $seen{$node};
+		$seen{$node} = { dist => $cost, prev => $prev };
+		last if $opts{end} && $opts{end} eq $node;
 
-				$seen{$node} = { dist => $dist, prev => $prev };
-				last OUTER if $opts{end} && $opts{end} eq $node;
-
-				my %conns = $edgeSub->($node);
-				while (my ($n, $d) = each %conns) {
-					push @{$prios[$dist + $d]}, [$n, $node];
-				}
-			}
-			$prios[$dist] = undef;
+		my %conns = $edgeSub->($node);
+		while (my ($n, $c) = each %conns) {
+			$q->push([$n, $node], $cost + $c);
 		}
-		$dist += 1;
 	}
 
 	return %seen;

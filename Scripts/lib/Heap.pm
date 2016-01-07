@@ -2,9 +2,6 @@ package Heap;
 use warnings;
 use strict;
 
-use Fcntl qw(:DEFAULT :seek);
-use Encode;
-
 sub new {
 	my $proto = shift;
 	my $class = ref($proto) || $proto;
@@ -17,11 +14,11 @@ sub new {
 sub _init {
 	my $self = shift;
 
-	if (ref($_[0]) eq 'SUB') {
+	if (ref($_[0]) eq 'CODE') {
 		$self->{cmp} = shift;
 	} else {
 		# Default to max-heap
-		$self->{cmp} = sub { $a <=> $b };
+		$self->{cmp} = sub { $_[0] <=> $_[1] };
 	}
 
 	$self->{items} = \@_;
@@ -50,8 +47,7 @@ sub _topChild {
 
 sub _cmp {
 	my $self = shift;
-	local ($a, $b) = map { $self->{items}[$_] } @_;
-	return $self->{cmp}->();
+	return $self->{cmp}->(map { $self->{items}[$_] } @_);
 }
 
 sub _swap {
@@ -75,7 +71,7 @@ sub _cmpSwap {
 sub _buildHeap {
 	my $self = shift;
 	my $last_parent = $self->_parent($#{$self->{items}});
-	next unless defined $last_parent;
+	return unless defined $last_parent;
 
 	for (my $i = $last_parent; $i >= 0; --$i) {
 		$self->_heapify($i);

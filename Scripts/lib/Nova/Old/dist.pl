@@ -157,10 +157,14 @@ sub printPath {
 }
 
 sub showDist {
+    my ($landingPenalty, $jumps) = (2, undef);
+	moreOpts(\@_, 'jumps|j=s' => \$jumps, 'land|l=s' => \$landingPenalty);
 	my ($src, $dst) = @_;
 	$src = findRes(syst => $src);
 	$dst = findRes(syst => $dst);
-	my @path = djikstraPath(edgesSyst(), $src->{ID}, $dst->{ID});
+
+	my $edge = $jumps ? edgesSegment($jumps, $landingPenalty) : edgesSyst();
+	my @path = djikstraPath($edge, $src->{ID}, $dst->{ID});
 	printPath(@path);
 }
 

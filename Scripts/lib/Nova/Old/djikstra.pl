@@ -55,4 +55,30 @@ sub edgesSyst {
 	};
 }
 
+sub edgesSegment {
+	my ($dist, $landingCost) = @_;
+	my $systs = resource('syst');
+	my $spobs = resource('spob');
+
+	return sub {
+		my $sid = shift;
+		my %found = djikstra(edgesSyst(), $sid, max => $dist);
+
+		my %inhabited;
+		while (my ($k, $v) = each %found) {
+			my $ok = 0;
+			for my $nav (multiProps($systs->{$k}, 'nav')) {
+				my $spob = $spobs->{$nav};
+				if (~$spob->{Flags} & 0x20) {
+					$ok = 1;
+					last;
+				}
+			}
+
+			$inhabited{$k} = $v->{dist} + $landingCost if $ok;
+		}
+		return %inhabited;
+	};
+}
+
 1;

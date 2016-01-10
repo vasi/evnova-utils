@@ -232,15 +232,19 @@ sub addEscort {
 	my $clear = 0;
     moreOpts(\@_, '--clear|C' => \$clear);
 
-	my ($file, $spec, $count) = @_;
-	$count ||= 1;
+	my ($file, @ships) = @_;
 
-	my $ship = $clear ? undef : findRes('ship' => $spec);
+	# Figure out what we want added
+	my @add;
+	while (my ($spec, $count) = splice(@ships, 0, 2)) {
+		$count //= 1;
+		my $ship = findRes(ship => $spec);
+		push @add, $ship for 1..$count;
+	}
 
 	my $vers = pilotVers($file);
 	my %limits = pilotLimits($vers);
 	my $maxEscorts = 6; # Hard max in EV
-	my $sid = $clear ? -1 : ($ship->{ID} - 128);
 
 	pilotEdit($file, 128, sub {
 		my ($data) = @_;
@@ -260,24 +264,20 @@ sub addEscort {
 		}
 
 		# Limit to the allowed number of escorts
-		unless ($clear) {
-			my $room = max(0, $maxEscorts - $existing);
-			splice @free, min($room, $count);
-			if (!@free) {
-				print "No more room for escorts!\n";
-				return $data;
-			}
+		my $room = $clear ? $maxEscorts : max(0, $maxEscorts - $existing);
+		if ($room < scalar(@add)) {
+			printf "Only more room for %d escorts!\n", $room;
+			return $data;
 		}
 
+		printf "Removing all %d escorts\n", $existing if $clear;
 		for my $pos (@free) {
+			my $ship = shift @add;
+			printf "Adding an %s escort\n", resName($ship) if $ship;
+			my $sid = $ship ? $ship->{ID} - 128 : -1;
 			substr($data, $pos, 2) = pack('s>', $sid);
 		}
 
-		if ($clear) {
-			printf "Removed all %d escorts\n", scalar(@free);
-		} else {
-			printf "Added %d %s escorts\n", scalar(@free), resName($ship);
-		}
 		return $data;
 	});
 }

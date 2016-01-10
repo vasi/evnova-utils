@@ -131,7 +131,8 @@ our @cmds;
 	setship => [\&setShip, 'PILOT SHIP', 'change the ship type'],
 	teleport => [\&setSpob, 'PILOT SPOD', "change the pilot's location"],
 	explore => [\&addExplore, 'PILOT [SYSTS...]', "add to the pilot's map"],
-	escort => [\&addEscort, 'PILOT SHIP [COUNT]', "add escorts"],
+	escort => [\&addEscort, '[--clear] PILOT SHIP [COUNT]',
+		"add escorts"],
 	setrating => [\&setRating, 'PILOT RATING', "set rating"],
 	setrecord => [\&setRecord, 'PILOT RECORD [--govt] SPECS...', "set legal record"],
 

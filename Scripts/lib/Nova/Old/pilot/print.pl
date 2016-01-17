@@ -58,7 +58,8 @@ sub pilotPrint {
 	});
 
 	# SHIP
-	$cat->('Ship', findRes(ship => $p->{ship} + 128)->{Name});
+	my $ship = findRes(ship => $p->{ship} + 128) // { Name => 'Unknown' };
+	$cat->('Ship', $ship->{Name});
     $cat->('Fuel', sprintf("%.2f", $p->{fuel} / 100));
 	$cat->('Cargo ', map {
     	my $qty = $p->{cargo}[$_];

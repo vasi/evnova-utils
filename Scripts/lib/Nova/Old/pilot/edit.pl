@@ -256,7 +256,7 @@ sub addEscort {
 
 			my $val = unpack('s>', substr($data, $pos, 2));
 			if ($val == -1) {
-				push @free, $pos unless $clear;
+				push @free, $pos;
 			} elsif ($val < 1000) {
 				++$existing;
 				push @free, $pos if $clear;

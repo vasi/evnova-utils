@@ -77,7 +77,7 @@ sub pilotLimits {
 			misn		=> 8,
 			escort		=> 36,
 			fighter 	=> 36,
-			posBits		=> 0x1e7e,
+			posBits		=> $pilot->{game} eq 'override' ? 0x1e7e : 0x1e3e,
 			spob		=> 1500,
 			pers		=> 512,
 		);

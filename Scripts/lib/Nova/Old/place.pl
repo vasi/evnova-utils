@@ -75,6 +75,9 @@ sub systsSelect {
 
 	unless (exists $ref->{systsSelect}{$type}{$id}) {
 		if ($type eq 'spob') {
+			if ($id >= 5000 && $id <= 7047) {
+				return systsSelect($ref, {adjacent => $id - 5000 + 128})
+			}
 			my @spobs = spobsMatching($id);
 			$ref->{systsSelect}{$type}{$id} = [
                 map { eval { refSpobSyst($ref, $_) } } @spobs ];

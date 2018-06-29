@@ -160,6 +160,7 @@ sub parseMisnData {
 	my ($p, $r) = @_;
 	my %m;
 	my $nova = ($p->{game} eq 'nova');
+	my $override = ($p->{game} eq 'override');
 
 	$m{travelSpob} = readShort($r);
 	readShort($r); # unused
@@ -171,14 +172,14 @@ sub parseMisnData {
 		$m{scanMask} = readShort($r);
 	} else {
 		$m{scanGovt} = readShort($r);
-		$m{compBits} = readSeq($r, \&readShort, 4);
+		$m{compBits} = readSeq($r, \&readShort, 2 + 2 * $override);
 	}
 	for my $k (qw(compGovt compReward)) { $m{$k} = readShort($r); }
 	if ($nova) {
 		$m{datePostInc} = readShort($r);
 		readShort($r); # unused
 	} else {
-		$m{failBits} = readSeq($r, \&readShort, 2);
+		$m{failBits} = readSeq($r, \&readShort, 1 + $override);
 	}
 	$m{pay} = readLong($r);
 	@keys = qw(Killed Boarded Disabled JumpedIn JumpedOut);
@@ -188,7 +189,8 @@ sub parseMisnData {
 	$m{canAbort} = readChar($r);
 	$m{cargoLoaded} = readChar($r);
 	$nova ? readShort($r) : readChar($r); # padding
-	@keys = qw(brief quickBrief loadCargo dropOffCargo comp fail refuse);
+	@keys = qw(brief quickBrief loadCargo dropOffCargo comp fail);
+	push @keys, qw(refuse) if $nova || $override;
 	push @keys, qw(shipDone) if $nova;
 	for my $k (@keys) { $m{"${k}Text"} = readShort($r); }
 	$m{timeLeft} = readShort($r);

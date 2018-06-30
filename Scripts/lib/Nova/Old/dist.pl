@@ -14,7 +14,7 @@ sub placeDist {
 		my $min = 1e6;
 		for my $s1 (@s1) {
 			for my $s2 (@s2) {
-				my $dist = refSystDist($ref, $s1, $s2);
+				my $dist = systDist($s1, $s2);
 				$max = $dist if $dist > $max;
 				$min = $dist if $dist < $min;
 			}
@@ -103,22 +103,6 @@ sub spobDist {
 		my ($memo, $s1, $s2) = @_;
 		return systDist(spobSyst($s1)->{ID}, spobSyst($s2)->{ID});
 	});
-}
-
-sub refSystDist {
-	my ($ref, $s1, $s2) = @_;
-	return 0 if $s1 == $s2;
-	return $ref->{systDist}{$s1}{$s2} if exists $ref->{systDist}{$s1}{$s2};
-
-	# Djikstra
-	djikstra($ref->{syst}, $s1, $s2, type => 'dist',
-		cache => sub {
-			$ref->{systDist}{$_[0]}{$_[1]} = $ref->{systDist}{$_[1]}{$_[0]}
-				= $_[2];
-		}
-	);
-
-	return $ref->{systDist}{$s1}{$s2};
 }
 
 sub systSetDist {

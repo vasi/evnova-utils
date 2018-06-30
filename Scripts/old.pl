@@ -7,7 +7,7 @@ $Data::Dumper::Sortkeys = 1;
 use Storable		qw(nstore retrieve freeze thaw dclone);
 use Getopt::Long;
 use File::Spec;
-use DB_File;
+use BerkeleyDB;
 use List::Util		qw(min first max);
 use File::Basename	qw(basename dirname);
 use Date::Manip;

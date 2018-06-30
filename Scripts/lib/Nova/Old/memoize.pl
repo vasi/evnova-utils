@@ -1,6 +1,14 @@
 use warnings;
 use strict;
 
+sub tieHash {
+	my ($file) = @_;
+	my %hash;
+	tie %hash, 'BerkeleyDB::Hash', -Filename => $file, -Flags => DB_CREATE
+		or die "Can't tie cache $file: $!\n";
+	return \%hash;
+}
+
 {
 	my %memory;
 
@@ -11,9 +19,7 @@ use strict;
 			mkdir_p($dir) unless -d $dir;
 			my $file = File::Spec->catfile($dir, $name);
 
-			my %hash;
-			tie %hash, 'DB_File', $file or die "Can't tie cache $file: $!\n";
-			$memory{$name} = \%hash;
+			$memory{$name} = tieHash($file);
 		}
 		return $memory{$name};
 	}

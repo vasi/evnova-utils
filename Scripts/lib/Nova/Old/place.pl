@@ -12,10 +12,7 @@ use strict;
 				contextCache(), '.spobSyst');
 			my $inited = -f $cacheFile;
 
-			my %h;
-			tie %h, DB_File => $cacheFile
-				or die "Can't tie cache $cacheFile: $!\n";
-			$cache = \%h;
+			$cache = tieHash($cacheFile);
 
 			unless ($inited) {
 				my $systs = resource('syst');

@@ -54,6 +54,7 @@ require 'pilotlog.pl';
 require 'place.pl';
 require 'rsrc.pl';
 require 'scratch.pl';
+require 'secret.pl';
 require 'ship.pl';
 require 'tech.pl';
 require 'trade.pl';

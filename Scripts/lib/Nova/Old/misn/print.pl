@@ -83,7 +83,9 @@ sub misnText {
 	my $section = $opts{verbose} ? "\n\n" : "\n";
 
 	# Name
-	unless ($opts{secret}) {
+	if ($opts{secret}) {
+		$ret .= sprintf "SecretID: %s\n", secretEncode('misn', $m->{ID});
+	} else {
 		my $name = $m->{Name};
 		if ($name =~ /^(.*);(.*)$/) {
 			$ret .= sprintf "%s (%d): %s$section", $2, $m->{ID}, $1;
@@ -202,7 +204,8 @@ sub misn {
 	moreOpts(\@_, 'verbose|v+' => \$verbose,
 		'secret|s' => \$secret);
 	printMisns({verbose => $verbose, secret => $secret},
-		map { findRes(misn => $_)				}
+		map { findRes(misn => $_)	}
+		map { secretDecode('misn', $_) }
 		map { /^(\d+)-(\d+)$/ ? ($1..$2) : $_	}
 		split /,/, join ',', @_
 	);

@@ -110,6 +110,9 @@ sub availMisns {
 }
 
 sub persMisns {
+	my %selected = map { $_->{ID} => 1 }
+		map { findRes('misn' => $_) } @_;
+	
 	my $misns = resource('misn');
 	my %persMisns;
 	for my $id (keys %$misns) {
@@ -129,11 +132,13 @@ sub persMisns {
 	my $govts = resource('govt');
 	my $strns = resource('STR#');
 	for my $id (sort keys %persMisns) {
+		next if %selected && !$selected{$id}; 
+
 		my $misn = $misns->{$id};
 		printf "%d: %s\n", $id, $misn->{Name};
 		for my $fld (qw(AvailRecord AvailRating AvailRandom AvailShipType
 				AvailBits CargoQty)) {
-			printf "  %s : %s\n", $fld, $misn->{$fld};
+			printf "  %s: %s\n", $fld, $misn->{$fld};
 		}
 		print "  Unavailable if in freighter\n" if $misn->{Flags} & 0x2000;
 		print "  Unavailable if in warship\n" if $misn->{Flags} & 0x4000;

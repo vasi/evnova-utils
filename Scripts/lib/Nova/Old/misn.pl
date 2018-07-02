@@ -100,7 +100,7 @@ sub availMisns {
     if ($idonly) {
         printf "%d\n", $_->{ID} for @ok;
     } elsif ($verbose) {
-		printMisns($verbose > 1, @ok);
+		printMisns({verbose => $verbose}, @ok);
 	} else {
 		for my $misn (@ok) {
 			printf "%4d: %s\n", $misn->{ID}, $misn->{Name};

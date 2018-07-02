@@ -83,11 +83,13 @@ sub misnText {
 	my $section = $opts{verbose} ? "\n\n" : "\n";
 
 	# Name
-	my $name = $m->{Name};
-	if ($name =~ /^(.*);(.*)$/) {
-		$ret .= sprintf "%s (%d): %s$section", $2, $m->{ID}, $1;
-	} else {
-		$ret .= sprintf "%s (%d)$section", $name, $m->{ID};
+	unless ($opts{secret}) {
+		my $name = $m->{Name};
+		if ($name =~ /^(.*);(.*)$/) {
+			$ret .= sprintf "%s (%d): %s$section", $2, $m->{ID}, $1;
+		} else {
+			$ret .= sprintf "%s (%d)$section", $name, $m->{ID};
+		}
 	}
 
 	# Availability
@@ -100,27 +102,35 @@ sub misnText {
 						3 => 'main spaceport',		4 => 'trading',
 						5 => 'shipyard',			6 => 'outfitters');
 		$ret .= "AvailLoc: $locs{$loc}\n";
+		if ($loc == 2) {
+			# Find a ship that matches this mission
+			my @pers = grep { $_->{LinkMission} == $m->{ID} } values %{resource('pers')};
+			my $chosen = @pers[rand(@pers)];
+			$ret .= sprintf "Pers: %s (%d)\n", resName($chosen), $chosen->{ID};
+		}
 	}
-	if ((my $rec = $m->{AvailRecord}) != 0) {
-		$ret .=  "AvailRecord: $rec\n";
-	}
-	my $rating = $m->{AvailRating};
-	if ($rating != 0 && $rating != -1) {
-		$ret .= sprintf "AvailRating: %s\n", ratingStr($rating);
+	unless ($opts{secret}) {
+		if ((my $rec = $m->{AvailRecord}) != 0) {
+			$ret .=  "AvailRecord: $rec\n";
+		}
+		my $rating = $m->{AvailRating};
+		if ($rating != 0 && $rating != -1) {
+			$ret .= sprintf "AvailRating: %s\n", ratingStr($rating);
+		}
 	}
 	if ((my $random = $m->{AvailRandom}) != 100) {
 		$ret .= "AvailRandom: $random%\n";
 	}
 	my $shiptype = $m->{AvailShipType};
-	if ($shiptype != 00 && $shiptype != -1) {
+	if ($shiptype != 0 && $shiptype != -1) {
 		$ret .= "AvailShipType: $shiptype\n";
 	}
-	for my $f ('AvailBits', @misnNCBset) {
-	    my $v = $m->{$f} or next;
-	    $ret .= "$f: $v\n";
+	unless ($opts{secret}) {
+		for my $f ('AvailBits', @misnNCBset) {
+				my $v = $m->{$f} or next;
+				$ret .= "$f: $v\n";
+		}
 	}
-
-	# TODO
 
 	if ($opts{verbose}) {
 		$ret .= "\n";
@@ -180,16 +190,18 @@ sub misnText {
 }
 
 sub printMisns {
-	my ($verbose, @misns) = @_;
-	my $join = $verbose ? "\n\n" : "\n";
-	my @text = map { misnText($_, verbose => $verbose) } @misns;
+	my ($opts, @misns) = @_;
+	my $join = $opts->{verbose} ? "\n\n" : "\n";
+	my @text = map { misnText($_, %$opts) } @misns;
 	print_breaking(join $join, @text);
 }
 
 sub misn {
 	my $verbose = 0;
-	moreOpts(\@_, 'verbose|v+' => \$verbose);
-	printMisns($verbose,
+	my $secret = 0; # Only show where to get this, not what it is
+	moreOpts(\@_, 'verbose|v+' => \$verbose,
+		'secret|s' => \$secret);
+	printMisns({verbose => $verbose, secret => $secret},
 		map { findRes(misn => $_)				}
 		map { /^(\d+)-(\d+)$/ ? ($1..$2) : $_	}
 		split /,/, join ',', @_

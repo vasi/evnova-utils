@@ -57,9 +57,10 @@ sub availMisns {
 	if (defined $progress) {
 		open my $fh, '<', $progress or die $!;
 		while (<$fh>) {
-			if (/^\s*(-?)(\d+)/) {
+			if (/^\s*(-?)(#?\d+)/) {
 				my $h = $1 ? \%exclude : \%include;
-				$h->{$2} = 1;
+				my $id = secretDecode('misn', $2);
+				$h->{$id} = 1;
 			}
 		}
     }

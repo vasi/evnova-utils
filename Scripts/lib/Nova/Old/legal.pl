@@ -57,7 +57,7 @@ sub legalGovt {
 
 	my $govt;
 	if (defined $find) {
-		if ($find == -1) {
+		if ($find eq '-1') {
 				$govt = -1;
 		} else {
 			my $govtRsrc = findRes(govt => $find) if defined $find;

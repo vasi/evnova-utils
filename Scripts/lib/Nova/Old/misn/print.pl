@@ -111,10 +111,10 @@ sub misnText {
 			$ret .= sprintf "Pers: %s (%d)\n", resName($chosen), $chosen->{ID};
 		}
 	}
-	unless ($opts{secret}) {
 		if ((my $rec = $m->{AvailRecord}) != 0) {
 			$ret .=  "AvailRecord: $rec\n";
 		}
+	unless ($opts{secret}) {
 		my $rating = $m->{AvailRating};
 		if ($rating != 0 && $rating != -1) {
 			$ret .= sprintf "AvailRating: %s\n", ratingStr($rating);

@@ -54,13 +54,22 @@ sub records {
 
 sub legalGovt {
 	my ($pilotFile, $find, $count) = @_;
-	my $govt = findRes(govt => $find) if defined $find;
+
+	my $govt;
+	if (defined $find) {
+		if ($find == -1) {
+				$govt = -1;
+		} else {
+			my $govtRsrc = findRes(govt => $find) if defined $find;
+			$govt = $govtRsrc->{ID};
+		}
+	}
 	my $pilot = pilotParse($pilotFile);
 	my $systs = resource('syst');
 
 	my %legal;
 	for my $s (values %$systs) {
-		next if defined $govt && $s->{Govt} != $govt->{ID};
+		next if defined $govt && $s->{Govt} != $govt;
 		next unless bitTestEvalPilot($s->{Visibility}, $pilot);
 		$legal{$s->{ID}} = $pilot->{legal}[$s->{ID} - 128];
 	}

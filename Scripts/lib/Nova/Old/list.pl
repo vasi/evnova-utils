@@ -1,6 +1,7 @@
 use warnings;
 use strict;
 
+use Scalar::Util qw(looks_like_number);
 use List::Util qw(max);
 
 sub list {
@@ -78,7 +79,7 @@ sub listBuildSub {
 
 	# Set a max of three decimal places
 	my @values = map { $$_[1] } @items;
-	if (grep { $_ - int($_) } @values) {
+	if (grep { looks_like_number($_) && $_ - int($_) } @values) {
 		@values = map { sprintf '%.3f', $_ } @values;
 	}
 

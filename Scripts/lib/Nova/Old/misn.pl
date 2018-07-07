@@ -40,7 +40,7 @@ sub isAvail {
 }
 
 sub availMisns {
-	my ($verbose, $unique, $fieldcheck, $idonly, $random) = (0, 0, 0, 0, 0);
+	my ($verbose, $quiet, $secret, $unique, $fieldcheck, $idonly, $random) = (0, 0, 0, 0, 0, 0, 0);
 	my %options;
 	moreOpts(\@_, 'verbose|v+' => \$verbose,
 	    'unique|u:+' => \$unique,
@@ -50,7 +50,9 @@ sub availMisns {
 		'legal|l' => \$options{legal},
 		'nopers|p' => \$options{nopers},
 		'bar|b' => \$options{bar},
-		'random|1' => \$random);
+		'random|1' => \$random,
+		'secret|s' => \$secret,
+		'quiet|q' => \$quiet);
 	my ($pfile, $progress) = @_;
 
 	# Read the progress
@@ -106,7 +108,7 @@ sub availMisns {
     if ($idonly) {
         printf "%d\n", $_->{ID} for @ok;
     } else {
-		printMisns({verbose => $verbose, quiet => !$verbose}, @ok);
+		printMisns({verbose => $verbose, quiet => $quiet, secret => $secret}, @ok);
 	}
 }
 

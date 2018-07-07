@@ -40,7 +40,7 @@ sub isAvail {
 }
 
 sub availMisns {
-	my ($verbose, $unique, $fieldcheck, $idonly) = (0, 0, 0, 0);
+	my ($verbose, $unique, $fieldcheck, $idonly, $random) = (0, 0, 0, 0, 0);
 	my %options;
 	moreOpts(\@_, 'verbose|v+' => \$verbose,
 	    'unique|u:+' => \$unique,
@@ -49,7 +49,8 @@ sub availMisns {
 		'rating|r' => \$options{rating},
 		'legal|l' => \$options{legal},
 		'nopers|p' => \$options{nopers},
-		'bar|b' => \$options{bar});
+		'bar|b' => \$options{bar},
+		'random|1' => \$random);
 	my ($pfile, $progress) = @_;
 
 	# Read the progress
@@ -98,6 +99,10 @@ sub availMisns {
 
 	# Print
     @ok = sort { $a->{ID} <=> $b->{ID} } @ok;
+	if ($random && @ok) {
+		@ok = ($ok[rand(@ok)]);
+	}
+
     if ($idonly) {
         printf "%d\n", $_->{ID} for @ok;
     } else {

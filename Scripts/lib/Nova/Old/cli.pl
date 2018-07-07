@@ -57,7 +57,10 @@ our @cmds;
         'rank primary weapons by damage output'],
 
 	0 => 'Missions',
-	misn		=> [\&misn, '[-vs] SPECSET', 'show mission details'],
+	misn		=> [\&misn, '[-vsq] SPECSET', 'show mission details',
+		'Flag --verbose shows more info',
+		'Flag --secret only shows where to get the mission, not what it is',
+		'Flag --quiet just lists the mission briefly'],
 	pers		=> [\&persMisns, '[-v] [MISNID ...]', 'list pers missions'],
 	limit		=> [\&limitMisns, '', 'list time-limited missions'],
 	bit			=> [\&bit, 'BIT', 'show where a bit is used'],

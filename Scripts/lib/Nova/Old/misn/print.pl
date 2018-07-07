@@ -201,14 +201,19 @@ sub printMisns {
 sub misn {
 	my $verbose = 0;
 	my $secret = 0; # Only show where to get this, not what it is
+	my $quiet = 0;
 	moreOpts(\@_, 'verbose|v+' => \$verbose,
-		'secret|s' => \$secret);
-	printMisns({verbose => $verbose, secret => $secret},
-		map { findRes(misn => $_)	}
+		'secret|s' => \$secret,
+		'quiet|q' => \$quiet);
+	my @res = map { findRes(misn => $_)	}
 		map { secretDecode('misn', $_) }
 		map { /^(\d+)-(\d+)$/ ? ($1..$2) : $_	}
-		split /,/, join ',', @_
-	);
+		split /,/, join ',', @_;
+	if ($quiet) {
+		list('misn', map { $_->{ID} } @res);
+	} else {
+		printMisns({verbose => $verbose, secret => $secret}, @res);
+	}
 }
 
 1;

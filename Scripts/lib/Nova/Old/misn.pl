@@ -40,7 +40,7 @@ sub isAvail {
 }
 
 sub availMisns {
-	my ($verbose, $unique, $fieldcheck, $idonly) = (0, 0, 0);
+	my ($verbose, $unique, $fieldcheck, $idonly) = (0, 0, 0, 0);
 	my %options;
 	moreOpts(\@_, 'verbose|v+' => \$verbose,
 	    'unique|u:+' => \$unique,
@@ -100,12 +100,8 @@ sub availMisns {
     @ok = sort { $a->{ID} <=> $b->{ID} } @ok;
     if ($idonly) {
         printf "%d\n", $_->{ID} for @ok;
-    } elsif ($verbose) {
-		printMisns({verbose => $verbose}, @ok);
-	} else {
-		for my $misn (@ok) {
-			printf "%4d: %s\n", $misn->{ID}, $misn->{Name};
-		}
+    } else {
+		printMisns({verbose => $verbose, quiet => !$verbose}, @ok);
 	}
 }
 

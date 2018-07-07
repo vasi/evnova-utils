@@ -193,16 +193,17 @@ sub misnText {
 
 sub printMisns {
 	my ($opts, @misns) = @_;
-	my $join = $opts->{verbose} ? "\n\n" : "\n";
-	my @text = map { misnText($_, %$opts) } @misns;
-	print_breaking(join $join, @text);
+	if ($opts->{quiet}) {
+		list('misn', map { $_->{ID} } @misns);
+	} else {
+		my $join = $opts->{verbose} ? "\n\n" : "\n";
+		my @text = map { misnText($_, %$opts) } @misns;
+		print_breaking(join $join, @text);
+	}
 }
 
 sub misn {
-	my $verbose = 0;
-	my $secret = 0; # Only show where to get this, not what it is
-	my $quiet = 0;
-	my $pilotfile;
+	my ($verbose, $secret, $quiet, $pilotfile) = (0, 0, 0);
 	moreOpts(\@_, 'verbose|v+' => \$verbose,
 		'secret|s' => \$secret,
 		'quiet|q' => \$quiet,
@@ -220,11 +221,7 @@ sub misn {
 			split /,/, join ',', @_;
 	}
 
-	if ($quiet) {
-		list('misn', map { $_->{ID} } @misns);
-	} else {
-		printMisns({verbose => $verbose, secret => $secret}, @misns);
-	}
+	printMisns({verbose => $verbose, secret => $secret, quiet => $quiet}, @misns);
 }
 
 1;

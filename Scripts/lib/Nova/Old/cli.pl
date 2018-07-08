@@ -98,6 +98,8 @@ our @cmds;
 		'show where a ship type is likely to be found'],
 	wherepers	=> [\&wherePers, 'PILOT PERS',
 		'show where a pers ship is likely to be found'],
+	wheregovt	=> [\&whereGovt, '[--max N] [--near SYST [--distance M]] SPEC ...',
+		'show where ships from the given govts are likely to be found'],
 	hiddenspobs	=> [\&hiddenSpobs, '',
 		'list stellar objects without a nav preset'],
 

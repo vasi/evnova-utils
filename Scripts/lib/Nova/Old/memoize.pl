@@ -46,7 +46,7 @@ sub memoize_internal {
 	my @args = @{$opts{args}};
 
 	my $code = pop @args;
-	my $name = (caller(2))[3];
+	my $name = $opts{name} || (caller(2))[3];
 	my $memory = memory($name);
 	my $key = $opts{encode}->($name, @args);
 

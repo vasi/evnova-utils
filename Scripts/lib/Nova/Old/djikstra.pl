@@ -10,6 +10,8 @@ sub djikstra {
 	my $q = PQueue->new('min', [$start, undef], 0);
 
 	while (my ($item, $cost) = $q->pop()) {
+		last unless defined($item);
+
 		my ($node, $prev) = @$item;
 		next if $seen{$node};
 		last if $opts{max} && $cost > $opts{max};

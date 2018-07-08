@@ -94,8 +94,18 @@ sub systDist {
 			$memo->($s1, $sid, $r->{dist});
 			$memo->($sid, $s1, $r->{dist});
 		}
-		return $seen{$s2}{dist};
+		return $seen{$s2}{dist} if defined($s2);
 	});
+}
+
+sub systsNear {
+	my ($syst, $dist) = @_;
+	scalar(systDist($syst->{ID})); # trigger memoization
+	my @ret;
+	for my $s2 (values %{resource('syst')}) {
+		push @ret, $s2 if systDist($syst->{ID}, $s2->{ID}) <= $dist;
+	}
+	return @ret;
 }
 
 sub spobDist {

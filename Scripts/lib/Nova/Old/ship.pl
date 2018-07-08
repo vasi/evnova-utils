@@ -119,6 +119,45 @@ sub whereShip {
 	}
 }
 
+sub whereGovt {
+	my $max = 20;
+	my ($distance, $near) = (3);
+	moreOpts(\@_, 'max|m=i' => \$max,
+		'near|n=s' => \$near, 'distance|d=i' => \$distance);
+
+	my (@govts) = @_;
+	my %gids = map { $_->{ID} => 1 } findRes(govt => \@govts);
+
+	my %strengths;
+	for my $dude (values %{resource('dude')}) {
+		next unless $gids{$dude->{Govt}};
+		$strengths{$dude->{ID}} = dudeStrength($dude);
+	}
+
+	my @systs = values %{resource('syst')};
+	if ($near) {
+		@systs = systsNear(findRes(syst => $near), $distance);
+	}
+
+	my %systStrengths;
+	for my $syst (@systs) {
+		my %dudes = multiPropsHash($syst, 'DudeTypes', 'Probs');
+		while (my ($dude, $prob) = each %dudes) {
+			next unless $strengths{$dude};
+			$systStrengths{$syst->{ID}} += 0.01 * @$prob[0] * $strengths{$dude}
+				* $syst->{AvgShips};
+		}
+	}
+
+	my @sorted = sort { $systStrengths{$b} <=> $systStrengths{$a} }
+		keys %systStrengths;
+	for my $sid (@sorted) {
+		return unless $max--;
+		my $syst = findRes(syst => $sid);
+		printf "%6.2f - %4d: %-20s\n", $systStrengths{$sid}, $sid, $syst->{Name};
+	}
+}
+
 sub shieldRegen {
 	my ($rezFile, $remod, $smod, @fields) = @_;
 	$remod ||= 0;

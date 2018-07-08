@@ -174,6 +174,10 @@ sub misnText {
 			$where = 1;
 			$ret .= "ReturnStel: " . spobText($spec) . "\n";
 		}
+		my $limit = $m->{TimeLimit};
+		if ($limit != 0 && $limit != -1) {
+			$ret .= "TimeLimit: " . $limit . "\n";
+		}
 		$ret .= "\n" if $where;
 
 		# Descs

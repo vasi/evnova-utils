@@ -194,7 +194,7 @@ sub misnText {
 sub printMisns {
 	my ($opts, @misns) = @_;
 	if ($opts->{quiet}) {
-		list('misn', map { $_->{ID} } @misns);
+		list('misn', map { $_->{ID} } @misns) if @misns;
 	} else {
 		my $join = $opts->{verbose} ? "\n\n" : "\n";
 		my @text = map { misnText($_, %$opts) } @misns;
@@ -213,7 +213,7 @@ sub misn {
 	if ($pilotfile) {
 		my $pilot = pilotParse($pilotfile);
 		my @finds = map { $_->{id} + 128 } @{$pilot->{missions}};
-		@misns = findRes('misn' => \@finds);
+		@misns = @finds ? findRes('misn' => \@finds) : ();
 	} else {
 		@misns = map { findRes(misn => $_)	}
 			map { secretDecode('misn', $_) }

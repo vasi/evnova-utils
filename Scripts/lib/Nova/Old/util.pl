@@ -2,6 +2,7 @@ use warnings;
 use strict;
 
 use utf8;
+use English;
 
 sub print_breaking {
 	my $string = shift;
@@ -55,6 +56,7 @@ sub openFindEncoding {
 
 sub fileType {
 	my ($file) = @_;
+	return undef if $OSNAME ne 'darwin';
 	return FinderInfo::typeCode($file);
 }
 

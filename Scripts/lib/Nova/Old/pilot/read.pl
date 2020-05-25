@@ -1,16 +1,24 @@
 use warnings;
 use strict;
 use utf8;
+use List::Util qw(first);
 
 sub pilotVers {
 	my ($file) = @_;
-	my $type = fileType($file) or return undef;
-
 	my %vers = (
 		'MpïL'	=> { game => 'classic',		key => 0xABCD1234 },
 		'OpïL'	=> { game => 'override',	key => 0xABCD1234 },
 		'NpïL'	=> { game => 'nova',		key => 0xB36A210F },
 	);
+
+	my $type = fileType($file);
+	unless (defined($type)) {
+		my $rf = eval { ResourceFork->rsrcFork($file) };
+		$rf ||= ResourceFork->new($file);
+		$type = first { $vers{$_} } $rf->types();
+	}
+	return undef unless $type;
+
 	$vers{$type}{type} = $type;
 	return $vers{$type};
 }

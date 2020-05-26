@@ -170,7 +170,7 @@ sub shieldRegen {
 	my @rez = readResources($rezFile, @rezSpecs);
 	my $pos = 0x10; # Position of ShieldRe in resource
 
-	# Find rechard data
+	# Find recharge data
 	my (%shieldre, %rate);
 	for my $rez (@rez) {
 		my $id = $rez->{id};
@@ -178,12 +178,20 @@ sub shieldRegen {
 
 		$shieldre{$id} = unpack('S>', substr($rez->{data}, $pos, 2));
 
-		# In hundredths of shield point per second
-		my $re = $shieldre{$id} - $remod;
+		# Frames per shield percentage point
+		my $re = $shieldre{$id};
 		$re = 1 if $re < 1;
 
+		# Total shield
 		my $shield = $ship->{Shield} + $smod;
-		$rate{$id} = int($shield * 30 / $re);
+
+		my $onePct = $shield / 100.0;
+		my $perFrame = $onePct / $re;
+		my $perSecond = $perFrame * 30;
+		$perSecond += $remod / 30;
+		
+		# Display hundredths-of-points-per-second
+		$rate{$id} = int(100 * $perSecond);
 	}
 
     rankHeaders('ShieldRe', @fields);

@@ -158,8 +158,6 @@ our @cmds;
 	pilotdump	=> [\&pilotDump, 'FILE RESOURCE_ID OUTPUT',
 		'export decrypted pilot resource'],
 	pilothex	=> [\&pilotHex, 'FILE', 'hex dump decrypted pilot file'],
-	legs		=> [\&printLegs, '',
-		'list the best trade legs (partial routes)'],
 	bittest		=> [\&bitTestPrint, 'NCB [BITS..]',
 		'evaluate a control bit expression', 'Given a set of bits'],
 	misc        => [\&misc, '', 'scratch pad'],

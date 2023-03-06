@@ -3,7 +3,7 @@ use strict;
 
 sub cargoName {
 	my ($id) = @_;
-	return 'Empty' if $id == -1;
+	return 'empty' if $id == -1;
 
 	if ($id < 128) {
 		return resource('str#')->{4000}{Strings}[$id];

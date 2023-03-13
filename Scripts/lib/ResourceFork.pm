@@ -25,14 +25,56 @@ sub DESTROY {
     close $self->{fh};
 }
 
+sub iread {
+    my ($self, $len, $fmt) = @_;
+    my $data;
+    read($self->{fh}, $data, $len) or die "Can't read: $@";
+    return unpack($fmt, $data);
+}
+
+my $appleDoubleMagic = 0x00051607;
+my $appleSingleMagic = 0x00051600;
+my $appleDoubleVersion = 0x00020000;
+my $appleDoubleResourceID = 2;
+
+sub findBaseOffset {
+    my ($self) = @_;
+    seek $self->{fh}, 0, SEEK_SET or die "Can't seek: $@";
+
+    # Maybe it's AppleSingle/AppleDouble?
+    my $magic = $self->iread(4, 'l>');
+    return 0 unless $magic == $appleSingleMagic || $magic == $appleDoubleMagic;
+
+    $self->iread(4, 'l>') == $appleDoubleVersion or die "Bad AppleDouble version";
+    seek $self->{fh}, 16, SEEK_CUR; # filler
+
+    my $entries = $self->iread(2, 's>');
+    for (my $i = 0; $i < $entries; $i++) {
+        my $id = $self->iread(4, 'l>');
+        my $offset = $self->iread(4, 'l>');
+        my $length = $self->iread(4, 'l>');
+        if ($id == $appleDoubleResourceID) {
+            return $offset;
+        }
+    }
+
+    die "No resource fork found in AppleDouble";
+}
+
 sub init {
     my ($self, $path) = @_;
 	$self->{path} = $path;
 	$self->open('<');
     
+    my $baseoff = $self->findBaseOffset();
+    seek($self->{fh}, $baseoff, SEEK_SET) or die "Can't seek to base offset: $@";
+    
     my ($filehdr, $map);
     read($self->{fh}, $filehdr, 16) == 16 or die "header too short";
     my ($dataoff, $mapoff, undef, $maplen) = unpack('N4', $filehdr);
+    $dataoff += $baseoff;
+    $mapoff += $baseoff;
+
     seek $self->{fh}, $mapoff, SEEK_SET;
     read($self->{fh}, $map, $maplen) == $maplen or die "map too short";
     

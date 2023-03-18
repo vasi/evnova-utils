@@ -78,6 +78,9 @@ sub agility {
 }
 
 sub whereShip {
+	my $booty;
+	moreOpts(\@_, 'booty' => \$booty);
+
 	my ($find, $max) = @_;
 	$max = 20 unless defined $max;
 	my $ship = findRes(ship => $find);
@@ -85,6 +88,7 @@ sub whereShip {
 	my %dudes;
 	my $dudes = resource('dude');
 	for my $dude (values %$dudes) {
+		next if $booty && !($dude->{Booty} & 0x40);
 		for my $kt (grep /^ShipTypes\d+/, keys %$dude) {
 			(my $kp = $kt) =~ s/ShipTypes(\d+)/Probs$1/;
 			my ($vt, $vp) = map { $dude->{$_} } ($kt, $kp);

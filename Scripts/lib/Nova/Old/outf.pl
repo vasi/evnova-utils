@@ -37,12 +37,44 @@ sub persistent {
 }
 
 sub cantSell {
+    my $gifts;
+    moreOpts(\@_, 'gifts' => \$gifts);
 	my $outfs = resource('outf');
 
+    my %techs;
+    my %defaults;
+    if ($gifts) {
+        # Sold techs aren't gifts
+        my $spobs = resource('spob');
+        foreach my $spob (values %$spobs) {
+            for (my $i = $spob->{TechLevel}; $i > 0; $i--) {
+                $techs{$i} = 1;
+            }
+            foreach my $level (multiProps($spob, 'SpecialTech')) {
+                $techs{$level} = 1 unless $level == -1;
+            }
+        }
+
+        # Ship defaults aren't gifts
+        my $weaps = resource('weap');
+        my $w2o = weaponOutfits($outfs, $weaps);
+        my $ships = resource('ship');
+        foreach my $ship (values %$ships) {
+            foreach my $item (shipDefaultItems($ship)) {
+                eval {
+                    my $outf = itemOutfit($w2o, $outfs, $item);
+                    $defaults{$outf->{ID}} = 1 if defined $outf;
+                }
+            }
+        }
+    }
+
 	for my $id (sort keys %$outfs) {
+        next if $defaults{$id};
 		my $o = $outfs->{$id};
 		my $flags = $o->{Flags};
 		next unless $flags & 0x8;
+        next if $techs{$o->{TechLevel}};
 
 		printf "%4d: %s\n", $id, $o->{Name};
 	}

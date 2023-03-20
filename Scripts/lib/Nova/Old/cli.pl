@@ -50,7 +50,7 @@ our @cmds;
 
 	0 => 'Outfits',
 	persistent	=> [\&persistent, '', 'list persistent outfits'],
-	cantsell	=> [\&cantSell, '', 'list unsellable outfits'],
+	cantsell	=> [\&cantSell, '[--gifts]', 'list unsellable outfits'],
 	outftech	=> [\&outftech, '', 'show tech level of each outfit'],
     sellable    => [\&sellable, 'PILOT', 'show outfits that can be sold'],
     dps         => [\&showDPS, '[--armor | --shield | --shield=%]',

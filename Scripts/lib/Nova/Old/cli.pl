@@ -107,7 +107,7 @@ our @cmds;
 	'grep'		=> [\&grepDescs, 'REGEXP',
 		'search for a string in descriptions'],
 	desc		=> [\&desc, 'TYPE SPEC', 'show description resources',
-		'TYPE is one of spob, outf, misn, ship, hire'],
+		'TYPE is one of spob, bar, outf, misn, ship, hire'],
 	crons		=> [\&crons, '[SPECS..]', 'show cron details'],
 	comm		=> [\&commodities, 'SPOB',
 		"show what commodities a planet has"],

@@ -189,4 +189,16 @@ sub persMisns {
 
 }
 
+sub chooseDest {
+	my $jumps = shift;
+	my ($start, @dests) = map { findRes(spob => $_) } @_;
+	@dests = grep {
+		spobDist($start->{ID}, $_->{ID}) <= $jumps
+	} @dests;
+	my $dest = @dests[rand(@dests)];
+	my @systs = map { spobSyst($_->{ID})->{ID} } ($start, $dest);
+	showDist(@systs);
+	printf "Target: %s\n", $dest->{Name};
+}
+
 1;

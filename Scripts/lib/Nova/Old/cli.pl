@@ -77,6 +77,7 @@ our @cmds;
 		'A progress file can list missions to be ignored, eg:',
 		'  128: Include this mission',
 		'  -129: Ignore this one'],
+	choose => [\&chooseDest, 'JUMPS STARTSPOB DESTSPOB1 ...'],
 
 	0 => 'Finding systems and stellar objects',
 	spobsyst	=> [\&printSpobSyst, 'SPOB',

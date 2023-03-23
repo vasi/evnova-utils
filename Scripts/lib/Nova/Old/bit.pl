@@ -18,7 +18,8 @@ sub bit {
 	    my ($type, @fields) = @_;
 	    @fields = sort @fields;
 	    my $resources = resource($type);
-	    for my $r (values %$resources) {
+	    for my $id (sort keys %$resources) {
+					my $r = $resources->{$id};
 	        my @has;
 	        for my $f (@fields) {
 	            push @has, $f if hasBit($r->{$f}, $bit);

@@ -195,6 +195,10 @@ sub chooseDest {
 	@dests = grep {
 		spobDist($start->{ID}, $_->{ID}) <= $jumps
 	} @dests;
+	unless (@dests) {
+		print "No valid destination!\n";
+		return;
+	}
 	my $dest = @dests[rand(@dests)];
 	my @systs = map { spobSyst($_->{ID})->{ID} } ($start, $dest);
 	showDist(@systs);

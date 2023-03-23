@@ -190,8 +190,9 @@ sub persMisns {
 }
 
 sub chooseDest {
-	my $jumps = shift;
-	my ($start, @dests) = map { findRes(spob => $_) } @_;
+	my ($jumps, $start, @dests) = @_;
+	$start = findRes(spob => $start);
+	@dests = map { findRes(spob => $_) } @dests;
 	@dests = grep {
 		spobDist($start->{ID}, $_->{ID}) <= $jumps
 	} @dests;

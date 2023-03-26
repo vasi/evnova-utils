@@ -190,17 +190,30 @@ sub persMisns {
 }
 
 sub chooseDest {
-	my ($jumps, $start, @dests) = @_;
+	my ($jumps, $start, @destSpecs) = @_;
 	$start = findRes(spob => $start);
-	@dests = map { findRes(spob => $_) } @dests;
-	@dests = grep {
-		spobDist($start->{ID}, $_->{ID}) <= $jumps
-	} @dests;
-	unless (@dests) {
-		print "No valid destination!\n";
+	
+	my @destSpobs = map { findRes(spob => $_) } @destSpecs;
+	unless (@destSpobs) {
+		print "No destinations found\n";
 		return;
 	}
-	my $dest = @dests[rand(@dests)];
+
+	my %dists = map {
+		my $dist = spobDist($start->{ID}, $_->{ID});
+		$_ => $dist
+	} @destSpobs;
+	my @validSpobs = grep { $dists{$_} <= $jumps } @destSpobs;
+
+	unless (@validSpobs) {
+		my @sorted = sort { $dists{$a} <=> $dists{$b} } @destSpobs;
+		my $best = $sorted[0];
+		printf "No valid destination, best is %s at distance %d\n",
+			$best->{Name}, $dists{$best};
+		return;
+	}
+	
+	my $dest = @validSpobs[rand(@validSpobs)];
 	my @systs = map { spobSyst($_->{ID})->{ID} } ($start, $dest);
 	showDist(@systs);
 	printf "Target: %s\n", $dest->{Name};

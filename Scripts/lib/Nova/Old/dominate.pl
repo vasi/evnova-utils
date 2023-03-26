@@ -11,7 +11,7 @@ sub dudeStrength {
 			next if $vt == -1;
 
 			my $ship = findRes(ship => $vt);
-			$strength += ($vp / 100) * $ship->{Strength};
+			$strength += ($vp / 100) * betterStrength($ship);
 		}
 		return $strength;
 	});

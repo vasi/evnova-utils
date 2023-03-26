@@ -3,23 +3,37 @@ use strict;
 
 use utf8;
 
-sub shipRank {
-	my @fields = @_;
-	my @names = map { $fields[2 * $_] } (0..$#fields/2);
+sub shipRankWeights {
+	my (@fields) = @_;
+	my @names = map { $fields[2 * $_] } (0..$#fields/2); # Preserve order
 	my %weights = @fields;
-	my %ne1 = map { ($weights{$_} == 1) ? () : ($_, $weights{$_}) }
-		keys %weights;
 
-	# Calculate ranks
-	my (%rank, %lengths);
-	my $ships = resource('ship');
-	while (my ($id, $ship) = each %$ships) {
+	my $calc = sub {
+		my ($ship) = @_;
 		my $sum = 0;
 		while (my ($k, $weight) = each %weights) {
 			my $v = $ship->{$k};
 			$sum += $weight * $v;
+		}
+		return $sum;
+	};
+
+	shipRank(\@names, $calc);
+}
+
+sub shipRank {
+	my ($fieldNames, $calc) = @_;
+	my @names = @$fieldNames;
+
+	# Calculate ranks & lengths
+	my (%rank, %lengths);
+	my $ships = resource('ship');
+	while (my ($id, $ship) = each %$ships) {
+		foreach my $k (@names) {
+			my $v = $ship->{$k};
 			push @{$lengths{$k}}, length $v;
 		}
+		my $sum = $calc->($ship);
 
 		$rank{$id} = $sum;
 		push @{$lengths{Sum}}, length int($sum);
@@ -70,11 +84,11 @@ sub shipRank {
 
 sub defense {
 	my ($arm) = @_;
-	shipRank(Shield => 1, Armor => $arm // 1);
+	shipRankWeights(Shield => 1, Armor => $arm // 1);
 }
 sub agility {
 	my ($acc, $man) = @_;
-	shipRank(Speed => 1, Accel => $acc // 0.02, Maneuver => $man // 1);
+	shipRankWeights(Speed => 1, Accel => $acc // 0.02, Maneuver => $man // 1);
 }
 
 sub whereShip {
@@ -219,6 +233,36 @@ sub maxGuns {
 	listBuildSub(type => 'ship',
 		value => sub { $::r{MaxGun} + $::r{MaxTur} * $turretFactor },
 		print => sub { @::r{'MaxGun', 'MaxTur'} });
+}
+
+# The Strength field on ships is really poor.
+sub betterStrength {
+	my ($ship) = @_;
+	return memoize($ship->{ID}, sub {
+		my $strength = $ship->{Shield} + $ship->{Armor};
+		for my $kweap (grep /^WType/, keys %$ship) {
+			my $wtype = $ship->{$kweap};
+			next if $wtype < 1;
+
+			my $weap = findRes(weap => $wtype);
+			if ($weap->{Guidance} == 99) {
+				# Carrier bay. Add the strength of each carried ship.
+				(my $kammo = $kweap) =~ s/WType/Ammo/;
+				my $carriedCount = $ship->{$kammo};
+				my $carried = findRes(ship => $weap->{AmmoType});
+				$strength += $carriedCount * betterStrength($carried); 
+			} else {
+				(my $kcount = $kweap) =~ s/WType/WCount/;
+				# Heuristically, add 200 per weapon
+				$strength += 200 * $ship->{$kcount};
+			}
+		}
+		return $strength;
+	});
+}
+
+sub printStrength {
+	shipRank([], sub { betterStrength($_[0]) });
 }
 
 1;

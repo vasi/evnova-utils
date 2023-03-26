@@ -193,7 +193,7 @@ sub chooseDest {
 	my ($jumps, $start, @destSpecs) = @_;
 	$start = findRes(spob => $start);
 	
-	my @destSpobs = map { findRes(spob => $_) } @destSpecs;
+	my @destSpobs = map { findRes(spob => $_, exact => 1) } @destSpecs;
 	unless (@destSpobs) {
 		print "No destinations found\n";
 		return;

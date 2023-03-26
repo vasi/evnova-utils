@@ -96,11 +96,12 @@ sub resName {
 }
 
 sub findRes {
-	my ($type, $find) = @_;
+	my ($type, $find, %opts) = @_;
+	my $exact = $opts{exact}; # prefer exact matches, if any exist
 
 	if (ref($find) eq 'ARRAY') {
 		@$find = ('') unless @$find;
-		my %res = map { $_->{ID} => $_ } map { findRes($type, $_) } @$find;
+		my %res = map { $_->{ID} => $_ } map { findRes($type, $_, %opts) } @$find;
 		return map { $res{$_} } sort { $a <=> $b } keys %res;
 	}
 
@@ -110,21 +111,23 @@ sub findRes {
 		return wantarray ? ($r) : $r;
 	}
 
-    my @res = sort { $a->{ID} <=> $b->{ID} } values %$res;
+	# Sort for consistent ordering
+	my @res = sort { $a->{ID} <=> $b->{ID} } values %$res;
 
-    $find =~ s/\W//g; # strip punct
-    return @res if $find eq '';
+	$find =~ s/\W//g; # strip punct
+	return @res if $find eq '';
 
-    $find = qr/$find/i;
+	$find = qr/$find/i;
 	my $whole = qr/^$find$/i;
-	my @found;
+	my (@exact, @inexact);
 	for my $r (@res) {
 		my $name = resName($r);
 		$name =~ s/\W//g; # strip punct
-		return $r if $name =~ /$whole/ && !wantarray;
-		push @found, $r if $name =~ /$find/;
+		push @exact, $r if $name =~ /$whole/;
+		push @inexact, $r if $name =~ /$find/;
 	}
 
+	my @found = (@exact && (!wantarray || $exact)) ? @exact : @inexact;
 	return wantarray ? @found : $found[0];
 }
 

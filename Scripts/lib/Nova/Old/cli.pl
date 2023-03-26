@@ -47,7 +47,7 @@ our @cmds;
 		'Use "Override Data 2" as the resource file for EVO'],
 	guns		=> [\&maxGuns, 'TURRET_FACTOR',
 		'show the maximum number of guns on a ship'],
-	strength => [\&printStrength, 'rank ships by approximate strength'],
+	strength => [\&printStrength, '', 'rank ships by approximate strength'],
 
 	0 => 'Outfits',
 	persistent	=> [\&persistent, '', 'list persistent outfits'],

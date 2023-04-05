@@ -219,4 +219,95 @@ sub chooseDest {
 	printf "Target: %s\n", $dest->{Name};
 }
 
+sub misnsByBitSet {
+	my $byBit = {};
+	my $misns = resource('misn');
+	for my $misnid (sort keys %$misns) {
+		my $misn = $misns->{$misnid};
+		for my $field (@misnNCBset) {
+			my $value = $misn->{$field};
+			my @matches = ($value =~ /(?:^|(?!!))b(\d+)/g);
+			for my $match (@matches) {
+				$byBit->{$match}{$misnid} = 1;
+			}
+		}
+	}
+	return $byBit;
+}
+
+sub needBitsHelper {
+	# kinda simplistic, but good enough
+	my ($parsed) = @_;
+	my %ret;
+	my ($etype, $val) = @$parsed;
+	if ($etype eq 'and') {
+		for my $expr (@$val) {
+			my %r = needBitsHelper($expr);
+			%ret = (%ret, %r);
+		}
+	} elsif ($etype eq 'or') {
+		# assume shortest is best
+		my $first = 1;
+		for my $expr (@$val) {
+			my %r = needBitsHelper($expr);
+			if ($first || scalar(keys %r) < scalar(keys %ret)) {
+				%ret = %r;
+			}
+			$first = 0;
+		}
+	} elsif ($etype eq 'not') {
+		# assume we don't care
+	} elsif ($etype eq 'bit') {
+		%ret = ($val => 1);
+	}
+	return %ret;
+}
+
+sub misnNeedBits {
+	my ($misn) = @_;
+	my $parsed = bitTestParse($misn->{AvailBits});
+	return needBitsHelper($parsed);
+}
+
+sub misnString {
+	my ($misnSpec, @opts) = @_;
+	my $verbose;
+	moreOpts(\@_,
+		'verbose|v' => \$verbose);
+
+	my $misns = resource('misn');
+	my $byBit = misnsByBitSet();
+
+	my $misn = findRes(misn => $misnSpec);
+	my %need = misnNeedBits($misn);
+	my @string = ($misn); # reverse order
+
+	while (%need) {
+		# Pick a bit to satisfy. Assume max bit is best for ordering?
+		my $bit = max(keys %need);
+	
+		# Find a misn that satisfies it
+		my %foundNeed;
+		my $found;
+		for my $next (keys %{$byBit->{$bit}}) {
+			my %nextNeed = misnNeedBits($misns->{$next});
+			if (!$found || scalar(keys %nextNeed) > scalar(keys %foundNeed)) {
+				# Assume shorter list of added bits is best
+				$found = $next;
+				%foundNeed = %nextNeed;
+			}
+		}
+		unless ($found) {
+			die "Found no mission for bit $bit";
+		}
+
+		# Add mission to the string
+		push @string, $misns->{$found};
+		delete $need{$bit};
+		%need = (%need, %foundNeed);
+	}
+
+	printMisns({verbose => $verbose, quiet => !$verbose}, reverse @string);
+}
+
 1;

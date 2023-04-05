@@ -270,17 +270,17 @@ sub misnNeedBits {
 }
 
 sub misnString {
-	my ($misnSpec, @opts) = @_;
 	my $verbose;
 	moreOpts(\@_,
 		'verbose|v' => \$verbose);
 
-	my $misns = resource('misn');
-	my $byBit = misnsByBitSet();
-
+	my ($misnSpec) = @_;
 	my $misn = findRes(misn => $misnSpec);
 	my %need = misnNeedBits($misn);
 	my @string = ($misn); # reverse order
+
+	my $misns = resource('misn');
+	my $byBit = misnsByBitSet();
 
 	while (%need) {
 		# Pick a bit to satisfy. Assume max bit is best for ordering?

@@ -6,12 +6,6 @@ use Fcntl qw(:DEFAULT :seek);
 use Encode;
 use File::Basename;
 
-sub rsrcFork {
-    my ($proto, $path) = @_;
-    $path .= "/..namedfork/rsrc";
-    return $proto->new($path);
-}
-
 sub new {
 	my $proto = shift;
 	my $class = ref($proto) || $proto;

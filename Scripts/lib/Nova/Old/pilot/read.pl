@@ -13,8 +13,7 @@ sub pilotVers {
 
 	my $type = fileType($file);
 	unless (defined($type)) {
-		my $rf = eval { ResourceFork->rsrcFork($file) };
-		$rf ||= ResourceFork->new($file);
+	  my $rf = ResourceFork->new($file);
 		$type = first { $vers{$_} } $rf->types();
 	}
 	return undef unless $type;

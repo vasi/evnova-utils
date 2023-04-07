@@ -6,8 +6,7 @@ sub readResources {
 	my ($file, @specs) = @_;
 
 	my @ret;
-    my $rf = eval { ResourceFork->rsrcFork($file) };
-    $rf ||= ResourceFork->new($file);
+  my $rf = ResourceFork->new($file);
 	for my $spec (@specs) {
 		my $r = $rf->resource($spec->{type}, $spec->{id});
 		next unless $r;
@@ -23,8 +22,7 @@ sub readResources {
 
 sub writeResources {
 	my ($file, @specs) = @_;
-    my $rf = eval { ResourceFork->rsrcFork($file) };
-    $rf ||= ResourceFork->new($file);
+  my $rf = ResourceFork->new($file);
 	for my $spec (@specs) {
 		my $r = $rf->resource($spec->{type}, $spec->{id});
 		die "Can't change name"
@@ -118,8 +116,7 @@ sub rsrcList {
 	my (@files) = @_;
 
 	for my $file (@files) {
-	    my $rf = eval { ResourceFork->rsrcFork($file) };
-	    $rf ||= eval { ResourceFork->new($file) };
+		  my $rf = ResourceFork->new($file);
 	    if ($@) {
 	        print "$file not a resource fork\n";
 	        next;

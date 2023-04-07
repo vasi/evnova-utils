@@ -45,8 +45,8 @@ sub persistent {
 }
 
 sub cantSell {
-    my $gifts;
-    moreOpts(\@_, 'gifts' => \$gifts);
+    my ($gifts, $mass);
+    moreOpts(\@_, 'gifts' => \$gifts, 'mass' => \$mass);
 	my $outfs = resource('outf');
 
     my %techs;
@@ -82,6 +82,7 @@ sub cantSell {
 		my $o = $outfs->{$id};
 		my $flags = $o->{Flags};
 		next unless $flags & 0x8;
+        next if $mass && $o->{Mass} <= 0;
         next if $techs{$o->{TechLevel}};
 
 		printf "%4d: %s\n", $id, $o->{Name};

@@ -4,6 +4,7 @@ use strict;
 
 use Fcntl qw(:DEFAULT :seek);
 use Encode;
+use File::Basename;
 
 sub rsrcFork {
     my ($proto, $path) = @_;
@@ -61,9 +62,35 @@ sub findBaseOffset {
     die "No resource fork found in AppleDouble";
 }
 
+sub choosePath {
+    my ($path) = @_;
+    my $base = basename($path);
+    my $exists = sub { return -e $_[0 ] };
+    my $nonempty = sub {
+        my $size = -s $_[0];
+        return $size && $size > 0
+    };
+    my @choices = (
+        $base => $nonempty,
+        "$base/..namedfork/rsrc" => $exists,
+        "._$base" => $nonempty,
+        ".rsrc/$base" => $nonempty,
+    );
+
+    my $dir = dirname($path);
+    while (my ($f, $ok) = splice(@choices, 0, 2)) {
+        my $full = "$dir/$f";
+        if ($ok->($full)) {
+            return $full
+        }
+    }
+
+    return $path;
+}
+
 sub init {
     my ($self, $path) = @_;
-	$self->{path} = $path;
+	$self->{path} = choosePath($path);
 	$self->open('<');
     
     my $baseoff = $self->findBaseOffset();

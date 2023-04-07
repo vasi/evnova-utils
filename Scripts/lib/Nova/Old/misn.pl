@@ -270,9 +270,10 @@ sub misnNeedBits {
 }
 
 sub misnString {
-	my $verbose;
+	my ($verbose, $quiet);
 	moreOpts(\@_,
-		'verbose|v' => \$verbose);
+		'verbose|v' => \$verbose,
+		'quiet|q' => \$quiet);
 
 	my ($misnSpec) = @_;
 	my $misn = findRes(misn => $misnSpec);
@@ -307,7 +308,7 @@ sub misnString {
 		%need = (%need, %foundNeed);
 	}
 
-	printMisns({verbose => $verbose, quiet => !$verbose}, reverse @string);
+	printMisns({verbose => $verbose, quiet => $quiet}, reverse @string);
 }
 
 1;

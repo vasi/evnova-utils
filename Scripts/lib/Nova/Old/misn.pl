@@ -226,7 +226,7 @@ sub misnsByBitSet {
 		my $misn = $misns->{$misnid};
 		for my $field (@misnNCBset) {
 			my $value = $misn->{$field};
-			my @matches = ($value =~ /(?:^|(?!!))b(\d+)/g);
+			my @matches = ($value =~ /(?:^|(?<!!))b(\d+)/g);
 			for my $match (@matches) {
 				$byBit->{$match}{$misnid} = 1;
 			}

@@ -27,7 +27,7 @@ sub showDPS {
     rankHeaders(qw(EnergyDmg MassDmg Reload Range));
     listBuildSub(type => 'weap',
         value => sub { sprintf "%.1f", dps(\%::r, $shield) },
-        filter => sub { ~$::r{Flags} & 2 },
+        filter => sub { $::r{AmmoType} < 0 },
         print => sub { @::r{qw(EnergyDmg MassDmg Reload)}, weapRange(\%::r) }
     );
 }

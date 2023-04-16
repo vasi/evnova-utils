@@ -72,7 +72,7 @@ sub availMisns {
 	my $pilot = pilotParse($pfile);
 
 	# Find ok missions
-	my (@ok, %bits);
+	my (@ok, %uniq);
 	my %cache;
 	my $misns = resource('misn');
 	for my $misn (values %$misns) {
@@ -80,13 +80,15 @@ sub availMisns {
 		next if $exclude{$misn->{ID}} || (%include && !$include{$misn->{ID}});
         next unless isAvail(\%cache, $pilot, $misn, %options);
 		push @ok, $misn;
-		push @{$bits{$misn->{AvailBits}}}, $misn;
+		# Uniqueness is by name & avail-bits
+		my $key = join '/', $misn->{Name}, $misn->{AvailBits};
+		push @{$uniq{$key}}, $misn;
 	}
 
 	# Filter interesting missions
 	if ($unique) {
 	    @ok = ();
-	    for my $ms (values %bits) {
+	    for my $ms (values %uniq) {
 	        next unless @$ms <= $unique;
 	        push @ok, @$ms;
 	    }

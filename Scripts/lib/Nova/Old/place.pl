@@ -81,7 +81,8 @@ sub systsSelect {
 		} elsif ($type eq 'syst') {
 			$ref->{systsSelect}{$type}{$id} = [ $id ];
 		} elsif ($type eq 'adjacent') {
-			my @systs = systsSelect($ref, { spob => $id });
+			$ref->{syst} ||= resource('syst');
+			my @systs = systsSelect($ref, { syst => $id });
 			my %matches;
 			for my $systid (@systs) {
 				my $syst = $ref->{syst}{$systid};

@@ -5,12 +5,12 @@ our @misnNCBset = qw(OnSuccess OnRefuse OnAccept
     OnFailure OnAbort OnShipDone);
 
 sub isAvail {
-    my ($cache, $pilot, $misn, %options) = @_;
-    return 0 if $misn->{AvailRandom} <= 0;
+	my ($cache, $pilot, $misn, %options) = @_;
+	return 0 if $misn->{AvailRandom} <= 0;
 	return 0 if $options{bar} && $misn->{AvailLoc} != 1;
-    return 1 unless $pilot;
+	return 1 unless $pilot;
 
-    return 0 if !bitTestEvalPilot($misn->{AvailBits}, $pilot);
+	return 0 if !bitTestEvalPilot($misn->{AvailBits}, $pilot);
 	return 0 if $options{rating} && $misn->{AvailRating} > $pilot->{rating};
 
 	# Check if there's a system where this mission is available
@@ -78,7 +78,7 @@ sub availMisns {
 	for my $misn (values %$misns) {
 		next if $options{nopers} && $misn->{AvailLoc} == 2;
 		next if $exclude{$misn->{ID}} || (%include && !$include{$misn->{ID}});
-        next unless isAvail(\%cache, $pilot, $misn, %options);
+		next unless isAvail(\%cache, $pilot, $misn, %options);
 		push @ok, $misn;
 		# Uniqueness is by name & avail-bits
 		my $key = join '/', $misn->{Name}, $misn->{AvailBits};

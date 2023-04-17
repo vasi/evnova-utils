@@ -133,6 +133,9 @@ sub misnText {
 				$ret .= "$f: $v\n";
 		}
 	}
+	if ($m->{Flags} & 0x40) {
+		$ret .= "Abortable: with penalty";
+	}
 
 	if ($opts{verbose}) {
 		$ret .= "\n";

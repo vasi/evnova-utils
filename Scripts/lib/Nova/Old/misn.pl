@@ -43,9 +43,9 @@ sub availMisns {
 	my ($verbose, $quiet, $secret, $unique, $fieldcheck, $idonly, $random) = (0, 0, 0, 0, 0, 0, 0);
 	my %options;
 	moreOpts(\@_, 'verbose|v+' => \$verbose,
-	    'unique|u:+' => \$unique,
-	    'fieldcheck|f' => \$fieldcheck,
-        'idonly|i' => \$idonly,
+		'unique|u:+' => \$unique,
+		'fieldcheck|f' => \$fieldcheck,
+		'idonly|i' => \$idonly,
 		'rating|r' => \$options{rating},
 		'legal|l' => \$options{legal},
 		'nopers|p' => \$options{nopers},

@@ -201,7 +201,9 @@ sub misnText {
 sub printMisns {
 	my ($opts, @misns) = @_;
 	if ($opts->{quiet}) {
-		list('misn', map { $_->{ID} } @misns) if @misns;
+		for my $misn (@misns) {
+			printf "%4d: %s\n", $misn->{ID}, resName($misn);
+		}
 	} else {
 		my $join = $opts->{verbose} ? "\n\n" : "\n";
 		my @text = map { misnText($_, %$opts) } @misns;

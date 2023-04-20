@@ -80,9 +80,11 @@ our @cmds;
 		'  128: Include this mission',
 		'  -129: Ignore this one'],
 	choose => [\&chooseDest, 'JUMPS STARTSPOB DESTSPOB1 ...',
-		'randomly choose a destination to go to next, from a list of spobs (and a max range)'],
+		'randomly choose a destination to go to next, from a list of spobs'],
 	string => [\&misnString, '[-v] MISN',
 		'print an entire mission string, based on the last mission'],
+	misnspobs => [\&misnSpobs, 'PILOT MISN [COUNT]',
+		'find spobs where a mission can be found'],
 
 	0 => 'Finding systems and stellar objects',
 	spobsyst	=> [\&printSpobSyst, 'SPOB',

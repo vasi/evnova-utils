@@ -86,6 +86,11 @@ sub init {
     my ($self, $path) = @_;
 	$self->{path} = choosePath($path);
 	$self->open('<');
+
+    if ($path =~ /\.rez$/) {
+        $self->initRez();
+        return;
+    }
     
     my $baseoff = $self->findBaseOffset();
     seek($self->{fh}, $baseoff, SEEK_SET) or die "Can't seek to base offset: $@";
@@ -136,6 +141,45 @@ sub init {
         
         $self->{rsrc}{$tname} = \%type;
     }
+}
+
+sub initRez {
+  my ($self) = @_;
+  
+  my $header;
+  read($self->{fh}, $header, 24) == 24 or die "rez header too short";
+  my ($sig, $vers, $entries) = unpack('a4Vx12V', $header);
+  die 'bad rez sig' unless $sig eq 'BRGR';
+
+  my $offsetsRaw;
+  read($self->{fh}, $offsetsRaw, 12 * $entries) == 12 * $entries or die "can't read map offset";
+  my @offsets = unpack('(Vx8)*', $offsetsRaw);
+  my @sizes = unpack('(x4Vx4)*', $offsetsRaw);
+
+  my $mapHeader;
+  seek($self->{fh}, $offsets[-1], SEEK_SET) or die "can't seek to map";
+  read($self->{fh}, $mapHeader, 8) == 8 or die "can't read map header";
+  my $numTypes = unpack('x4N', $mapHeader);
+  seek($self->{fh}, 12 * $numTypes, SEEK_CUR) or die "can't skip type infos";
+  
+  my $resInfo;
+  for (my $i = 0; $i < $entries - 1; $i++) {
+    read($self->{fh}, $resInfo, 266) == 266 or die "can't read resource info";
+    my ($type, $id, $name) = unpack('x4a4nZ256', $resInfo);
+    $type = decode('MacRoman', $type);
+    $name = decode('MacRoman', $name);
+    
+    my $rsrc = {
+      fork => $self,
+      type => $type,
+      id => $id,
+      name => $name,
+      oob_length => $sizes[$i],
+      offset => $offsets[$i],
+    };
+    bless $rsrc, 'ResourceFork::Resource';
+    $self->{rsrc}{$type}{$id} = $rsrc;
+  }
 }
 
 sub open {
@@ -191,6 +235,8 @@ sub _readLength {
     
     my $fh = $self->{fork}{fh};
     seek $fh, $self->{offset}, SEEK_SET or die "seek: $!";
+    return $self->{oob_length} if defined($self->{oob_length});
+
     my $len;
     read($fh, $len, 4) == 4 or die "resource length too short";
     return $self->{length} = unpack('N', $len);

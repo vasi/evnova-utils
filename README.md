@@ -15,7 +15,7 @@ __Spoiler alert! Don't look things up unless you want to know about them.__
 
 Assuming you're on Ubuntu 22.04:
 
-* Install dependencies: `sudo apt install libyaml-syck-perl libmldbm-perl libberkelydb-perl libdate-manip-perl libterm-readkey-perl libperlio-eol-perl`
+* Install dependencies: `sudo apt install libyaml-syck-perl libmldbm-perl libberkeleydb-perl libdate-manip-perl libterm-readkey-perl libperlio-eol-perl`
 * Go to the directory where scripts live: `cd ./Scripts`
 * Configure which game to use with the `setcontext` command. Eg, for EV Override: `./old.pl setcontext ../Context/EVOConText.txt`
 * Get a list of all weapons in the game: `./old.pl list weap`

@@ -9,6 +9,7 @@ sub pilotVers {
 		'MpïL'	=> { game => 'classic',		key => 0xABCD1234 },
 		'OpïL'	=> { game => 'override',	key => 0xABCD1234 },
 		'NpïL'	=> { game => 'nova',		key => 0xB36A210F },
+		'plt'	=> { game => 'plt', 		key => 0xB36A210F },
 	);
 
 	my $type = fileType($file);
@@ -58,13 +59,14 @@ sub pilotLimits {
 	my ($pilot) = @_; # pilot or vers object
 
 	my %l;
-	if ($pilot->{game} eq 'nova') {
+	if ($pilot->{game} eq 'nova' || $pilot->{game} eq 'plt') {
 		%l = (
 			cargo		=> 6,
 			syst		=> 2048,
 			outf		=> 512,
 			weap		=> 256,
 			misn		=> 16,
+			misnFlags 	=> 'true',
 			bits		=> 10000,
 			escort		=> 74,
 			fighter 	=> 54,
@@ -106,21 +108,21 @@ sub pilotParsePlayer {
 	my %limits = pilotLimits($p);
 	$p->{limits} = \%limits;
 
-	$p->{lastSpob} = readShort($r);
-	$p->{ship} = readShort($r);
-	$p->{cargo} = readSeq($r, \&readShort, $limits{cargo});
-	readShort($r); # unused? val = 300
-	$p->{fuel} = readShort($r);
-	$p->{month} = readShort($r);
-	$p->{day} = readShort($r);
-	$p->{year} = readShort($r);
+	$p->{lastSpob} = $p->readShort($r);
+	$p->{ship} = $p->readShort($r);
+	$p->{cargo} = readSeq($r, $p->short, $limits{cargo});
+	$p->readShort($r); # unused? val = 300
+	$p->{fuel} = $p->readShort($r);
+	$p->{month} = $p->readShort($r);
+	$p->{day} = $p->readShort($r);
+	$p->{year} = $p->readShort($r);
 	$p->{date} = ParseDate(sprintf "%d-%d-%d", @$p{qw(year month day)});
-	$p->{explore} = readSeq($r, \&readShort, $limits{syst});
-	$p->{outf} = readSeq($r, \&readShort, $limits{outf});
-	$p->{legal} = readSeq($r, \&readShort, $limits{syst});
-	$p->{weap} = readSeq($r, \&readShort, $limits{weap});
-	$p->{ammo} = readSeq($r, \&readShort, $limits{weap});
-	$p->{cash} = readLong($r);
+	$p->{explore} = readSeq($r, $p->short, $limits{syst});
+	$p->{outf} = readSeq($r, $p->short, $limits{outf});
+	$p->{legal} = readSeq($r, $p->short, $limits{syst});
+	$p->{weap} = readSeq($r, $p->short, $limits{weap});
+	$p->{ammo} = readSeq($r, $p->short, $limits{weap});
+	$p->{cash} = $p->readLong($r);
 
 	my %misns;
 	for my $i (0..$limits{misn}-1) {
@@ -129,8 +131,8 @@ sub pilotParsePlayer {
 		$m{travelDone} = readChar($r);
 		$m{shipDone} = readChar($r);
 		$m{failed} = readChar($r);
-		$m{flags} = readShort($r) if $p->{game} eq 'nova';
-		$m{limit} = readDate($r);
+		$m{flags} = $p->readShort($r) if $limits{misnFlags};
+		$m{limit} = readDate($p, $r);
 		$misns{$i} = \%m if $m{active};
 	}
 	for my $i (0..$limits{misn}-1) {
@@ -145,7 +147,7 @@ sub pilotParsePlayer {
 	$p->{dominated} = readSeq($r, \&readChar, $limits{spob});
 
 	for my $i (0..$limits{escort}-1) {
-		my $v = readShort($r);
+		my $v = $p->readShort($r);
 		next if $v == -1;
 		if ($v >= 1000) {
 			push @{$p->{hired}}, $v - 1000;
@@ -154,72 +156,73 @@ sub pilotParsePlayer {
 		}
 	}
 	for my $i (0..$limits{fighter}-1) {
-		my $v = readShort($r);
-		next if $v == -1;
+		my $v = $p->readShort($r);
+		next if $v == -1 || $v == 0; # zero should be allowed, but plt can contain it
 		push @{$p->{fighter}}, $v;
 	}
 
 	skipTo($r, resourceLength($r) - 4);
-	$p->{rating} = readLong($r);
+	$p->{rating} = $p->readLong($r);
 }
 
 sub parseMisnData {
 	my ($p, $r) = @_;
 	my %m;
-	my $nova = ($p->{game} eq 'nova');
+	my $plt = ($p->{game} eq 'plt');
+	my $nova = ($p->{game} eq 'nova' || $p->{game} eq 'plt');
 	my $override = ($p->{game} eq 'override');
 
-	$m{travelSpob} = readShort($r);
-	readShort($r); # unused
+	$m{travelSpob} = $p->readShort($r);
+	$p->readShort($r); # unused
 	my @keys = (qw(returnSpob shipCount shipDude shipGoal shipBehavior),
 		$nova ? qw(shipStart) : (),
 		qw(shipSyst cargoType cargoQty pickupMode dropoffMode));
-	for my $k (@keys) { $m{$k} = readShort($r); }
+	for my $k (@keys) { $m{$k} = $p->readShort($r); }
 	if ($nova) {
-		$m{scanMask} = readShort($r);
+		$m{scanMask} = $p->readShort($r);
 	} else {
-		$m{scanGovt} = readShort($r);
-		$m{compBits} = readSeq($r, \&readShort, 2 + 2 * $override);
+		$m{scanGovt} = $->readShort($r);
+		$m{compBits} = readSeq($r, $p->short, 2 + 2 * $override);
 	}
-	for my $k (qw(compGovt compReward)) { $m{$k} = readShort($r); }
+	for my $k (qw(compGovt compReward)) { $m{$k} = $p->readShort($r); }
 	if ($nova) {
-		$m{datePostInc} = readShort($r);
-		readShort($r); # unused
+		$m{datePostInc} = $p->readShort($r);
+		$p->readShort($r) unless $plt; # unused
 	} else {
-		$m{failBits} = readSeq($r, \&readShort, 1 + $override);
+		$m{failBits} = readSeq($r, $p->short, 1 + $override);
 	}
-	$m{pay} = readLong($r);
+	$m{pay} = $p->readLong($r);
 	@keys = qw(Killed Boarded Disabled JumpedIn JumpedOut);
-	for my $k (@keys) { $m{"ships$k"} = readShort($r); }
-	$m{initialShips} = readShort($r);
+	for my $k (@keys) { $m{"ships$k"} = $p->readShort($r); }
+	$m{initialShips} = $p->readShort($r);
 	$m{failIfScanned} = readChar($r) unless $nova;
 	$m{canAbort} = readChar($r);
 	$m{cargoLoaded} = readChar($r);
-	$nova ? readShort($r) : readChar($r); # padding
+	($p->{game} eq 'nova') ? $p->readShort($r) : readChar($r); # padding
 	@keys = qw(brief quickBrief loadCargo dropOffCargo comp fail);
 	push @keys, qw(refuse) if $nova || $override;
 	push @keys, qw(shipDone) if $nova;
-	for my $k (@keys) { $m{"${k}Text"} = readShort($r); }
-	$m{timeLeft} = readShort($r);
-	$m{shipNameRes} = readShort($r);
-	$m{shipNameIdx} = readShort($r);
-	readShort($r); # unused
+	for my $k (@keys) { $m{"${k}Text"} = $p->readShort($r); }
+	$m{timeLeft} = $p->readShort($r);
+	$m{shipNameRes} = $p->readShort($r);
+	$m{shipNameIdx} = $p->readShort($r);
+	$p->readShort($r); # unused
 	if ($nova) {
-		$m{id} = readShort($r);
-		$m{shipSubtitleRes} = readShort($r);
-		$m{shipSubtitleIdx} = readShort($r);
-		readShort($r); # unused
+		$m{id} = $p->readShort($r);
+		$m{shipSubtitleRes} = $p->readShort($r);
+		$m{shipSubtitleIdx} = $p->readShort($r);
+		$p->readShort($r); # unused
 	} else {
-		$m{shipDelay} = readShort($r);
-		$m{id} = readShort($r);
+		$m{shipDelay} = $p->readShort($r);
+		$m{id} = $p->readShort($r);
 	}
-	$m{flags} = readShort($r);
+	$m{flags} = $p->readShort($r);
 	if ($nova) {
-		$m{flags2} = readShort($r);
-		readShort($r) for (1..4);
+		$m{flags2} = $p->readShort($r);
+		$p->readShort($r) for (1..4);
 	}
 	@keys = qw(Count Dude Syst JumpedIn Delay Left);
-	for my $k (@keys) { $m{"aux$k"} = readShort($r); }
+	for my $k (@keys) { $m{"aux$k"} = $p->readShort($r); }
 	$m{shipName} = readPString($r, $nova ? 63 : 31);
 	if ($nova) {
 		$m{shipSubtitle} = readPString($r, 63);
@@ -227,7 +230,7 @@ sub parseMisnData {
 		@keys = qw(Accept Refuse Success Failure Abort ShipDone);
 		for my $k (@keys) { $m{"on$k"} = readString($r,255); }
 		$m{name} = readPString($r, 127);
-		skip($r, 131);
+		skip($r, $plt ? 128 : 131);
 	} else {
 		$m{name} = readPString($r, 255);
 	}
@@ -238,18 +241,18 @@ sub pilotParseGlobals {
 	my ($p, $r) = @_;
 	my %limits = pilotLimits($p);
 
-	$p->{version} = readShort($r);
-	$p->{strict} = readShort($r);
-	readShort($r) if $limits{skipBeforeDef}; # unused?
+	$p->{version} = $p->readShort($r);
+	$p->{strict} = $p->readShort($r);
+	$p->readShort($r) if $limits{skipBeforeDef}; # unused?
 
-	$p->{defense} = readSeq($r, \&readShort, $limits{spob});
-	$p->{persAlive} = readSeq($r, \&readShort, $limits{pers});
-	$p->{persGrudge} = readSeq($r, \&readShort, $limits{pers});
+	$p->{defense} = readSeq($r, $p->short, $limits{spob});
+	$p->{persAlive} = readSeq($r, $p->short, $limits{pers});
+	$p->{persGrudge} = readSeq($r, $p->short, $limits{pers});
 
 	if (exists $limits{posCron}) {
     	skipTo($r, $limits{posCron});
-    	$p->{cronDurations} = readSeq($r, \&readShort, $limits{cron});
-    	$p->{cronHoldoffs} = readSeq($r, \&readShort, $limits{cron});
+    	$p->{cronDurations} = readSeq($r, $p->short, $limits{cron});
+    	$p->{cronHoldoffs} = readSeq($r, $p->short, $limits{cron});
 	}
 }
 
@@ -261,14 +264,43 @@ sub pilotParse {
 	map { $_->{data} = simpleCrypt($vers->{key}, $_->{data}) }
 		($player, $globals);
 
-	my %pilot = (
+	my $pilot = {
 		name		=> basename($file),
 		shipName	=> $globals->{name},
 		game		=> $vers->{game},
-	);
-	pilotParsePlayer(\%pilot, $player);
-	pilotParseGlobals(\%pilot, $globals);
-	return \%pilot;
+	};
+	bless $pilot, 'Pilot';
+	pilotParsePlayer($pilot, $player);
+	pilotParseGlobals($pilot, $globals);
+	return $pilot;
+}
+
+
+package Pilot;
+
+sub endianUnpack {
+	my ($self) = @_;
+	return $self->{game} eq 'plt' ? '<' : '>';
+}
+
+sub readShort {
+	my ($self, $r) = @_;
+	::readItem($r, 2, 's' . $self->endianUnpack());
+}
+
+sub readLong {
+	my ($self, $r) = @_;
+	::readItem($r, 4, 'l' . $self->endianUnpack());
+}
+
+sub short {
+	my ($self) = @_;
+	return sub { $self->readShort($_[0]) };
+}
+
+sub long {
+	my ($self) = @_;
+	return sub { $self->readLong($_[0]) };
 }
 
 1;

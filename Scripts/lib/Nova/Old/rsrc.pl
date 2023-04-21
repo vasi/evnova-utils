@@ -97,11 +97,11 @@ sub readPString {
 }
 
 sub readDate {
-	my ($r) = @_;
-	my $year = readShort($r);
-	my $month = readShort($r);
-	my $day = readShort($r);
-	readShort($r) for (1..4);
+	my ($p, $r) = @_;
+	my $year = $p->readShort($r);
+	my $month = $p->readShort($r);
+	my $day = $p->readShort($r);
+	$p->readShort($r) for (1..4);
 	return ParseDate(sprintf "%d-%d-%d", $year, $month, $day);
 }
 

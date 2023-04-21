@@ -90,6 +90,9 @@ sub init {
     if ($path =~ /\.rez$/) {
         $self->initRez();
         return;
+    } elsif ($path =~ /\.plt$/) {
+        $self->initPlt();
+        return;
     }
     
     my $baseoff = $self->findBaseOffset();
@@ -180,6 +183,36 @@ sub initRez {
     bless $rsrc, 'ResourceFork::Resource';
     $self->{rsrc}{$type}{$id} = $rsrc;
   }
+}
+
+sub pltResource {
+    my ($self, $id) = @_;
+    my $len;
+    read($self->{fh}, $len, 4) == 4 or die "can't read length";
+    $len = unpack('V', $len);
+    my $rsrc = {
+        fork => $self,
+        type => 'plt',
+        id => $id,
+        name => 'NONE',
+        oob_length => $len,
+        offset => tell($self->{fh}),
+    };
+    bless $rsrc, 'ResourceFork::Resource';
+    $self->{rsrc}{plt}{$id} = $rsrc;
+    seek($self->{fh}, $len, SEEK_CUR) or die "can't skip contents";
+}
+
+sub initPlt {
+    my ($self) = @_;
+    $self->pltResource(128);
+    $self->pltResource(129);
+
+    my $name;
+    read($self->{fh}, $name, 256);
+    $name = unpack('Z*', $name);
+    $name = decode('MacRoman', $name);
+    $self->{rsrc}{plt}{129}{name} = $name;
 }
 
 sub open {

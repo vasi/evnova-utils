@@ -72,6 +72,7 @@ sub outftech {
 	my %tech;
 	for my $oid (sort keys %$os) {
 		my $o = $os->{$oid};
+		next if $o->{BuyRandom} == 0;
 		push @{$tech{$o->{TechLevel}}}, $o;
 	}
 	printTechs \%tech;
@@ -82,6 +83,7 @@ sub shiptech {
 	my %tech;
 	for my $sid (sort keys %$ss) {
 		my $s = $ss->{$sid};
+		next if $s->{BuyRandom} == 0;
 		push @{$tech{$s->{TechLevel}}}, $s;
 	}
 	printTechs \%tech;

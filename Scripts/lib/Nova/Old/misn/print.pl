@@ -147,7 +147,7 @@ sub misnText {
 
 		# Ships
 		my $ships = 0;
-		if ($m->{ShipCount} != -1) {
+		if ($m->{ShipCount} > 0) {
 			$ships = 1;
 			my $dude = findRes(dude => $m->{ShipDude});
 			my $goal = shipGoal($m->{ShipGoal});

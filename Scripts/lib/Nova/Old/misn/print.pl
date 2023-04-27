@@ -124,7 +124,7 @@ sub misnText {
 		$ret .= "AvailRandom: $random%\n";
 	}
 	my $shiptype = $m->{AvailShipType};
-	if ($shiptype != 0 && $shiptype != -1) {
+	if ($shiptype >= 128) {
 		$ret .= "AvailShipType: $shiptype\n";
 	}
 	unless ($opts{secret}) {

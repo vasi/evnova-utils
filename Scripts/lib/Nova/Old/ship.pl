@@ -5,6 +5,11 @@ use utf8;
 
 sub shipRankWeights {
 	my (@fields) = @_;
+	my $filter = sub { return 1 };
+	if (ref($fields[-1]) eq 'CODE') {
+		$filter = pop @fields;
+	}
+
 	my @names = map { $fields[2 * $_] } (0..$#fields/2); # Preserve order
 	my %weights = @fields;
 
@@ -18,17 +23,19 @@ sub shipRankWeights {
 		return $sum;
 	};
 
-	shipRank(\@names, $calc);
+	shipRank(\@names, $calc, $filter);
 }
 
 sub shipRank {
-	my ($fieldNames, $calc) = @_;
+	my ($fieldNames, $calc, $filter) = @_;
+	$filter //= sub { return 1 };
 	my @names = @$fieldNames;
 
 	# Calculate ranks & lengths
 	my (%rank, %lengths);
 	my $ships = resource('ship');
 	while (my ($id, $ship) = each %$ships) {
+		next unless $filter->($ship);
 		foreach my $k (@names) {
 			my $v = $ship->{$k};
 			push @{$lengths{$k}}, length $v;
@@ -74,7 +81,7 @@ sub shipRank {
 
 	# Print rows
 	my $sort = sub { $rank{$b} <=> $rank{$a} || $a <=> $b };
-	for my $id (sort { $sort->() } keys %$ships) {
+	for my $id (sort { $sort->() } keys %rank) {
 		my $ship = $ships->{$id};
 		my @vals = map { $ship->{$_} } @names;
 		printf $fmt, $rank{$id}, @vals, resName($ship), $id,
@@ -87,8 +94,15 @@ sub defense {
 	shipRankWeights(Shield => 1, Armor => $arm // 1);
 }
 sub agility {
+	my $buyable;
+	moreOpts(\@_, 'buyable' => \$buyable);
 	my ($acc, $man) = @_;
-	shipRankWeights(Speed => 1, Accel => $acc // 0.02, Maneuver => $man // 1);
+	my $filter = sub { return 1 };
+	if ($buyable) {
+		$filter = sub { return int($_[0]->{BuyRandom}) != 0 };
+	}
+
+	shipRankWeights(Speed => 1, Accel => $acc // 0.02, Maneuver => $man // 1, $filter);
 }
 
 sub whereShip {

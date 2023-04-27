@@ -171,8 +171,8 @@ sub showShipMass {
 }
 
 sub massTable {
-	my ($tsv, $removable) = (0, 0);
-	moreOpts(\@_, 'tsv|t+' => \$tsv, 'removable|r+' => \$removable);
+	my ($tsv, $removable, $buyable) = (0, 0);
+	moreOpts(\@_, 'tsv|t+' => \$tsv, 'removable|r+' => \$removable, 'buyable' => \$buyable);
 
 	my $cache = {};
     my $ships = resource('ship');
@@ -185,6 +185,7 @@ sub massTable {
 	@ships = sort { $b->{TotalMass} <=> $a->{TotalMass} } @ships;
 	print tsv(qw(ID Name SubTitle TotalMass)) if $tsv;
 	for my $ship (@ships) {
+		next if $buyable && int($ship->{BuyRandom}) == 0;
 		if ($tsv) {
 			print tsv(@$ship{qw(ID Name SubTitle TotalMass)});
 		} else {

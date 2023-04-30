@@ -157,7 +157,7 @@ sub misnText {
 				$dude->{Name}, $dude->{ID};
 			$ret .= "ShipSyst: " . systText($m, 'ShipSyst') . "\n";
 		}
-		if ($m->{AuxShipCount} != -1) {
+		if ($m->{AuxShipCount} > 0) {
 			$ships = 1;
 			my $dude = findRes(dude => $m->{AuxShipDude});
 			$ret .= sprintf "AuxShips: %s%s (%d)\n",

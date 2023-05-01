@@ -155,6 +155,8 @@ our @cmds;
 		'search for the best trade routes'],
 	dominate	=> [\&dominate, '[-p PILOT]',
 		'rank planetary defense fleet strength'],
+	contrib		=> [\&contribRequire, 'INDEX',
+		'find uses of a contrib/require bit'],
 	help		=> [\&help, '[COMMAND]', 'show command usage'],
 
 	0 => 'Raw resources',

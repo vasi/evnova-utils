@@ -154,7 +154,7 @@ sub multiProps {
 	$ignore = -1 unless defined $ignore;
 
 	my @keys = grep /^$prefix\d*$/, keys %$obj;
-	my @vals = @$obj{@keys};
+	my @vals = @$obj{sort @keys};
 	@vals = grep { $_ ne $ignore} @vals;
 	return @vals;
 }

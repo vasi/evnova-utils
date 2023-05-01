@@ -1,6 +1,8 @@
 use warnings;
 use strict;
 
+use Math::BigInt;
+
 our @misnNCBset;
 
 # 0 => no bit, + => positive, - => negative
@@ -198,6 +200,64 @@ sub bitTestPrint {
 sub initiallyTrue {
 	my ($val) = @_;
 	return bitTestEvalSimple($val);
+}
+
+my %contribRequires = (
+	Contribute => [qw[cron outf rank ship]],
+	Require => [qw[cron govt misn outf ship]],
+);
+
+my %contribRequireVariants = (
+  Contribute => [qw[Contribute Contributes Contrib]],
+  Require => [qw[Require]],
+);
+
+sub stringifyContribRequire {
+	my ($x) = @_;
+	my ($q, $r) = $x->copy()->bdiv(Math::BigInt->new(1)->blsft(32));
+	return sprintf("0x%08x %08x", $q->numify(), $r->numify());
+}
+
+sub getContribRequire {
+	my ($res, $name) = @_;
+  my @vals;
+  for my $field (@{$contribRequireVariants{$name}}) {
+    @vals = multiProps($res, $field);
+    last if @vals;
+  }
+	my ($a, $b) = map { Math::BigInt->new($_) } @vals;
+	return $a->badd($b->blsft(32));
+}
+
+sub contribRequire {
+	my ($idx) = @_;
+	my $bit = Math::BigInt->new(1)->blsft($idx);
+
+  my %resFields = ();
+  while (my ($field, $types) = each %contribRequires) {
+    for my $type (@$types) {
+      push @{$resFields{$type}}, $field;
+    }
+  }
+
+  for my $type (sort keys %resFields) {
+    my @fields = sort @{$resFields{$type}};
+    my $resources = resource($type);
+    for my $id (sort keys %$resources) {
+      my $res = $resources->{$id};
+      my $foundRes;
+      for my $field (@fields) {
+        my $val = getContribRequire($res, $field);
+        if (!$bit->copy()->band($val)->is_zero()) {
+          if (!$foundRes) {
+            printf("%s %5d: %s\n", $type, $res->{ID}, resName($res));
+            $foundRes = 1;
+          }
+          printf("  %s: %s\n", $field, stringifyContribRequire($val));
+        }
+      }
+    }
+  }
 }
 
 1;

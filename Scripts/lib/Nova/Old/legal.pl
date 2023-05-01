@@ -17,6 +17,7 @@ sub suckUp {
 	for my $mid (sort keys %$ms) {
 		my $m = $ms->{$mid};
 		my $gv = $m->{CompGovt};
+		next unless $m->{CompReward} > 0;
 		next unless $govts{$gv};
 		next unless !$pilot ||
 			isAvail(\%cache, $pilot, $m, legal => 1, rating => 1);

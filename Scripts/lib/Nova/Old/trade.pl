@@ -66,7 +66,7 @@ sub routeForSpobPair {
 	my $leg2 = legForSpobPair($cargo2, $cargo1);
 	my $profit = $leg1->{profit} + $leg2->{profit};
 	my $dist = spobDist($spob1->{ID}, $spob2->{ID});
-	my $score = $profit / (1 * $dist + 1);
+	my $score = $profit / (1 * $dist + 1) / 2;
 	return {
 		spob1 => $spob1,
 		cargo1 => $leg1->{cargo},

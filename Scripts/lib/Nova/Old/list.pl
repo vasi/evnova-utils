@@ -19,7 +19,12 @@ sub rankCmp {
 }
 
 sub rank {
-    listBuild(1, @_);
+	my $order = 1;
+	my $max = 1e99;
+	moreOpts(\@_,
+		'reverse|r' => sub { $order = -1 },
+		'max|m=i' => \$max);
+  listBuild($order, @_, $max);
 }
 
 sub mapOver {
@@ -27,7 +32,8 @@ sub mapOver {
 }
 
 sub listBuild {
-	my ($sort, $type, $field, $filt) = @_;
+	my ($sort, $type, $field, $filt, $max) = @_;
+	$max //= 1e99;
 	($type, $field) = ('ship', $type) unless defined $field;
     $filt = defined $filt ? eval "no strict 'vars'; sub { $filt }": sub { 1 };
 
@@ -40,19 +46,19 @@ sub listBuild {
 	} else {
 		$fieldSub = eval "no strict 'vars'; sub { $field }";
 
-        my $rez = resource($type);
-        my ($i1, $r1) = each %$rez;
+		my $rez = resource($type);
+		my ($i1, $r1) = each %$rez;
 		my @used = grep { $_ ne 'Type' && defined $r1->{$_} }
-            ($field =~ /$fieldMatch/g);
+			($field =~ /$fieldMatch/g);
 
 		$xtra = sub { map {
-            defined($::r{$_}) ? formatField(fieldType(\%::r, $_), $::r{$_}) : ()
-        } @used };
-        rankHeaders(@used);
+			defined($::r{$_}) ? formatField(fieldType(\%::r, $_), $::r{$_}) : ()
+		} @used };
+		rankHeaders(@used);
 	}
 
-    listBuildSub(type => $type, value => $fieldSub, filter => $filt,
-        print => $xtra, sort => $sort);
+	listBuildSub(type => $type, value => $fieldSub, filter => $filt,
+			print => $xtra, sort => $sort, max => $max);
 }
 
 sub rankHeaders {
@@ -61,21 +67,22 @@ sub rankHeaders {
 }
 
 sub listBuildSub {
-    my %opts = @_;
+	my %opts = @_;
 
-    my $type = $opts{type};
-    my $value = $opts{value};
-    my $filter = $opts{filter} // sub { 1 };
-    my $sort = $opts{sort} // 1;
-    my $print = $opts{print} // sub { () };
+	my $type = $opts{type};
+	my $value = $opts{value};
+	my $filter = $opts{filter} // sub { 1 };
+	my $order = $opts{sort} // 1;
+	my $print = $opts{print} // sub { () };
+	my $max = $opts{max} // 1e99;
 
 	my $res = resource($type);
-    $sort = $sort ? sub { -rankCmp($a->[1], $b->[1]) }
-        : sub { $a->[0]{ID} <=> $b->[0]{ID} };
-    my @items = sort $sort map {
-        local %::r = %$_;
-        $filter->() ? [$_, $value->()] : ();
-    } values %$res;
+	my $sort = $order ? sub { -$order * rankCmp($a->[1], $b->[1]) }
+		: sub { $a->[0]{ID} <=> $b->[0]{ID} };
+	my @items = sort $sort map {
+		local %::r = %$_;
+		$filter->() ? [$_, $value->()] : ();
+	} values %$res;
 
 	# Set a max of three decimal places
 	my @values = map { $$_[1] } @items;
@@ -85,6 +92,7 @@ sub listBuildSub {
 
 	my $size = max (6, map { length($_) } @values);
 	for my $i (0..$#items) {
+		next if $i >= $max;
 		my $v = $values[$i];
 		local %::r = %{$items[$i][0]};
 		my @xtra = $print->();

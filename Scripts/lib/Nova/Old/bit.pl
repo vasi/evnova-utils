@@ -9,12 +9,13 @@ our @misnNCBset;
 sub hasBit {
 	my ($fld, $bit) = @_;
 
-	return 0 unless $fld =~ /(.?)\bb$bit\b/;
+	return 0 unless $fld =~ /(.?)\b$bit\b/;
 	return $1 eq '!' ? -1 : 1;
 }
 
 sub bit {
 	my ($bit) = @_;
+	$bit =~ s/^(\d+)$/b$1/;
 
 	my $bitInResource = sub {
 	    my ($type, @fields) = @_;
@@ -28,8 +29,8 @@ sub bit {
 	        }
 
 	        if (@has) {
-	            printf "%s %4d: %s\n", $type, $r->{ID}, resName($r);
-				printf "     %s: %s\n", $_, $r->{$_} foreach @has;
+	          printf "%s %4d: %s\n", $type, $r->{ID}, resName($r);
+						printf "     %s: %s\n", $_, $r->{$_} foreach @has;
 	        }
 	    }
 	};

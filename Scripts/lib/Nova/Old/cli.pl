@@ -58,8 +58,9 @@ our @cmds;
         'rank primary weapons by damage output'],
 
 	0 => 'Missions',
-	misn		=> [\&misn, '[-vsq] [-p PILOT] [SPECSET]', 'show mission details',
-		'Flag --verbose shows more info',
+	misn		=> [\&misn, '[-dvsq] [-p PILOT] [SPECSET]', 'show mission details',
+		'Flag --details shows more info',
+		'Flag --verbose shows complete mission info and text',
 		'Flag --secret only shows where to get the mission, not what it is',
 		'Flag --quiet just lists the mission briefly'],
 	pers		=> [\&persMisns, '[-v] [MISNID ...]', 'list pers missions'],

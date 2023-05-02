@@ -80,7 +80,7 @@ sub shipGoal {
 sub misnText {
 	my ($m, %opts) = @_;
 	my $ret = '';
-	my $section = $opts{verbose} ? "\n\n" : "\n";
+	my $section = $opts{details} ? "\n\n" : "\n";
 
 	# Name
 	if ($opts{secret}) {
@@ -137,13 +137,13 @@ sub misnText {
 		$ret .= "Abortable: with penalty\n";
 	}
 
-	if ($opts{verbose}) {
+	if ($opts{details}) {
 		$ret .= "\n";
 
-        # Reward
-        if ($m->{PayVal} > 0) {
-            $ret .= sprintf "PayVal: %dK\n", $m->{PayVal} / 1000;
-        }
+		# Reward
+		if ($m->{PayVal} > 0) {
+				$ret .= sprintf "PayVal: %dK\n", $m->{PayVal} / 1000;
+		}
 
 		# Ships
 		my $ships = 0;
@@ -185,8 +185,10 @@ sub misnText {
 
 		# Descs
 		$m->{InitialText} = $m->{ID} + 4000 - 128;
-		for my $type (qw(InitialText RefuseText BriefText QuickBrief
-				LoadCargText ShipDoneText DropCargText CompText FailText)) {
+		my @fields = qw(InitialText QuickBrief);
+		@fields = (@fields, qw(RefuseText BriefText LoadCargText ShipDoneText
+			DropCargText CompText FailText)) if $opts{verbose};
+		for my $type (@fields) {
 			my $descid = $m->{$type};
 			next if $descid < 128;
 			my $r = findRes(desc => $descid);
@@ -212,8 +214,10 @@ sub printMisns {
 }
 
 sub misn {
-	my ($verbose, $secret, $quiet, $pilotfile) = (0, 0, 0);
-	moreOpts(\@_, 'verbose|v+' => \$verbose,
+	my ($details, $verbose, $secret, $quiet, $pilotfile) = (0, 0, 0, 0);
+	moreOpts(\@_,
+		'details|d+' => \$details,
+		'verbose|v+' => \$verbose,
 		'secret|s' => \$secret,
 		'quiet|q' => \$quiet,
 		'pilot|p=s' => \$pilotfile);
@@ -230,7 +234,12 @@ sub misn {
 			split /,/, join ',', @_;
 	}
 
-	printMisns({verbose => $verbose, secret => $secret, quiet => $quiet}, @misns);
+	printMisns({
+		details => $details || $verbose,
+		verbose => $verbose,
+		secret => $secret,
+		quiet => $quiet
+	}, @misns);
 }
 
 1;

@@ -125,4 +125,23 @@ sub pilotDump {
 	writeResources($out, { type => $vers->{type}, id => $rid, data => $data });
 }
 
+sub unexplored {
+	my ($pilotFile, @govtSpecs) = @_;
+	my $pilot = pilotParse($pilotFile);
+
+	my %govtids = map { $_->{ID} => 1 } findRes(govt => \@govtSpecs);
+	for my $spec (@govtSpecs) {
+		$govtids{-1} = 1 if $spec eq '-1' || $spec eq '127' || lc($spec) eq 'independent';
+	}
+
+	my $systs = resource('syst');
+	for my $id (sort keys %$systs) {
+		my $syst = $systs->{$id};
+		next unless $govtids{$syst->{Govt}};
+
+		my $str = pilotPrintExplored($pilot, $syst, $pilot->{explore}[$id - 128]);
+		print "$str\n" if $str;
+	}
+}
+
 1;

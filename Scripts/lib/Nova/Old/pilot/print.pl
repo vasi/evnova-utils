@@ -1,6 +1,16 @@
 use warnings;
 use strict;
 
+sub pilotPrintExplored {
+	my ($pilot, $syst, $val) = @_;
+	return 0 if $val == 2;
+	my $details = $val == 1 ? ' (not landed)' : '';
+
+	return 0 unless bitTestEvalPilot($syst->{Visibility}, $pilot);
+	return 0 if $val == 1 && !systCanLand($syst);
+	return sprintf "%d - %s%s", $syst->{ID}, $syst->{Name}, $details;
+}
+
 # To be localized
 our ($id, $idx, $rez, $val, $name, @lines);
 
@@ -84,12 +94,7 @@ sub pilotPrint {
 
 	# GALAXY
 	$catfor->(qw(Unexplored explore syst), sub {
-	    return 0 if $val == 2;
-		my $details = $val == 1 ? ' (not landed)' : '';
-
-		return 0 unless bitTestEvalPilot($rez->{Visibility}, $p);
-		return 0 if $val == 1 && !systCanLand($rez);
-		sprintf "%d - %s%s", $id, $name, $details;
+		pilotPrintExplored($p, $rez, $val);
 	});
 	$cat->('Records ', sub {
 	    my ($systs, %gov) = resource('syst');

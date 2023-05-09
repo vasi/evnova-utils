@@ -107,11 +107,11 @@ sub agility {
 
 sub whereShip {
 	my $booty;
-	moreOpts(\@_, 'booty' => \$booty);
+	my $max = 20;
+	moreOpts(\@_, 'booty' => \$booty, 'max=i' => \$max);
 
-	my ($find, $max) = @_;
-	$max = 20 unless defined $max;
-	my $ship = findRes(ship => $find);
+	my @ships = findRes(ship => \@_);
+	my %ships = map { $_->{ID} => 1 } @ships;
 
 	my %dudes;
 	my $dudes = resource('dude');
@@ -120,7 +120,7 @@ sub whereShip {
 		for my $kt (grep /^ShipTypes\d+/, keys %$dude) {
 			(my $kp = $kt) =~ s/ShipTypes(\d+)/Probs$1/;
 			my ($vt, $vp) = map { $dude->{$_} } ($kt, $kp);
-			next if $vt != $ship->{ID};
+			next unless $ships{$vt};
 			$dudes{$dude->{ID}} += $vp;
 		}
 	}
@@ -139,7 +139,8 @@ sub whereShip {
 	}
 
 	my $count = 0;
-	printf "Systems with %s (%d):\n", resName($ship), $ship->{ID};
+	my $names = join ', ', map { sprintf "%s (%d)", resName($_), $_->{ID} } @ships;
+	printf "Systems with %s:\n", $names;
 	for my $sid (sort { $systs{$b} <=> $systs{$a} } keys %systs) {
 		last if $systs{$sid} == 0;
 

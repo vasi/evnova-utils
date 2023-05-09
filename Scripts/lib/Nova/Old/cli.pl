@@ -106,7 +106,7 @@ our @cmds;
 		'find the closest planet that sells items of a tech level'],
 	closeoutf	=> [\&closestOutfit, '[PILOT | --syst SYST] OUTFIT',
 		'find the closest place to buy an outfit'],
-	where		=> [\&whereShip, 'SHIP [--booty] [MAXPLACES]',
+	where		=> [\&whereShip, '[--booty] [--max MAX] SHIP...',
 		'show where a ship type is likely to be found'],
 	wherepers	=> [\&wherePers, 'PILOT PERS',
 		'show where a pers ship is likely to be found'],

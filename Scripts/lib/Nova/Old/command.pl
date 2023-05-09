@@ -30,6 +30,7 @@ sub dudes {
 	my %dudes = multiPropsHash($syst, 'DudeTypes', 'Probs', 0);
 	my @objs = 
 		sort { $b->{prob} <=> $a->{prob} or $a->{id} cmp $b->{id} }
+		grep { $_->{prob} > 0 }
 		map { {id => $_, prob => $dudes{$_}->[0] } }
 		keys %dudes;
 	foreach my $o (@objs) {

@@ -77,8 +77,9 @@ sub listBuildSub {
 	my $max = $opts{max} // 1e99;
 
 	my $res = resource($type);
-	my $sort = $order ? sub { -$order * rankCmp($a->[1], $b->[1]) }
-		: sub { $a->[0]{ID} <=> $b->[0]{ID} };
+	my $basicSort = sub { $a->[0]{ID} <=> $b->[0]{ID} };
+	my $sort = $order ? sub { -$order * rankCmp($a->[1], $b->[1]) or $basicSort->() }
+		: $basicSort;
 	my @items = sort $sort map {
 		local %::r = %$_;
 		$filter->() ? [$_, $value->()] : ();

@@ -129,7 +129,8 @@ sub unexplored {
 	my ($pilotFile, @govtSpecs) = @_;
 	my $pilot = pilotParse($pilotFile);
 
-	my %govtids = map { $_->{ID} => 1 } findRes(govt => \@govtSpecs);
+	my %govtids = map { $_->{ID} => 1 } findRes(govt => [ @govtSpecs ]);
+	$govtids{-1} = 1 unless @govtSpecs;
 	for my $spec (@govtSpecs) {
 		$govtids{-1} = 1 if $spec eq '-1' || $spec eq '127' || lc($spec) eq 'independent';
 	}

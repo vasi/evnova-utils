@@ -23,4 +23,21 @@ sub dude {
 	printf "\nStrength: %.2f\n", scalar(dudeStrength($dude));
 }
 
+sub dudes {
+	my ($systSpec) = @_;
+	my ($syst) = findRes(syst => $systSpec);
+
+	my %dudes = multiPropsHash($syst, 'DudeTypes', 'Probs', 0);
+	my @objs = 
+		sort { $b->{prob} <=> $a->{prob} or $a->{id} cmp $b->{id} }
+		map { {id => $_, prob => $dudes{$_}->[0] } }
+		keys %dudes;
+	foreach my $o (@objs) {
+		my $dude = findRes(dude => $o->{id});
+		my $govt = findRes(govt => $dude->{Govt});
+		printf "%3d%%: %s (%d), govt: %s\n", $o->{prob}, resName($dude), $o->{id},
+			resName($govt);
+	}
+}
+
 1;

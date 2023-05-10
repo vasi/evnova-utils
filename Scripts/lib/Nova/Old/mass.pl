@@ -135,6 +135,14 @@ sub showMass {
     $free = $total - $accum unless defined $free;
     $total = $free + $accum unless defined $total;
 
+		my %typeOrder = (weapon => 1, ammo => 1, outfit => 2);
+		my %subOrder = (weapon => 1, ammo => 2, outfit => 2);
+		$items = [sort {
+			$typeOrder{$a->{type}} <=> $typeOrder{$b->{type}} or
+			$a->{id} <=> $b->{id} or
+			$subOrder{$a->{type}} <=> $subOrder{$b->{type}}
+		} @$items];
+
 	printf "  %3d              - free\n", $free;
 	for my $i (@$items) {
 		my $outf = eval { itemOutfit($w2o, $outfs, $i) };

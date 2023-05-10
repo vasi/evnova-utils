@@ -68,14 +68,19 @@ sub pilotLimits {
 			misn		=> 16,
 			misnFlags 	=> 'true',
 			bits		=> 10000,
-			escort		=> 74,
-			fighter 	=> 54,
+			escort		=> 64,
+			fighter 	=> 64,
 			posBits		=> 0xb81e,
 			spob		=> 2048,
-			skipBeforeDef => 'true',
+			gender => 'true',
 			pers		=> 1024,
+			junk	  => 128,
+			posJunk => 0x3488,
 			posCron     => 0x3590,
 			cron        => 512,
+			posNick		  => 0x5d98,
+			posRank		  => 0x5dde,
+			rank			  => 128,
 		);
 	} else {
 		%l = (
@@ -98,7 +103,7 @@ sub pilotLimits {
 	$l{posWeap} = $l{posLegal} + 2 * $l{syst};
 	$l{posCash} = $l{posWeap} + 2 * 2 * $l{weap};
 	$l{posEscort} = $l{posBits} + $l{bits} + $l{spob};
-	$l{posPers} = 4 + 2*$l{spob} + ($l{skipBeforeDef} ? 2 : 0);
+	$l{posPers} = 4 + 2*$l{spob} + ($l{gender} ? 2 : 0);
 
 	return %l;
 }
@@ -161,6 +166,7 @@ sub pilotParsePlayer {
 		push @{$p->{fighter}}, $v;
 	}
 
+	# TODO: escorts for sale/upgrade
 	skipTo($r, resourceLength($r) - 4);
 	$p->{rating} = $p->readLong($r);
 }
@@ -243,17 +249,38 @@ sub pilotParseGlobals {
 
 	$p->{version} = $p->readShort($r);
 	$p->{strict} = $p->readShort($r);
-	$p->readShort($r) if $limits{skipBeforeDef}; # unused?
+	$p->{gender} = $p->readShort($r) if $limits{gender};
 
 	$p->{defense} = readSeq($r, $p->short, $limits{spob});
 	$p->{persAlive} = readSeq($r, $p->short, $limits{pers});
 	$p->{persGrudge} = readSeq($r, $p->short, $limits{pers});
 
+	# TODO: spobAnnoyance, seenIntroScreen, disasters
+	if (exists $limits{posJunk}) {
+		skipTo($r, $limits{posJunk});
+		$p->{junk} = readSeq($r, $p->short, $limits{junk});
+	}
+
+	# TODO: priceFlux
 	if (exists $limits{posCron}) {
     	skipTo($r, $limits{posCron});
     	$p->{cronDurations} = readSeq($r, $p->short, $limits{cron});
     	$p->{cronHoldoffs} = readSeq($r, $p->short, $limits{cron});
 	}
+
+	# TODO: reinforcements, stelDestroyed
+	if (exists $limits{posNick}) {
+		skipTo($r, $limits{posNick});
+		$p->{nick} = readPString($r, 63);
+	}
+
+	# TODO: ship colors
+	if (exists $limits{posRank}) {
+		skipTo($r, $limits{posRank});
+		$p->{rank} = readSeq($r, $p->short, $limits{rank});
+	}
+
+	# TODO: date prefix/suffix
 }
 
 sub pilotParse {

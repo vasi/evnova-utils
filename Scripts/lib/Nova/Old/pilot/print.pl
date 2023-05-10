@@ -54,6 +54,7 @@ sub pilotPrint {
 	# PLAYER
 	$cat->('Name', $p->{name});
 	$cat->('Ship name', $p->{shipName});
+  $cat->('Nickname', $p->{nick}) if $p->{nick};
 	$cat->('Strict', $p->{strict} ? 'true' : 'false');
 	$cat->('Game date', UnixDate($p->{date}, "%b %E, %Y"));
     $cat->('Rating', ratingStr($p->{rating}));
@@ -72,9 +73,9 @@ sub pilotPrint {
 	$cat->('Ship', sprintf("%d - %s", $ship->{ID}, resName($ship)));
     $cat->('Fuel', sprintf("%.2f", $p->{fuel} / 100));
 	$cat->('Cargo ', map {
-    	my $qty = $p->{cargo}[$_];
-    	$qty ? sprintf("%s: %d", cargoName($_), $qty) : ();
-    } (0..$#{$p->{cargo}}));
+    my $qty = $_ < 128 ? $p->{cargo}[$_] : $p->{junk}[$_-128];
+			$qty ? sprintf("%s: %d", cargoName($_), $qty) : ();
+    } (0..$#{$p->{cargo}}, 128..(128+$#{$p->{junk}})));
 	$catfor->(qw(Outfits outf outf), sub {
 	    !$val ? 0 : sprintf "%s: %d", $name, $val;
 	});
@@ -142,6 +143,10 @@ sub pilotPrint {
 	    return 0 if $val && !$grudge;
 		sprintf "%d - %s: %s", $id, $name, ($val ? 'grudge' : 'killed');
 	});
+  $catfor->(qw(Ranks rank rank), sub {
+    return 0 unless $val;
+    return sprintf "%d - %s", $id, $name;
+  }) if exists $p->{rank};
 }
 
 sub pilotMisn {

@@ -24,16 +24,15 @@ sub rank {
 	moreOpts(\@_,
 		'reverse|r' => sub { $order = -1 },
 		'max|m=i' => \$max);
-  listBuild($order, @_, $max);
+  listBuild($order, $max, @_);
 }
 
 sub mapOver {
-    listBuild(0, @_);
+    listBuild(0, undef, @_);
 }
 
 sub listBuild {
-	my ($sort, $type, $field, $filt, $max) = @_;
-	$max //= 1e99;
+	my ($sort, $max, $type, $field, $filt) = @_;
 	($type, $field) = ('ship', $type) unless defined $field;
     $filt = defined $filt ? eval "no strict 'vars'; sub { $filt }": sub { 1 };
 

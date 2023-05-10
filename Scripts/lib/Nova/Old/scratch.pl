@@ -1,17 +1,26 @@
 use warnings;
 use strict;
 
+use List::Util qw(sum);
+
 sub misc {
-	my ($file) = @_;
-	my $vers = pilotVers($file);
-	my ($res) = readResources($file, { type => $vers->{type}, id => 129 });
-	my $data = simpleCrypt($vers->{key}, $res->{data});
-	my $spobid = 502;
-	my $defPos = 4;
-	my $pos = $defPos + 2 * ($spobid - 128);
-	my $str = substr $data, $pos, 2;
-	my $count = unpack 's>', $str;
-	printf "Remaining: %3d\n", $count;
+	my %fighters;
+	for my $ship (values %{resource('ship')}) {
+		my @items = shipDefaultItems($ship);
+		my $fighters = sum(
+			map { $_->{count} }
+			grep {
+				$_->{type} eq 'ammo' && findRes(weap => $_->{id})->{Guidance} == 99
+			}
+			@items
+		);
+		$fighters{$ship->{ID}} = $fighters;
+	}
+	listBuildSub(
+		type => 'ship',
+		value => sub { $fighters{$::r{ID}} },
+		filter => sub { $fighters{$::r{ID}} },
+	);
 }
 
 1;

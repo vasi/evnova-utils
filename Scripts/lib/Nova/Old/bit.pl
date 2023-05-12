@@ -71,7 +71,12 @@ sub bit {
 				push @toks, { type => $c, num => $n };
 			} elsif ($c =~ /\d/) {
 				$c .= shift @chars while @chars && $chars[0] =~ /\d/;
-				push @toks, { type => '1', num => $c };
+				# Generally a typo for a bit! Assume only 0/1 are real values
+				if ($c eq '0' || $c eq '1') {
+					push @toks, { type => '1', num => $c };
+				} else {
+					push @toks, { type => 'b', num => $c };
+				}
 			} elsif ($c eq '(') {
 			    my $count = 1;
 			    my @s;

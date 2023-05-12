@@ -477,7 +477,7 @@ sub misnSpobs {
 	my $seenBad;
 	for (my $i = 0; $i < $count && $i <= $#spobs; $i++) {
 		my $spob = $spobs[$i];
-		if ($i && !$seenBad && $sign && $records{$spob->{ID}} * $sign < $availRec * $sign) {
+		if (!$seenBad && $sign && $records{$spob->{ID}} * $sign < $availRec * $sign) {
 			$seenBad = 1;
 			printf "%s\n", "-" x 40;
 		}

@@ -114,6 +114,8 @@ our @cmds;
 		'show where ships from the given govts are likely to be found'],
 	hiddenspobs	=> [\&hiddenSpobs, '',
 		'list stellar objects without a nav preset'],
+	changedspobs => [\&changedSpobs, '',
+		'list stellar objects that change visibility'],
 
 	0 => 'Other resource types',
 	'grep'		=> [\&grepDescs, 'REGEXP',

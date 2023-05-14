@@ -208,4 +208,50 @@ sub hiddenSpobs {
 	}
 }
 
+sub changedSpobs {
+	my $systs = resource('syst');
+	my $spobs = resource('spob');
+
+	my %systBypos;
+	my %bypos;
+	for my $syst (values %$systs) {
+		for my $nav (multiProps($syst, 'nav', -1)) {
+			my $spob = $spobs->{$nav};
+			my $systPos = join ',', $syst->{xPos}, $syst->{yPos};
+			my $spobPos = join ',', $spob->{xPos}, $spob->{yPos};
+			my $pos = join ',', $systPos, $spobPos;
+
+			$systBypos{$systPos}{$syst->{ID}} = 1;
+
+			my $p = ($bypos{$pos} ||= {});
+			my $viz = $syst->{Visibility};
+
+			$p->{default} ||= 1 if initiallyTrue($viz);
+			$p->{systs}{$syst->{ID}} = 1;
+			$p->{systPos} = $systPos;
+			$p->{spobPos} = $spobPos;
+			$p->{spobs}{$nav}{$viz} = 1;
+		}
+	}
+
+	my @found = grep { !$_->{default} || scalar(keys %{$_->{spobs}}) > 1 }
+		values %bypos;
+	for my $p (@found) {
+		my @systs = sort keys %{$systBypos{$p->{systPos}}};
+		$p->{minSyst} = $systs[0];
+	}
+	@found = sort { $a->{minSyst} <=> $b->{minSyst} or
+		$a->{spobPos} cmp $b->{spobPos} } @found;
+
+	for my $p (@found) {
+		my $syst = $systs->{$p->{minSyst}};
+		printf "%s (%s) @ %s:\n", resName($syst),
+			join(', ', sort keys %{$p->{systs}}), $p->{spobPos};
+		for my $nav (sort { $a <=> $b } keys %{$p->{spobs}}) {
+			printf "  %s (%d): %s\n", resName($spobs->{$nav}), $nav,
+				join(', ', sort keys %{$p->{spobs}{$nav}});
+		}
+	}
+}
+
 1;

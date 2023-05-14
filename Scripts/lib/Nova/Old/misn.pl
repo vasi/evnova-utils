@@ -461,6 +461,7 @@ sub misnSpobs {
 		my $syst = spobSyst($id);
 		$records{$id} = $pilot->{legal}[$syst->{ID} - 128];
 		my $dist = spobDist($lastSpob->{ID}, $id);
+		next unless defined($dist) && length($dist); # spobDist has trouble with visbits
 
 		if ($availRec == 0) {
 			$printableScores{$id} = $dist;
@@ -471,7 +472,8 @@ sub misnSpobs {
 		}
 	}
 
-	@spobs = sort { $scores{$a->{ID}} <=> $scores{$b->{ID}} } @spobs;
+	@spobs = sort { $scores{$a->{ID}} <=> $scores{$b->{ID}} }
+		grep { defined($scores{$_->{ID}}) } @spobs;
 	printf "In order of %s%s\n", ($availRec ? "record" : "distance"),
 		($availRec ? ", target = $availRec" : "");
 	my $seenBad;

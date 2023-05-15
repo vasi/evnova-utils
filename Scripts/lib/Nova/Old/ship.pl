@@ -106,9 +106,12 @@ sub agility {
 }
 
 sub whereShip {
-	my $booty;
+	my ($booty, $pilot);
 	my $max = 20;
-	moreOpts(\@_, 'booty' => \$booty, 'max=i' => \$max);
+	moreOpts(\@_,
+		'booty|b' => \$booty,
+		'max|m=i' => \$max,
+		'pilot|p=s' => sub { $pilot = pilotParse($_[1] )});
 
 	my @ships = findRes(ship => \@_);
 	my %ships = map { $_->{ID} => 1 } @ships;
@@ -117,12 +120,25 @@ sub whereShip {
 	my $dudes = resource('dude');
 	for my $dude (values %$dudes) {
 		next if $booty && !($dude->{Booty} & 0x40);
+
+		my $total = 0;
+		my $want = 0;
 		for my $kt (grep /^ShipTypes\d+/, keys %$dude) {
 			(my $kp = $kt) =~ s/ShipTypes(\d+)/Probs$1/;
 			my ($vt, $vp) = map { $dude->{$_} } ($kt, $kp);
+
+			if ($pilot) {
+				my $ship = findRes(ship => $vt);
+				next unless bitTestEvalPilot($ship->{AppearOn}, $pilot);
+			}
+			$total += $vp;
+
 			next unless $ships{$vt};
-			$dudes{$dude->{ID}} += $vp;
+			$want += $vp;
 		}
+
+		next if $total == 0;
+		$dudes{$dude->{ID}} = 100.0 * $want / $total;
 	}
 
 	my %systs;

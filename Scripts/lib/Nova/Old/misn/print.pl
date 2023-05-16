@@ -37,7 +37,7 @@ sub spobText {
 	} elsif ($spec < 5000) {
 		my $spob = findRes(spob => $spec);
 		my $syst = spobSyst($spec);
-		return sprintf "%s in %s", $spob->{Name}, $syst->{Name};
+		return sprintf "%s (%d) in %s", $spob->{Name}, $spob->{ID}, $syst->{Name};
 	} elsif ($spec < 9999) {
 		my $syst = findRes(syst => $spec - 5000 + 128);
 		return sprintf "system adjacent to %s", $syst->{Name};
@@ -111,9 +111,9 @@ sub misnText {
 			$ret .= sprintf "Pers: %s (%d)\n", resName($chosen), $chosen->{ID};
 		}
 	}
-		if ((my $rec = $m->{AvailRecord}) != 0) {
-			$ret .=  "AvailRecord: $rec\n";
-		}
+	if ((my $rec = $m->{AvailRecord}) != 0) {
+		$ret .=  "AvailRecord: $rec\n";
+	}
 	unless ($opts{secret}) {
 		my $rating = $m->{AvailRating};
 		if ($rating != 0 && $rating != -1) {
@@ -141,9 +141,18 @@ sub misnText {
 		$ret .= "\n";
 
 		# Reward
+		my $hasReward;
 		if ($m->{PayVal} > 0) {
-				$ret .= sprintf "PayVal: %dK\n", $m->{PayVal} / 1000;
+			$ret .= sprintf "PayVal: %dK\n", $m->{PayVal} / 1000;
+			$hasReward = 1;
 		}
+		if ($m->{CompReward} > 0) {
+			my $govt = findRes(govt => $m->{CompGovt});
+			$ret .= sprintf "CompGovt: %s (%d)\n", resName($govt), $govt->{ID};
+			$ret .= sprintf "CompReward: %d\n", $m->{CompReward};
+			$hasReward = 1;
+		}
+		$ret .= "\n" if $hasReward;
 
 		# Ships
 		my $ships = 0;
@@ -164,6 +173,13 @@ sub misnText {
 				($m->{AuxShipCount} > 1 ? "$m->{AuxShipCount} " : ''),
 				$dude->{Name}, $dude->{ID};
 			$ret .= "AuxShipSyst: " . systText($m, 'AuxShipSyst') . "\n";
+		}
+		if ($m->{Flags} & 0x20) {
+			$ships = 1; # best category
+			my @govts = scanGovts($m->{ScanMask});
+			$ret .= sprintf "NoScan: %s\n", join(', ', map {
+				sprintf "%s (%d)", resName($_), $_->{ID}
+			} @govts);
 		}
 		$ret .= "\n" if $ships;
 

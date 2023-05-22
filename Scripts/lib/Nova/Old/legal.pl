@@ -75,7 +75,7 @@ sub legalGovt {
 		$legal{$s->{ID}} = $pilot->{legal}[$s->{ID} - 128];
 	}
 
-	my @sorted = sort { $legal{$b} <=> $legal{$a} } keys %legal;
+	my @sorted = sort { $legal{$b} <=> $legal{$a} or $a <=> $b } keys %legal;
 	$count = 8 unless $count;
 	for my $idx (0..$#sorted) {
 		next unless $idx < $count || $#sorted - $idx < $count;

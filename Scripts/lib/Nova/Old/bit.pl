@@ -9,7 +9,7 @@ our @misnNCBset;
 sub hasBit {
 	my ($fld, $bit) = @_;
 
-	return 0 unless $fld =~ /(.?)\b$bit\b/;
+	return 0 unless $fld =~ /(.?)\b$bit\b/i;
 	return $1 eq '!' ? -1 : 1;
 }
 

@@ -133,6 +133,9 @@ sub misnText {
 				$ret .= "$f: $v\n";
 		}
 	}
+	if ($m->{CargoQty} != -1 && $m->{CargoQty} != 0) {
+		$ret .= "CargoQty: $m->{CargoQty}\n";
+	}
 	if ($m->{Flags} & 0x40) {
 		$ret .= "Abortable: with penalty\n";
 	}

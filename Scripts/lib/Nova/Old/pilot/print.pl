@@ -180,7 +180,8 @@ sub pilotMisn {
 		my $count = grep { $_ == $misn->{ShipGoal} } (0, 1, 2, 5, 6);
 		if ($count) {
 			my $line = sprintf "%d / %d", $m->{shipCount}, $misn->{ShipCount};
-			$line .= sprintf(" (%d disabled)", $m->{shipsDisabled}) if $m->{shipsDisabled};
+			$line .= sprintf(" (%d disabled)", $m->{shipsDisabled})
+				if $m->{shipsDisabled} && $misn->{ShipGoal} == 1;
 			$line .= " (done)" if $m->{shipDone};
 			push @lines, sprintf "  Ships: $line";
 		}

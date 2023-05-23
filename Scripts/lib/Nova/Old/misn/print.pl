@@ -3,6 +3,14 @@ use strict;
 
 our @misnNCBset;
 
+use constant {
+	V_QUIET => 0,
+	V_BITS => 1,
+	V_GOALS => 2,
+	V_START_TEXT => 3,
+	V_ALL_TEXT => 4,
+};
+
 sub govtRel {
 	my ($spec) = @_;
 
@@ -80,7 +88,8 @@ sub shipGoal {
 sub misnText {
 	my ($m, %opts) = @_;
 	my $ret = '';
-	my $section = $opts{details} ? "\n\n" : "\n";
+	my $level = $opts{level};
+	my $section = ($level >= V_START_TEXT) ? "\n\n" : "\n";
 
 	# Name
 	if ($opts{secret}) {
@@ -140,7 +149,7 @@ sub misnText {
 		$ret .= "Abortable: with penalty\n";
 	}
 
-	if ($opts{details}) {
+	if ($level >= V_GOALS) {
 		$ret .= "\n";
 
 		# Reward
@@ -203,16 +212,18 @@ sub misnText {
 		$ret .= "\n" if $where;
 
 		# Descs
-		$m->{InitialText} = $m->{ID} + 4000 - 128;
-		my @fields = qw(InitialText QuickBrief);
-		@fields = (@fields, qw(RefuseText BriefText LoadCargText ShipDoneText
-			DropCargText CompText FailText)) if $opts{verbose};
-		for my $type (@fields) {
-			my $descid = $m->{$type};
-			next if $descid < 128;
-			my $r = findRes(desc => $descid);
-			if ($r) {
-				$ret .= sprintf "%s: %s$section", $type, $r->{Description};
+		if ($level >= V_START_TEXT) {
+			$m->{InitialText} = $m->{ID} + 4000 - 128;
+			my @fields = qw(InitialText QuickBrief);
+			@fields = (@fields, qw(RefuseText BriefText LoadCargText ShipDoneText
+				DropCargText CompText FailText)) if $level >= V_ALL_TEXT;
+			for my $type (@fields) {
+				my $descid = $m->{$type};
+				next if $descid < 128;
+				my $r = findRes(desc => $descid);
+				if ($r) {
+					$ret .= sprintf "%s: %s$section", $type, $r->{Description};
+				}
 			}
 		}
 	}
@@ -221,24 +232,25 @@ sub misnText {
 
 sub printMisns {
 	my ($opts, @misns) = @_;
-	if ($opts->{quiet}) {
+	if ($opts->{level} <= V_QUIET) {
 		for my $misn (@misns) {
 			printf "%4d: %s\n", $misn->{ID}, resName($misn);
 		}
 	} else {
-		my $join = $opts->{verbose} ? "\n\n" : "\n";
+		my $join = ($opts->{level} > V_BITS) ? "\n\n" : "\n";
 		my @text = map { misnText($_, %$opts) } @misns;
 		print_breaking(join $join, @text);
 	}
 }
 
 sub misn {
-	my ($details, $verbose, $secret, $quiet, $pilotfile) = (0, 0, 0, 0);
+	my ($level, $secret, $pilotfile) = (V_BITS, 0);
 	moreOpts(\@_,
-		'details|d+' => \$details,
-		'verbose|v+' => \$verbose,
+		'level|l=i' => \$level,
 		'secret|s' => \$secret,
-		'quiet|q' => \$quiet,
+		'details|d' => sub { $level = V_GOALS },
+		'quiet|q' => sub { $level = V_QUIET },
+		'verbose|v' => sub { $level = V_ALL_TEXT },
 		'pilot|p=s' => \$pilotfile);
 
 	my @misns;
@@ -254,10 +266,8 @@ sub misn {
 	}
 
 	printMisns({
-		details => $details || $verbose,
-		verbose => $verbose,
+		level => $level,
 		secret => $secret,
-		quiet => $quiet
 	}, @misns);
 }
 

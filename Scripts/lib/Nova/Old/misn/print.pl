@@ -74,7 +74,7 @@ sub systText {
 sub shipGoal {
 	my ($i) = @_;
 	my @goals = qw(destroy disable board escort observe rescue chase);
-	return $i > 0 ? $goals[$i] : undef;
+	return $i >= 0 ? $goals[$i] : undef;
 }
 
 sub misnText {

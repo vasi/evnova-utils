@@ -176,6 +176,16 @@ sub misnText {
 				($goal ? ucfirst "$goal " : ''),
 				"$m->{ShipCount} ",
 				$dude->{Name}, $dude->{ID};
+			
+			if ($m->{ShipSubtitle} > 0) {
+				my $subtitle = findRes('str#' => $m->{ShipSubtitle});
+				my %subtitles = map { $_ => 1 } @{$subtitle->{Strings}};
+				my @subtitles = sort keys %subtitles;
+				if (@subtitles && scalar(@subtitles) <= 3) {
+					$ret .= sprintf "ShipSubtitles: %s\n", join(', ', @subtitles);
+				}
+			}
+
 			$ret .= "ShipSyst: " . systText($m, 'ShipSyst') . "\n";
 		}
 		if ($m->{AuxShipCount} > 0) {

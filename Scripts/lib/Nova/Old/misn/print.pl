@@ -3,14 +3,6 @@ use strict;
 
 our @misnNCBset;
 
-use constant {
-	V_QUIET => 0,
-	V_BITS => 1,
-	V_GOALS => 2,
-	V_START_TEXT => 3,
-	V_ALL_TEXT => 4,
-};
-
 sub govtRel {
 	my ($spec) = @_;
 

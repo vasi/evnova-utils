@@ -1,8 +1,23 @@
 use warnings;
 use strict;
 
+use constant {
+	V_QUIET => 0,
+	V_BITS => 1,
+	V_GOALS => 2,
+	V_START_TEXT => 3,
+	V_ALL_TEXT => 4,
+};
+
 our @misnNCBset = qw(OnSuccess OnRefuse OnAccept
     OnFailure OnAbort OnShipDone);
+
+sub verbosity {
+	my ($verbose, $quiet) = @_;
+	return  $verbose ? V_ALL_TEXT :
+		$quiet ? V_QUIET :
+		V_BITS;
+}
 
 sub isAvail {
 	my ($cache, $pilot, $misn, %options) = @_;
@@ -102,15 +117,15 @@ sub availMisns {
     }
 
 	# Print
-    @ok = sort { $a->{ID} <=> $b->{ID} } @ok;
+	@ok = sort { $a->{ID} <=> $b->{ID} } @ok;
 	if ($random && @ok) {
 		@ok = ($ok[rand(@ok)]);
 	}
 
-    if ($idonly) {
-        printf "%d\n", $_->{ID} for @ok;
-    } else {
-		printMisns({verbose => $verbose, quiet => $quiet, secret => $secret}, @ok);
+	if ($idonly) {
+			printf "%d\n", $_->{ID} for @ok;
+	} else {
+		printMisns({level => verbosity($verbose, $quiet), secret => $secret}, @ok);
 	}
 }
 
@@ -310,7 +325,7 @@ sub misnString {
 		%need = (%need, %foundNeed);
 	}
 
-	printMisns({verbose => $verbose, quiet => $quiet}, reverse @string);
+	printMisns({level => verbosity($verbose, $quiet)}, reverse @string);
 }
 
 sub systCons {

@@ -56,7 +56,7 @@ sub pilotPrint {
 	$cat->('Ship name', $p->{shipName});
   $cat->('Nickname', $p->{nick}) if $p->{nick};
 	$cat->('Strict', $p->{strict} ? 'true' : 'false');
-	$cat->('Gender', $p->{gender} ? 'male' : 'female');
+	$cat->('Gender', $p->{gender} ? 'male' : 'female') if defined $p->{gender};
 	$cat->('Game date', UnixDate($p->{date}, "%b %E, %Y"));
     $cat->('Rating', ratingStr($p->{rating}));
     $cat->('Cash', commaNum($p->{cash}));

@@ -157,6 +157,7 @@ our @cmds;
 		"add escorts"],
 	setrating => [\&setRating, 'PILOT RATING', "set rating"],
 	setrecord => [\&setRecord, 'PILOT RECORD [--govt] SPECS...', "set legal record"],
+	trans => [\&swapGender, 'PILOT', "swap pilot's gender"],
 
 	0 => 'Miscellaneous',
 	trade		=> [\&trade, '[ITERATIONS]',

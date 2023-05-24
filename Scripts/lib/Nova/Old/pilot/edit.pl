@@ -282,4 +282,20 @@ sub addEscort {
 	});
 }
 
+sub swapGender {
+	my ($file) = @_;
+
+	my $vers = pilotVers($file);
+	my %limits = pilotLimits($vers);
+	die "Bad version" unless $limits{gender};
+
+	pilotEdit($file, 129, sub {
+		my ($data) = @_;
+
+		my $gender = unpack('s>', substr($data, 4, 2));
+		substr($data, 4, 2) = pack('s>', !$gender);
+		return $data;
+	});
+}
+
 1;

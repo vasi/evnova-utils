@@ -17,6 +17,7 @@ use strict;
 				$cache{$type} = retrieve $cacheFile;
 			} else {
 				my $ret = readContext(getConText(), $type)->{$type} || {};
+				extrasAdd(values %$ret);
 				if ($opts{cache}) {
 					mkdir_p($dir) unless -d $dir;
 					nstore $ret, $cacheFile;
@@ -50,7 +51,6 @@ sub resDump {
 
 	my $res = findRes($type => $find);
 	die "No such item '$find' of type '$type'\n" unless defined $res;
-	extrasAdd($res);
 
 	my $idx = 0;
 	for my $k (@{$res->{_priv}->{order}}) {
@@ -134,7 +134,6 @@ sub findRes {
 sub diff {
 	my ($type, $f1, $f2) = @_;
 	my ($r1, $r2) = map { findRes($type => $_) } ($f1, $f2);
-	extrasAdd($r1, $r2);
 
 	my $idx = 0;
 	for my $k (@{$r1->{_priv}->{order}}) {

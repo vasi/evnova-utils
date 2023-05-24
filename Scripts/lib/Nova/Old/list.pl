@@ -130,22 +130,22 @@ sub find {
 
 	my (%fields, $fcnt);
 	for my $id (sort keys %$res) {
-		my $r = $res->{$id};
+		my $rsrc = $res->{$id};
 		unless (%fields) {
-			my @names = grep &$fldfilt, grep { $_ ne '_priv' } keys %$r;
-			@fields{@names} = map { fieldType($r, $_) } @names;
+			my @names = grep &$fldfilt, grep { $_ ne '_priv' } keys %$rsrc;
+			@fields{@names} = map { fieldType($rsrc, $_) } @names;
 			$fcnt = scalar(@names) or die "No fields matched";
 		}
 
-		for my $field (keys %fields) {
-			my $val = $r->{$field};
+		for my $field (sort keys %fields) {
+			my $val = $rsrc->{$field};
 			local $_ = $val;
 			next unless $filt->();
 
 			if ($idonly) {
 				printf "%d\n", $id;
 			} else {
-				my $name = sprintf "%s (%d)", resName($r), $id;
+				my $name = sprintf "%s (%d)", resName($rsrc), $id;
 				printf "%6s: %-50s%s\n", formatField($fields{$field}, $val),
 					$name, ($fcnt == 1 ? '' : " $field");
 			}

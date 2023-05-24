@@ -115,7 +115,7 @@ sub makeFilt {
 			return sub { $_ == $num }; # num
 		}
 	}
-	my $filt = eval "sub { $spec }";
+	my $filt = eval "no strict 'vars'; sub { $spec }";
 	die $@ if $@;
 	return $filt;
 }
@@ -125,29 +125,42 @@ sub find {
 	moreOpts(\@_, 'idonly|i+' => \$idonly);
 
 	my $type = shift;
+	my $whole = ($_[0] eq '--');
 	my ($fldfilt, $filt) = map { makeFilt($_) } (@_, undef, undef);
 	my $res = resource($type);
 
-	my (%fields, $fcnt);
+	my (@fields, $extract, $print);
+	if ($whole) {
+		@fields = ('--');
+		$extract = sub { $_[0] };
+		$print = sub { printf "%5d: %s\n", $_[0]->{ID}, resName($_[0]) };
+	} else {
+		my (undef, $sample) = %$res;
+		@fields = sort grep &$fldfilt, grep { $_ ne '_priv' } keys %$sample;
+		die "No fields matched" unless @fields;
+		$extract = sub { $_[0]->{$_[1]} };
+		$print = sub {
+			my ($rsrc, $field) = @_;
+			my $name = sprintf "%s (%d)", resName($rsrc), $rsrc->{ID};
+			printf "%6s: %-50s%s\n",
+				formatField(fieldType($rsrc, $field), $rsrc->{$field}),
+				$name,
+				(scalar(@fields) == 1 ? '' : " $field");
+		};
+	}
+
 	for my $id (sort keys %$res) {
 		my $rsrc = $res->{$id};
-		unless (%fields) {
-			my @names = grep &$fldfilt, grep { $_ ne '_priv' } keys %$rsrc;
-			@fields{@names} = map { fieldType($rsrc, $_) } @names;
-			$fcnt = scalar(@names) or die "No fields matched";
-		}
 
-		for my $field (sort keys %fields) {
-			my $val = $rsrc->{$field};
-			local $_ = $val;
+		for my $field (@fields) {
+			local $_ = $extract->($rsrc, $field);
+			local %::r = %$_ if ref($_) eq 'HASH';
 			next unless $filt->();
 
 			if ($idonly) {
 				printf "%d\n", $id;
 			} else {
-				my $name = sprintf "%s (%d)", resName($rsrc), $id;
-				printf "%6s: %-50s%s\n", formatField($fields{$field}, $val),
-					$name, ($fcnt == 1 ? '' : " $field");
+				$print->($rsrc, $field);
 			}
 			last if $idonly;
 		}

@@ -93,16 +93,67 @@ sub defense {
 	my ($arm) = @_;
 	shipRankWeights(Shield => 1, Armor => $arm // 1);
 }
+
+sub agilityWeights {
+	my ($acc, $man) = @_;
+	$acc //= 0.1;
+	$man //= 1.5;
+	return ($acc, $man);
+}
+
+sub myAgility {
+	my ($file, @weights) = @_;
+	my ($wacc, $wman) = agilityWeights(@weights);
+
+	my $pilot = pilotParse($file);
+	my $ship = findRes(ship => $pilot->{ship} + 128);
+	my @names = qw(Speed Accel Maneuver);
+	my %props = map { $_ => $ship->{$_} } @names;
+
+	my %types = (7 => 'Accel', 8 => 'Speed', 9 => 'Maneuver');
+	my %found;
+	for my $item (pilotItems($pilot)) {
+		my $outf = findRes(outf => $item->{id});
+		my %mods = multiPropsHash($outf, 'ModType', 'ModVal', -1);
+		while (my ($type, $vals) = each %mods) {
+			my $name = $types{$type} or next;
+			foreach my $val (@$vals) {
+				push @{$found{$name}}, {outf => $outf, id => $outf->{ID},
+					count => $item->{count}, val => $val };
+			}
+		}
+	}
+
+	for my $type (@names) {
+		my $xtra = ($type eq 'Maneuver') ? ' / 10' : '     ';
+		printf "%-8s                    %4d\n", $type, $props{$type};
+		my @items = sort { $a->{id} <=> $b->{id} } @{$found{$type}};
+		for my $item (@items) {
+			my $mod = $item->{count} * $item->{val};
+			$mod *= 0.1 if $type eq 'Maneuver';
+			printf "%-8s   %2d * %4d$xtra = %4d   %s (%d)\n", $type, $item->{count},
+				$item->{val}, $mod, resName($item->{outf}), $item->{id};
+			$props{$type} += $mod;
+		}
+		printf "%-8s                    %4d\n", $type, $props{$type} if @items;
+		print "\n";
+	}
+
+	printf "Agility = %4d + (%3d * %.1f) + (%3d * %.1f) = %d\n",
+		$props{Speed}, $props{Accel}, $wacc, $props{Maneuver}, $wman,
+		$props{Speed} + $props{Accel} * $wacc + $props{Maneuver} * $wman,
+}
+
 sub agility {
 	my $buyable;
 	moreOpts(\@_, 'buyable' => \$buyable);
-	my ($acc, $man) = @_;
+	my ($wacc, $wman) = agilityWeights(@_);
 	my $filter = sub { return 1 };
 	if ($buyable) {
 		$filter = sub { return int($_[0]->{BuyRandom}) != 0 };
 	}
 
-	shipRankWeights(Speed => 1, Accel => $acc // 0.1, Maneuver => $man // 1.5, $filter);
+	shipRankWeights(Speed => 1, Accel => $wacc // 0.1, Maneuver => $wman // 1.5, $filter);
 }
 
 sub whereShip {

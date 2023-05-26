@@ -39,6 +39,8 @@ our @cmds;
         'rank ships by total space'],
 	defense		=> [\&defense, '[ARMOR_WEIGHT]',
 		'rank ships by shield and armor'],
+	myagility		=> [\&myAgility, 'PILOT [ACCEL_WEIGHT] [MANEUVER_WEIGHT]',
+		'calculate agility of current ship'],
 	agility		=> [\&agility, '[ACCEL_WEIGHT] [MANEUVER_WEIGHT]',
 		'rank ships by speed and agility'],
 	shiptech	=> [\&shiptech, '', 'show tech level of each ship'],

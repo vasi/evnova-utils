@@ -102,7 +102,7 @@ sub agility {
 		$filter = sub { return int($_[0]->{BuyRandom}) != 0 };
 	}
 
-	shipRankWeights(Speed => 1, Accel => $acc // 0.02, Maneuver => $man // 1, $filter);
+	shipRankWeights(Speed => 1, Accel => $acc // 0.1, Maneuver => $man // 1.5, $filter);
 }
 
 sub whereShip {
